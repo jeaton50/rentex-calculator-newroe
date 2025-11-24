@@ -54,22 +54,37 @@ const EquipmentCalculator = {
       supportType
     } = config;
 
-    // Determine pixels per tile
-    const pixelsPerTile = productType === "absen" ? 200 :
-                         productType === "theatrixx" ? 192 :
-                         productType === "ROEGP26Full" ? 192 :
-                         productType === "ROEGP26Half" ? 192 : 176;
+    // Determine pixels per tile (width and height separately)
+    let pixelsPerTileWidth, pixelsPerTileHeight;
+
+    if (productType === "absen") {
+      pixelsPerTileWidth = 200;
+      pixelsPerTileHeight = 200;
+    } else if (productType === "theatrixx") {
+      pixelsPerTileWidth = 192;
+      pixelsPerTileHeight = 192;
+    } else if (productType === "ROEGP26Full") {
+      pixelsPerTileWidth = 192;
+      pixelsPerTileHeight = 384; // Full is 1000mm tall (2x)
+    } else if (productType === "ROEGP26Half") {
+      pixelsPerTileWidth = 192;
+      pixelsPerTileHeight = 192;
+    } else {
+      // BP2B1, BP2B2, BP2V2
+      pixelsPerTileWidth = 176;
+      pixelsPerTileHeight = 176;
+    }
 
     // Max data cascade per refresh/bit
     const maxDataCascade = productType === "absen" ? 10 : 13;
 
     // Max panels per processor type
-    const maxPanelsPerS8 = Math.floor(2000 / pixelsPerTile) * Math.floor(2000 / pixelsPerTile);
-    const maxPanelsPerSX40 = Math.floor(4096 / pixelsPerTile) * Math.floor(2160 / pixelsPerTile);
+    const maxPanelsPerS8 = Math.floor(2000 / pixelsPerTileWidth) * Math.floor(2000 / pixelsPerTileHeight);
+    const maxPanelsPerSX40 = Math.floor(4096 / pixelsPerTileWidth) * Math.floor(2160 / pixelsPerTileHeight);
 
     // Pixel dimensions
-    const pixelsHeight = verticalBlocks * pixelsPerTile;
-    const pixelsWidth = horizontalBlocks * pixelsPerTile;
+    const pixelsHeight = verticalBlocks * pixelsPerTileHeight;
+    const pixelsWidth = horizontalBlocks * pixelsPerTileWidth;
 
     // Processing calculations
     const minProcessorsForPixels = Math.ceil(pixelsWidth / 4096) * Math.ceil(pixelsHeight / 2160);
@@ -820,14 +835,16 @@ function addROEGP26Equipment(config, tbody) {
     powerDistro
   } = config;
 
-  // Get product-specific weight
+  // Get product-specific weight and pixel dimensions
   const tileWeight = productType === "ROEGP26Full" ? 18.96 : 11.24;
+  const pixelWidth = 192;
+  const pixelHeight = productType === "ROEGP26Full" ? 384 : 192; // Full is 1000mm tall (2x)
 
   // Calculate total wall weight (tiles only)
   totalWeight = tileWeight * totalTiles;
 
-  // Calculate total pixels (ROE GP2.6 uses 192 pixels per tile width)
-  const totalPixels = (horizontalBlocks * 192) * (verticalBlocks * 192);
+  // Calculate total pixels
+  const totalPixels = (horizontalBlocks * pixelWidth) * (verticalBlocks * pixelHeight);
 
   // Tiles - product-specific
   if (productType === "ROEGP26Full") {

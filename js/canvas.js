@@ -886,40 +886,61 @@ const CanvasRenderer = {
     const verticalBlocks = parseInt(document.getElementById('blocksVer')?.value || 1, 10);
     const numScreens = parseInt(document.getElementById('numScreens')?.value || 1, 10);
 
-    // Get product-specific pixel size
-    let pixelsPerTile;
+    // Get product-specific pixel size and dimensions
+    let pixelsPerTileWidth;
+    let pixelsPerTileHeight;
     let depth;
+    let tileWidthFeet;
+    let tileHeightFeet;
 
     switch (productType) {
       case 'BP2B1':
       case 'BP2B2':
       case 'BP2V2':
-        pixelsPerTile = 176;
+        pixelsPerTileWidth = 176;
+        pixelsPerTileHeight = 176;
         depth = '44"';
+        tileWidthFeet = 1.64;
+        tileHeightFeet = 1.64;
         break;
       case 'theatrixx':
-        pixelsPerTile = 192;
+        pixelsPerTileWidth = 192;
+        pixelsPerTileHeight = 192;
         depth = '47"';
+        tileWidthFeet = 1.64;
+        tileHeightFeet = 1.64;
         break;
       case 'ROEGP26Full':
-      case 'ROEGP26Half':
-        pixelsPerTile = 192;
+        pixelsPerTileWidth = 192;
+        pixelsPerTileHeight = 384; // Full is 1000mm tall (2x height)
         depth = '80mm (3.15")';
+        tileWidthFeet = 1.64;
+        tileHeightFeet = 3.28; // 1000mm = 3.28 feet
+        break;
+      case 'ROEGP26Half':
+        pixelsPerTileWidth = 192;
+        pixelsPerTileHeight = 192;
+        depth = '80mm (3.15")';
+        tileWidthFeet = 1.64;
+        tileHeightFeet = 1.64;
         break;
       case 'absen':
       default:
-        pixelsPerTile = 200;
+        pixelsPerTileWidth = 200;
+        pixelsPerTileHeight = 200;
         depth = '35"';
+        tileWidthFeet = 1.64;
+        tileHeightFeet = 1.64;
         break;
     }
 
     // Calculate dimensions
-    const totalWidthPixels = (horizontalBlocks * pixelsPerTile * numScreens) + (this.config.screenSpacing * (numScreens - 1));
-    const totalHeightPixels = verticalBlocks * pixelsPerTile;
+    const totalWidthPixels = (horizontalBlocks * pixelsPerTileWidth * numScreens) + (this.config.screenSpacing * (numScreens - 1));
+    const totalHeightPixels = verticalBlocks * pixelsPerTileHeight;
     const totalPixels = (totalWidthPixels * totalHeightPixels).toLocaleString();
 
-    const totalWidthFeet = (horizontalBlocks * 1.64 * numScreens).toFixed(2);
-    const totalHeightFeet = (verticalBlocks * 1.64).toFixed(2);
+    const totalWidthFeet = (horizontalBlocks * tileWidthFeet * numScreens).toFixed(2);
+    const totalHeightFeet = (verticalBlocks * tileHeightFeet).toFixed(2);
 
     const totalTiles = horizontalBlocks * verticalBlocks * numScreens;
 
