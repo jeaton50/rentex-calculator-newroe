@@ -261,6 +261,43 @@ window.addEventListener("DOMContentLoaded", () => {
           <label for="dimensionInput">Input Dimensions</label>
         </div>
 
+        <!-- ROE Graphic Mix Section -->
+        <div id="roeGraphicMixContainer" style="margin-top:10px; margin-bottom:15px;">
+          <input type="checkbox" id="roeGraphicMix" name="roeGraphicMix">
+          <label for="roeGraphicMix"><strong>ROE Graphic Mix</strong></label>
+
+          <!-- Mixed tile inputs (shown when ROE Graphic Mix is enabled) -->
+          <div id="mixedTileInputs" style="display:none; margin-top:10px; padding:10px; border:1px solid #ddd; border-radius:5px; background-color:#f9f9f9;">
+            <div style="margin-bottom:10px;">
+              <label><strong>ROE GP2.6 Half Tiles (Bottom):</strong></label>
+              <div style="display:flex; gap:10px; margin-top:5px;">
+                <div>
+                  <label for="halfHorizontal">Horizontal:</label>
+                  <input type="number" id="halfHorizontal" name="halfHorizontal" min="1" max="20" value="5" style="width:60px;">
+                </div>
+                <div>
+                  <label for="halfVertical">Vertical:</label>
+                  <input type="number" id="halfVertical" name="halfVertical" min="1" max="20" value="3" style="width:60px;">
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label><strong>ROE GP2.6 Full Tiles (Top):</strong></label>
+              <div style="display:flex; gap:10px; margin-top:5px;">
+                <div>
+                  <label for="fullHorizontal">Horizontal:</label>
+                  <input type="number" id="fullHorizontal" name="fullHorizontal" min="1" max="20" value="5" style="width:60px;">
+                </div>
+                <div>
+                  <label for="fullVertical">Vertical:</label>
+                  <input type="number" id="fullVertical" name="fullVertical" min="1" max="20" value="3" style="width:60px;">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Block inputs -->
         <div id="blockInputs">
   <label for="blocksHor">Horizontal/Vertical</label><br>
@@ -431,43 +468,6 @@ window.addEventListener("DOMContentLoaded", () => {
       <!-- Equipment Requirements (MOVED TO CENTER) -->
       <div id="controls">
         <h2>Equipment Requirements</h2>
-
-        <!-- ROE Graphic Mix Section -->
-        <div id="roeGraphicMixContainer" style="margin-bottom:15px;">
-          <input type="checkbox" id="roeGraphicMix" name="roeGraphicMix">
-          <label for="roeGraphicMix"><strong>ROE Graphic Mix</strong></label>
-
-          <!-- Mixed tile inputs (shown when ROE Graphic Mix is enabled) -->
-          <div id="mixedTileInputs" style="display:none; margin-top:10px; padding:10px; border:1px solid #ddd; border-radius:5px; background-color:#f9f9f9;">
-            <div style="margin-bottom:10px;">
-              <label><strong>ROE GP2.6 Half Tiles:</strong></label>
-              <div style="display:flex; gap:10px; margin-top:5px;">
-                <div>
-                  <label for="halfHorizontal">Horizontal:</label>
-                  <input type="number" id="halfHorizontal" name="halfHorizontal" min="1" max="20" value="5" style="width:60px;">
-                </div>
-                <div>
-                  <label for="halfVertical">Vertical:</label>
-                  <input type="number" id="halfVertical" name="halfVertical" min="1" max="20" value="3" style="width:60px;">
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label><strong>ROE GP2.6 Full Tiles:</strong></label>
-              <div style="display:flex; gap:10px; margin-top:5px;">
-                <div>
-                  <label for="fullHorizontal">Horizontal:</label>
-                  <input type="number" id="fullHorizontal" name="fullHorizontal" min="1" max="20" value="5" style="width:60px;">
-                </div>
-                <div>
-                  <label for="fullVertical">Vertical:</label>
-                  <input type="number" id="fullVertical" name="fullVertical" min="1" max="20" value="3" style="width:60px;">
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <!-- Insert the new Screen Multiplier dropdown here -->
         <!-- New "Number of Screens" radio button group -->

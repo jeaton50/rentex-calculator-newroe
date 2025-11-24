@@ -112,6 +112,9 @@ const CanvasRenderer = {
     // Use provided blockImage or fall back to loaded image or create fallback
     const tileImage = blockImage || this.images.block;
 
+    // Check if ROE Graphic Mix mode is enabled
+    const roeGraphicMixEnabled = document.getElementById('roeGraphicMix')?.checked || false;
+
     // Get product type to determine tile dimensions
     const productType = wallData.productType || 'absen';
 
@@ -121,7 +124,21 @@ const CanvasRenderer = {
     let blockWidth = (this.config.baseBlockPixels / 4) * zoomLevel;
     let blockHeight = (this.config.baseBlockPixels / 4) * zoomLevel;
 
-    if (productType === 'ROEGP26Full') {
+    // Handle ROE Graphic Mix mode (mixed Half and Full tiles)
+    let mixedTileMode = false;
+    let halfHorizontal = 0, halfVertical = 0;
+    let fullHorizontal = 0, fullVertical = 0;
+    let halfBlockHeight = blockHeight; // 500mm (standard)
+    let fullBlockHeight = blockHeight * 2; // 1000mm (2x height)
+
+    if (roeGraphicMixEnabled) {
+      mixedTileMode = true;
+      halfHorizontal = parseInt(document.getElementById('halfHorizontal')?.value || 0, 10);
+      halfVertical = parseInt(document.getElementById('halfVertical')?.value || 0, 10);
+      fullHorizontal = parseInt(document.getElementById('fullHorizontal')?.value || 0, 10);
+      fullVertical = parseInt(document.getElementById('fullVertical')?.value || 0, 10);
+      console.log('ROE Graphic Mix mode:', { halfHorizontal, halfVertical, fullHorizontal, fullVertical });
+    } else if (productType === 'ROEGP26Full') {
       blockHeight = blockHeight * 2; // 1000mm is 2x the standard 500mm
       console.log('ROE GP2.6 Full visualization: using tall rectangles', { blockWidth, blockHeight });
     }
@@ -138,9 +155,21 @@ const CanvasRenderer = {
     const gridLinePadding = 5;
 
     // Calculate canvas dimensions
-    const singleScreenWidth = wallData.blocksHor * blockWidth;
+    let singleScreenWidth, totalWallHeight;
+
+    if (mixedTileMode) {
+      // Mixed mode: use max horizontal count and sum of half/full heights
+      const maxHorizontal = Math.max(halfHorizontal, fullHorizontal);
+      singleScreenWidth = maxHorizontal * blockWidth;
+      totalWallHeight = (halfVertical * halfBlockHeight) + (fullVertical * fullBlockHeight);
+    } else {
+      // Normal mode
+      singleScreenWidth = wallData.blocksHor * blockWidth;
+      totalWallHeight = wallData.blocksVer * blockHeight;
+    }
+
     canvas.width = (singleScreenWidth * numScreens) + (this.config.screenSpacing * (numScreens - 1)) + (gridLinePadding * 2);
-    canvas.height = wallData.blocksVer * blockHeight + extraHeightTop + extraHeightBottom + (gridLinePadding * 2);
+    canvas.height = totalWallHeight + extraHeightTop + extraHeightBottom + (gridLinePadding * 2);
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -156,9 +185,7 @@ const CanvasRenderer = {
       ctx.rect(xOffset - gridLinePadding, 0, singleScreenWidth + (gridLinePadding * 2), canvas.height);
       ctx.clip();
 
-      // Draw wall background as a single stretched image
-      const wallWidth = wallData.blocksHor * blockWidth;
-      const wallHeight = wallData.blocksVer * blockHeight;
+      // Draw wall background and grid
       const wallX = xOffset;
       const wallY = gridLinePadding + extraHeightTop;
 
@@ -167,39 +194,104 @@ const CanvasRenderer = {
         ? window.wallBackgroundImage
         : tileImage;
 
-      if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
-        // Draw background image at 55% opacity
-        ctx.globalAlpha = 0.55;
-        ctx.drawImage(imageToUse, wallX, wallY, wallWidth, wallHeight);
-        ctx.globalAlpha = 1.0; // Reset to full opacity
+      if (mixedTileMode) {
+        // Mixed mode: draw Half tiles on bottom, Full tiles on top
+        const maxHorizontal = Math.max(halfHorizontal, fullHorizontal);
+        const wallWidth = maxHorizontal * blockWidth;
+        const halfSectionHeight = halfVertical * halfBlockHeight;
+        const fullSectionHeight = fullVertical * fullBlockHeight;
+
+        // Draw Half tile section (bottom)
+        if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+          ctx.globalAlpha = 0.55;
+          ctx.drawImage(imageToUse, wallX, wallY, wallWidth, halfSectionHeight);
+          ctx.globalAlpha = 1.0;
+        } else {
+          ctx.globalAlpha = 0.55;
+          ctx.fillStyle = '#444';
+          ctx.fillRect(wallX, wallY, wallWidth, halfSectionHeight);
+          ctx.globalAlpha = 1.0;
+        }
+
+        // Draw Full tile section (top)
+        if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+          ctx.globalAlpha = 0.55;
+          ctx.drawImage(imageToUse, wallX, wallY + halfSectionHeight, wallWidth, fullSectionHeight);
+          ctx.globalAlpha = 1.0;
+        } else {
+          ctx.globalAlpha = 0.55;
+          ctx.fillStyle = '#555'; // Slightly different color for Full section
+          ctx.fillRect(wallX, wallY + halfSectionHeight, wallWidth, fullSectionHeight);
+          ctx.globalAlpha = 1.0;
+        }
+
+        // Draw grid lines for mixed tiles
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2;
+
+        // Vertical grid lines (same for both sections)
+        for (let col = 0; col <= maxHorizontal; col++) {
+          const lineX = xOffset + col * blockWidth;
+          ctx.beginPath();
+          ctx.moveTo(lineX, wallY);
+          ctx.lineTo(lineX, wallY + halfSectionHeight + fullSectionHeight);
+          ctx.stroke();
+        }
+
+        // Horizontal grid lines for Half tiles (bottom)
+        for (let row = 0; row <= halfVertical; row++) {
+          const lineY = wallY + row * halfBlockHeight;
+          ctx.beginPath();
+          ctx.moveTo(wallX, lineY);
+          ctx.lineTo(wallX + wallWidth, lineY);
+          ctx.stroke();
+        }
+
+        // Horizontal grid lines for Full tiles (top)
+        for (let row = 0; row <= fullVertical; row++) {
+          const lineY = wallY + halfSectionHeight + row * fullBlockHeight;
+          ctx.beginPath();
+          ctx.moveTo(wallX, lineY);
+          ctx.lineTo(wallX + wallWidth, lineY);
+          ctx.stroke();
+        }
       } else {
-        // Fallback: draw colored rectangle
-        ctx.globalAlpha = 0.55;
-        ctx.fillStyle = '#444';
-        ctx.fillRect(wallX, wallY, wallWidth, wallHeight);
-        ctx.globalAlpha = 1.0; // Reset to full opacity
-      }
+        // Normal mode: single tile type
+        const wallWidth = wallData.blocksHor * blockWidth;
+        const wallHeight = wallData.blocksVer * blockHeight;
 
-      // Draw grid lines to show block boundaries
-      ctx.strokeStyle = '#FFFFFF';  // White grid lines
-      ctx.lineWidth = 2;
+        if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+          ctx.globalAlpha = 0.55;
+          ctx.drawImage(imageToUse, wallX, wallY, wallWidth, wallHeight);
+          ctx.globalAlpha = 1.0;
+        } else {
+          ctx.globalAlpha = 0.55;
+          ctx.fillStyle = '#444';
+          ctx.fillRect(wallX, wallY, wallWidth, wallHeight);
+          ctx.globalAlpha = 1.0;
+        }
 
-      // Draw vertical grid lines
-      for (let col = 0; col <= wallData.blocksHor; col++) {
-        const lineX = xOffset + col * blockWidth;
-        ctx.beginPath();
-        ctx.moveTo(lineX, wallY);
-        ctx.lineTo(lineX, wallY + wallHeight);
-        ctx.stroke();
-      }
+        // Draw grid lines
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2;
 
-      // Draw horizontal grid lines
-      for (let row = 0; row <= wallData.blocksVer; row++) {
-        const lineY = wallY + row * blockHeight;
-        ctx.beginPath();
-        ctx.moveTo(wallX, lineY);
-        ctx.lineTo(wallX + wallWidth, lineY);
-        ctx.stroke();
+        // Vertical grid lines
+        for (let col = 0; col <= wallData.blocksHor; col++) {
+          const lineX = xOffset + col * blockWidth;
+          ctx.beginPath();
+          ctx.moveTo(lineX, wallY);
+          ctx.lineTo(lineX, wallY + wallHeight);
+          ctx.stroke();
+        }
+
+        // Horizontal grid lines
+        for (let row = 0; row <= wallData.blocksVer; row++) {
+          const lineY = wallY + row * blockHeight;
+          ctx.beginPath();
+          ctx.moveTo(wallX, lineY);
+          ctx.lineTo(wallX + wallWidth, lineY);
+          ctx.stroke();
+        }
       }
 
       // Draw wiring diagram if enabled
