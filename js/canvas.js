@@ -878,13 +878,20 @@ const CanvasRenderer = {
    * @param {string} productType - Type of LED product
    */
   displayWallDimensions(productType) {
+    console.log('displayWallDimensions called with productType:', productType);
+
     const dimensionsDiv = document.getElementById('wallDimensions');
-    if (!dimensionsDiv) return;
+    if (!dimensionsDiv) {
+      console.error('wallDimensions element not found!');
+      return;
+    }
 
     // Get configuration values
     const horizontalBlocks = parseInt(document.getElementById('blocksHor')?.value || 1, 10);
     const verticalBlocks = parseInt(document.getElementById('blocksVer')?.value || 1, 10);
     const numScreens = parseInt(document.getElementById('numScreens')?.value || 1, 10);
+
+    console.log('Blocks:', { horizontalBlocks, verticalBlocks, numScreens });
 
     // Get product-specific pixel size and dimensions
     let pixelsPerTileWidth;
@@ -916,6 +923,7 @@ const CanvasRenderer = {
         depth = '80mm (3.15")';
         tileWidthFeet = 1.64;
         tileHeightFeet = 3.28; // 1000mm = 3.28 feet
+        console.log('ROE GP2.6 Full selected - using 384px height and 3.28\' per tile');
         break;
       case 'ROEGP26Half':
         pixelsPerTileWidth = 192;
@@ -943,6 +951,14 @@ const CanvasRenderer = {
     const totalHeightFeet = (verticalBlocks * tileHeightFeet).toFixed(2);
 
     const totalTiles = horizontalBlocks * verticalBlocks * numScreens;
+
+    console.log('Calculated dimensions:', {
+      totalWidthPixels,
+      totalHeightPixels,
+      totalWidthFeet,
+      totalHeightFeet,
+      tileHeightFeet
+    });
 
     // Update display
     dimensionsDiv.innerHTML = `
