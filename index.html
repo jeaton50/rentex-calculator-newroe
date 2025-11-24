@@ -913,6 +913,33 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Add event listeners to mixed tile inputs
+  const halfHorizontalInput = document.getElementById('halfHorizontal');
+  const halfVerticalInput = document.getElementById('halfVertical');
+  const fullHorizontalInput = document.getElementById('fullHorizontal');
+  const fullVerticalInput = document.getElementById('fullVertical');
+
+  if (halfHorizontalInput) {
+    halfHorizontalInput.addEventListener('input', function() {
+      if (typeof generateWall === 'function') generateWall();
+    });
+  }
+  if (halfVerticalInput) {
+    halfVerticalInput.addEventListener('input', function() {
+      if (typeof generateWall === 'function') generateWall();
+    });
+  }
+  if (fullHorizontalInput) {
+    fullHorizontalInput.addEventListener('input', function() {
+      if (typeof generateWall === 'function') generateWall();
+    });
+  }
+  if (fullVerticalInput) {
+    fullVerticalInput.addEventListener('input', function() {
+      if (typeof generateWall === 'function') generateWall();
+    });
+  }
+
   // ... the rest of your existing code ...
 
 
