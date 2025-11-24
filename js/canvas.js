@@ -112,13 +112,25 @@ const CanvasRenderer = {
     // Use provided blockImage or fall back to loaded image or create fallback
     const tileImage = blockImage || this.images.block;
 
-    const blockSize = (this.config.baseBlockPixels / 4) * zoomLevel;
+    // Get product type to determine tile dimensions
+    const productType = wallData.productType || 'absen';
+
+    // Calculate block size based on product type
+    // ROE GP2.6 Full is 500mm × 1000mm (tall rectangle)
+    // All other products are 500mm × 500mm (square)
+    let blockWidth = (this.config.baseBlockPixels / 4) * zoomLevel;
+    let blockHeight = (this.config.baseBlockPixels / 4) * zoomLevel;
+
+    if (productType === 'ROEGP26Full') {
+      blockHeight = blockHeight * 2; // 1000mm is 2x the standard 500mm
+      console.log('ROE GP2.6 Full visualization: using tall rectangles', { blockWidth, blockHeight });
+    }
 
     // Get number of screens (default to 1)
     const numScreens = parseInt(document.getElementById('numScreens')?.value || "1", 10);
 
     // Calculate support heights
-    const supportHeight = blockSize / 4;
+    const supportHeight = blockWidth / 4; // Use blockWidth as base for support size
     const extraHeightTop = wallData.flownSupport ? supportHeight * 2 : 0;
     const extraHeightBottom = wallData.groundSupport ? supportHeight * 2 : 0;
 
@@ -126,9 +138,9 @@ const CanvasRenderer = {
     const gridLinePadding = 5;
 
     // Calculate canvas dimensions
-    const singleScreenWidth = wallData.blocksHor * blockSize;
+    const singleScreenWidth = wallData.blocksHor * blockWidth;
     canvas.width = (singleScreenWidth * numScreens) + (this.config.screenSpacing * (numScreens - 1)) + (gridLinePadding * 2);
-    canvas.height = wallData.blocksVer * blockSize + extraHeightTop + extraHeightBottom + (gridLinePadding * 2);
+    canvas.height = wallData.blocksVer * blockHeight + extraHeightTop + extraHeightBottom + (gridLinePadding * 2);
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -145,8 +157,8 @@ const CanvasRenderer = {
       ctx.clip();
 
       // Draw wall background as a single stretched image
-      const wallWidth = wallData.blocksHor * blockSize;
-      const wallHeight = wallData.blocksVer * blockSize;
+      const wallWidth = wallData.blocksHor * blockWidth;
+      const wallHeight = wallData.blocksVer * blockHeight;
       const wallX = xOffset;
       const wallY = gridLinePadding + extraHeightTop;
 
@@ -174,7 +186,7 @@ const CanvasRenderer = {
 
       // Draw vertical grid lines
       for (let col = 0; col <= wallData.blocksHor; col++) {
-        const lineX = xOffset + col * blockSize;
+        const lineX = xOffset + col * blockWidth;
         ctx.beginPath();
         ctx.moveTo(lineX, wallY);
         ctx.lineTo(lineX, wallY + wallHeight);
@@ -183,7 +195,7 @@ const CanvasRenderer = {
 
       // Draw horizontal grid lines
       for (let row = 0; row <= wallData.blocksVer; row++) {
-        const lineY = wallY + row * blockSize;
+        const lineY = wallY + row * blockHeight;
         ctx.beginPath();
         ctx.moveTo(wallX, lineY);
         ctx.lineTo(wallX + wallWidth, lineY);
@@ -192,30 +204,30 @@ const CanvasRenderer = {
 
       // Draw wiring diagram if enabled
       if (window.showWiring) {
-        this.drawWiringDiagram(ctx, wallData, blockSize, xOffset, gridLinePadding + extraHeightTop);
+        this.drawWiringDiagram(ctx, wallData, blockWidth, blockHeight, xOffset, gridLinePadding + extraHeightTop);
       }
 
       // Draw power diagram if enabled
       if (window.showPower) {
-        this.drawPowerDiagram(ctx, wallData, blockSize, xOffset, gridLinePadding + extraHeightTop);
+        this.drawPowerDiagram(ctx, wallData, blockWidth, blockHeight, xOffset, gridLinePadding + extraHeightTop);
       }
 
       // Draw tile numbers if enabled (drawn after wiring diagrams so they appear on top)
       if (showNumbers) {
         for (let row = 0; row < wallData.blocksVer; row++) {
           for (let col = 0; col < wallData.blocksHor; col++) {
-            const posX = xOffset + col * blockSize;
-            const posY = gridLinePadding + extraHeightTop + row * blockSize;
+            const posX = xOffset + col * blockWidth;
+            const posY = gridLinePadding + extraHeightTop + row * blockHeight;
 
             // White text with black outline for visibility
             ctx.fillStyle = 'white';
             ctx.strokeStyle = 'black';
             ctx.lineWidth = 3;
-            ctx.font = `bold ${Math.max(12, blockSize / 4)}px Arial`;
+            ctx.font = `bold ${Math.max(12, Math.min(blockWidth, blockHeight) / 4)}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            const textX = posX + blockSize / 2;
-            const textY = posY + blockSize / 2;
+            const textX = posX + blockWidth / 2;
+            const textY = posY + blockHeight / 2;
             ctx.strokeText(tileNumber, textX, textY);
             ctx.fillText(tileNumber, textX, textY);
 
@@ -226,11 +238,11 @@ const CanvasRenderer = {
 
       // Draw support structures
       if (wallData.flownSupport) {
-        this.drawFlownSupports(ctx, wallData.blocksHor, blockSize, xOffset, supportHeight, zoomLevel);
+        this.drawFlownSupports(ctx, wallData.blocksHor, blockWidth, xOffset, supportHeight, zoomLevel);
       }
 
       if (wallData.groundSupport) {
-        this.drawGroundBases(ctx, wallData.blocksHor, wallData.blocksVer, blockSize, xOffset, supportHeight, zoomLevel);
+        this.drawGroundBases(ctx, wallData.blocksHor, wallData.blocksVer, blockWidth, blockHeight, xOffset, supportHeight, zoomLevel);
       }
 
       // Restore context
@@ -244,11 +256,12 @@ const CanvasRenderer = {
    * Draw wiring diagram showing data connections between tiles
    * @param {CanvasRenderingContext2D} ctx - Canvas context
    * @param {Object} wallData - Wall configuration data
-   * @param {number} blockSize - Size of each block in pixels
+   * @param {number} blockWidth - Width of each block in pixels
+   * @param {number} blockHeight - Height of each block in pixels
    * @param {number} xOffset - Horizontal offset for multi-screen
    * @param {number} extraHeightTop - Extra height at top for supports
    */
-  drawWiringDiagram(ctx, wallData, blockSize, xOffset, extraHeightTop) {
+  drawWiringDiagram(ctx, wallData, blockWidth, blockHeight, xOffset, extraHeightTop) {
     // Get product type to determine daisy chain limit
     const productType = document.getElementById('productType')?.value;
     const daisyChainLimits = {
@@ -437,8 +450,8 @@ const CanvasRenderer = {
 
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i];
-      const posX = xOffset + tile.col * blockSize + blockSize / 2;
-      const posY = extraHeightTop + tile.row * blockSize + blockSize / 2;
+      const posX = xOffset + tile.col * blockWidth + blockWidth / 2;
+      const posY = extraHeightTop + tile.row * blockHeight + blockHeight / 2;
 
       if (tilesInCurrentChain === 0) {
         // Start of a new chain
@@ -483,7 +496,7 @@ const CanvasRenderer = {
         ctx.fillStyle = chainColor;
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 3;
-        ctx.font = `bold ${Math.max(14, blockSize / 3)}px Arial`;
+        ctx.font = `bold ${Math.max(14, Math.min(blockWidth, blockHeight) / 3)}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         const labelText = `Port ${chainNumber}`;
@@ -503,11 +516,12 @@ const CanvasRenderer = {
    * Draw power diagram showing power distribution with voltage-dependent tile limits
    * @param {CanvasRenderingContext2D} ctx - Canvas context
    * @param {Object} wallData - Wall configuration data
-   * @param {number} blockSize - Size of each block in pixels
+   * @param {number} blockWidth - Width of each block in pixels
+   * @param {number} blockHeight - Height of each block in pixels
    * @param {number} xOffset - Horizontal offset for multi-screen
    * @param {number} extraHeightTop - Extra height at top for supports
    */
-  drawPowerDiagram(ctx, wallData, blockSize, xOffset, extraHeightTop) {
+  drawPowerDiagram(ctx, wallData, blockWidth, blockHeight, xOffset, extraHeightTop) {
     // Get product type and voltage to determine power tile limit
     const productType = document.getElementById('productType')?.value;
     const powerDistroType = document.getElementById('powerDistroType')?.value;
@@ -702,8 +716,8 @@ const CanvasRenderer = {
 
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i];
-      const posX = xOffset + tile.col * blockSize + blockSize / 2;
-      const posY = extraHeightTop + tile.row * blockSize + blockSize / 2;
+      const posX = xOffset + tile.col * blockWidth + blockWidth / 2;
+      const posY = extraHeightTop + tile.row * blockHeight + blockHeight / 2;
 
       if (tilesInCurrentChain === 0) {
         // Start of a new chain
@@ -751,7 +765,7 @@ const CanvasRenderer = {
         ctx.fillStyle = chainColor;
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 3;
-        ctx.font = `bold ${Math.max(14, blockSize / 3)}px Arial`;
+        ctx.font = `bold ${Math.max(14, Math.min(blockWidth, blockHeight) / 3)}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         const labelText = `Pwr ${chainNumber}`;
@@ -779,7 +793,7 @@ const CanvasRenderer = {
    * @param {number} supportHeight - Height of support structure
    * @param {number} zoomLevel - Current zoom level
    */
-  drawFlownSupports(ctx, horizontalBlocks, blockSize, xOffset, supportHeight, zoomLevel) {
+  drawFlownSupports(ctx, horizontalBlocks, blockWidth, xOffset, supportHeight, zoomLevel) {
     const headerOffset = this.config.headerOffsetMultiplier * zoomLevel;
     const flownSupportType = document.getElementById('flownSupportType')?.value || 'Single Header';
 
@@ -792,21 +806,21 @@ const CanvasRenderer = {
         // Check if double header would extend past the wall
         if (i + 2 > horizontalBlocks) {
           // Use single header for the remaining odd tile
-          posX = i * blockSize;
+          posX = i * blockWidth;
           posY = headerOffset;
-          imageWidth = blockSize;
+          imageWidth = blockWidth;
           headerImage = this.images.singleHeader;
         } else {
-          posX = i * blockSize;
+          posX = i * blockWidth;
           posY = headerOffset;
-          imageWidth = 2 * blockSize;
+          imageWidth = 2 * blockWidth;
           headerImage = this.images.doubleHeader;
         }
       } else {
         // Single headers: every position
-        posX = i * blockSize;
+        posX = i * blockWidth;
         posY = headerOffset;
-        imageWidth = blockSize;
+        imageWidth = blockWidth;
         headerImage = this.images.singleHeader;
       }
 
@@ -826,12 +840,13 @@ const CanvasRenderer = {
    * @param {CanvasRenderingContext2D} ctx - Canvas context
    * @param {number} horizontalBlocks - Number of horizontal blocks
    * @param {number} verticalBlocks - Number of vertical blocks
-   * @param {number} blockSize - Size of each block in pixels
+   * @param {number} blockWidth - Width of each block in pixels
+   * @param {number} blockHeight - Height of each block in pixels
    * @param {number} xOffset - Horizontal offset for multi-screen
    * @param {number} supportHeight - Height of support structure
    * @param {number} zoomLevel - Current zoom level
    */
-  drawGroundBases(ctx, horizontalBlocks, verticalBlocks, blockSize, xOffset, supportHeight, zoomLevel) {
+  drawGroundBases(ctx, horizontalBlocks, verticalBlocks, blockWidth, blockHeight, xOffset, supportHeight, zoomLevel) {
     const baseOffset = this.config.baseOffsetMultiplier * zoomLevel;
     const groundSupportType = document.getElementById('groundSupportType')?.value || 'Single Base';
 
@@ -844,21 +859,21 @@ const CanvasRenderer = {
         // Check if double base would extend past the wall
         if (i + 2 > horizontalBlocks) {
           // Use single base for the remaining odd tile
-          posX = i * blockSize;
-          posY = (verticalBlocks * blockSize) - supportHeight + baseOffset;
-          imageWidth = blockSize;
+          posX = i * blockWidth;
+          posY = (verticalBlocks * blockHeight) - supportHeight + baseOffset;
+          imageWidth = blockWidth;
           baseImage = this.images.singleBase;
         } else {
-          posX = i * blockSize;
-          posY = (verticalBlocks * blockSize) - supportHeight + baseOffset;
-          imageWidth = 2 * blockSize;
+          posX = i * blockWidth;
+          posY = (verticalBlocks * blockHeight) - supportHeight + baseOffset;
+          imageWidth = 2 * blockWidth;
           baseImage = this.images.doubleBase;
         }
       } else {
         // Single bases: every position
-        posX = i * blockSize;
-        posY = (verticalBlocks * blockSize) - supportHeight + baseOffset;
-        imageWidth = blockSize;
+        posX = i * blockWidth;
+        posY = (verticalBlocks * blockHeight) - supportHeight + baseOffset;
+        imageWidth = blockWidth;
         baseImage = this.images.singleBase;
       }
 
