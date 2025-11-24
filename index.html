@@ -432,6 +432,43 @@ window.addEventListener("DOMContentLoaded", () => {
       <div id="controls">
         <h2>Equipment Requirements</h2>
 
+        <!-- ROE Graphic Mix Section -->
+        <div id="roeGraphicMixContainer" style="margin-bottom:15px;">
+          <input type="checkbox" id="roeGraphicMix" name="roeGraphicMix">
+          <label for="roeGraphicMix"><strong>ROE Graphic Mix</strong></label>
+
+          <!-- Mixed tile inputs (shown when ROE Graphic Mix is enabled) -->
+          <div id="mixedTileInputs" style="display:none; margin-top:10px; padding:10px; border:1px solid #ddd; border-radius:5px; background-color:#f9f9f9;">
+            <div style="margin-bottom:10px;">
+              <label><strong>ROE GP2.6 Half Tiles:</strong></label>
+              <div style="display:flex; gap:10px; margin-top:5px;">
+                <div>
+                  <label for="halfHorizontal">Horizontal:</label>
+                  <input type="number" id="halfHorizontal" name="halfHorizontal" min="1" max="20" value="5" style="width:60px;">
+                </div>
+                <div>
+                  <label for="halfVertical">Vertical:</label>
+                  <input type="number" id="halfVertical" name="halfVertical" min="1" max="20" value="3" style="width:60px;">
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label><strong>ROE GP2.6 Full Tiles:</strong></label>
+              <div style="display:flex; gap:10px; margin-top:5px;">
+                <div>
+                  <label for="fullHorizontal">Horizontal:</label>
+                  <input type="number" id="fullHorizontal" name="fullHorizontal" min="1" max="20" value="5" style="width:60px;">
+                </div>
+                <div>
+                  <label for="fullVertical">Vertical:</label>
+                  <input type="number" id="fullVertical" name="fullVertical" min="1" max="20" value="3" style="width:60px;">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Insert the new Screen Multiplier dropdown here -->
         <!-- New "Number of Screens" radio button group -->
         <!-- Number of Screens section (hidden) -->
@@ -842,6 +879,38 @@ window.addEventListener("DOMContentLoaded", () => {
     document.getElementById('multipleScreensOptions').style.display = 'block';
   } else {
     document.getElementById('multipleScreensOptions').style.display = 'none';
+  }
+
+  // ROE Graphic Mix toggle
+  const roeGraphicMixCheckbox = document.getElementById('roeGraphicMix');
+  if (roeGraphicMixCheckbox) {
+    roeGraphicMixCheckbox.addEventListener('change', function() {
+      const mixedTileInputs = document.getElementById('mixedTileInputs');
+      const blockInputs = document.getElementById('blockInputs');
+      const productTypeSelect = document.getElementById('productType');
+
+      if (this.checked) {
+        // Show mixed tile inputs
+        if (mixedTileInputs) mixedTileInputs.style.display = 'block';
+        // Hide regular block inputs
+        if (blockInputs) blockInputs.style.display = 'none';
+        // Force product type to ROEGP26Full (or keep current if already ROE)
+        if (productTypeSelect && !productTypeSelect.value.includes('ROEGP26')) {
+          productTypeSelect.value = 'ROEGP26Full';
+          productTypeSelect.dispatchEvent(new Event('change'));
+        }
+      } else {
+        // Hide mixed tile inputs
+        if (mixedTileInputs) mixedTileInputs.style.display = 'none';
+        // Show regular block inputs
+        if (blockInputs) blockInputs.style.display = 'block';
+      }
+
+      // Regenerate wall
+      if (typeof generateWall === 'function') {
+        generateWall();
+      }
+    });
   }
 
   // ... the rest of your existing code ...
