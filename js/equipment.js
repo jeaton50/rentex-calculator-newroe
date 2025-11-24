@@ -56,7 +56,9 @@ const EquipmentCalculator = {
 
     // Determine pixels per tile
     const pixelsPerTile = productType === "absen" ? 200 :
-                         productType === "theatrixx" ? 192 : 176;
+                         productType === "theatrixx" ? 192 :
+                         productType === "ROEGP26Full" ? 192 :
+                         productType === "ROEGP26Half" ? 192 : 176;
 
     // Max data cascade per refresh/bit
     const maxDataCascade = productType === "absen" ? 10 : 13;
@@ -797,6 +799,106 @@ function addROEEquipment(config, tbody) {
 }
 
 /**
+ * Add ROE GP2.6-specific equipment to table
+ * @param {Object} config - Equipment configuration
+ * @param {HTMLElement} tbody - Table body element
+ */
+function addROEGP26Equipment(config, tbody) {
+  const {
+    productType,
+    totalTiles,
+    totalSpareTiles,
+    processors,
+    cables,
+    sandbags,
+    singleBases,
+    doubleBases,
+    singleHeaders,
+    doubleHeaders,
+    horizontalBlocks,
+    verticalBlocks,
+    powerDistro
+  } = config;
+
+  // Get product-specific weight
+  const tileWeight = productType === "ROEGP26Full" ? 18.96 : 11.24;
+
+  // Calculate total wall weight (tiles only)
+  totalWeight = tileWeight * totalTiles;
+
+  // Calculate total pixels (ROE GP2.6 uses 192 pixels per tile width)
+  const totalPixels = (horizontalBlocks * 192) * (verticalBlocks * 192);
+
+  // Tiles - product-specific
+  if (productType === "ROEGP26Full") {
+    addEquipmentRow('ROEGP26FULL', 'ROE GP2.6 Full LED tile 500x1000mm', 18.96, totalTiles, tbody);
+    addEquipmentRow('ROEGP26FULL', 'ROE GP2.6 Full LED tile 500x1000mm **SPARE**', 18.96, totalSpareTiles, tbody);
+  } else if (productType === "ROEGP26Half") {
+    addEquipmentRow('ROEGP26HALF', 'ROE GP2.6 Half LED tile 500x500mm', 11.24, totalTiles, tbody);
+    addEquipmentRow('ROEGP26HALF', 'ROE GP2.6 Half LED tile 500x500mm **SPARE**', 11.24, totalSpareTiles, tbody);
+  }
+
+  // Processors
+  if (processors.SX40 > 0) {
+    addEquipmentRow('SX40', 'Brompton Tessera SX40 **Kit includes an XD10**', 17, processors.SX40, tbody);
+  }
+  if (processors.XD10 > 0) {
+    addEquipmentRow('XD10', 'Brompton Tessera XD 10G data distribution unit', 8.16, processors.XD10, tbody);
+  }
+  if (processors.S8 > 0) {
+    addEquipmentRow('S8', 'Brompton Tessera S8', 17, processors.S8, tbody);
+  }
+
+  // Support structures - headers
+  if (singleHeaders > 0) {
+    addEquipmentRow('BPBOHEAD1', 'ROE Black Pearl header, 1W, 0.5m', 12, singleHeaders, tbody);
+  }
+  if (doubleHeaders > 0) {
+    addEquipmentRow('BPBOHEAD2', 'ROE Black Pearl header, 2W, 1m', 19, doubleHeaders, tbody);
+  }
+
+  // Support structures - bases
+  if (singleBases > 0) {
+    addEquipmentRow('BPBOBB1', 'ROE Black Pearl base bar, 1W, 0.5m', 16, singleBases, tbody);
+  }
+  if (doubleBases > 0) {
+    addEquipmentRow('BPBOBB2', 'ROE Black Pearl base bar, 2W, 1.0m', 28, doubleBases, tbody);
+  }
+
+  // Sandbags
+  if (sandbags > 0) {
+    addEquipmentRow('SANDBAG25', 'Sand Bag 25 lbs.', 25, sandbags, tbody);
+  }
+
+  // Cables
+  if (cables.ECONRJ45 > 0) {
+    addEquipmentRow('ECONRJ45', "Ethercon to RJ45 (CAT6) 100'", 2.4, cables.ECONRJ45, tbody);
+  }
+  if (cables.ECON1M > 0) {
+    addEquipmentRow('ECON1M', "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
+  }
+
+  // Power distribution
+  if (powerDistro.CUBEDIST > 0) {
+    addEquipmentRow('CUBEDIST', 'Indu Electric 200A Cube Distro', 177, powerDistro.CUBEDIST, tbody);
+  }
+  if (powerDistro.TP1 > 0) {
+    addEquipmentRow('TP1', 'Indu Electric 400A Power Distro w/ (4) 208v Soca', 197, powerDistro.TP1, tbody);
+  }
+  if (powerDistro.TRUE125FT > 0) {
+    addEquipmentRow('TRUE125FT', "True1 to True1 cable, 25'", 4, powerDistro.TRUE125FT, tbody);
+  }
+  if (powerDistro.T11M > 0) {
+    addEquipmentRow('T11M', "True1 power cable 1M (3')", 0.44, powerDistro.T11M, tbody);
+  }
+
+  // Display data ports needed
+  if (typeof displayDataPortsNeeded === 'function') {
+    displayDataPortsNeeded('ROE', totalTiles);
+  }
+}
+
+/**
  * Add Theatrixx-specific equipment to table
  * @param {Object} config - Equipment configuration
  * @param {HTMLElement} tbody - Table body element
@@ -1188,6 +1290,11 @@ function displayEquipment(data) {
       case 'BP2B2':
       case 'BP2V2':
         addROEEquipment(equipmentConfig, tbody);
+        break;
+
+      case 'ROEGP26Full':
+      case 'ROEGP26Half':
+        addROEGP26Equipment(equipmentConfig, tbody);
         break;
 
       case 'theatrixx':

@@ -42,7 +42,9 @@ const CONSTANTS = {
     BP2B1: 'BP2B1',
     BP2B2: 'BP2B2',
     BP2V2: 'BP2V2',
-    THEATRIXX: 'theatrixx'
+    THEATRIXX: 'theatrixx',
+    ROEGP26FULL: 'ROEGP26Full',
+    ROEGP26HALF: 'ROEGP26Half'
   },
 
   // Vertical tile limits
@@ -51,7 +53,9 @@ const CONSTANTS = {
     BP2B1: 13,
     BP2B2: 12,
     BP2V2: 13,
-    theatrixx: 13
+    theatrixx: 13,
+    ROEGP26Full: 13,
+    ROEGP26Half: 13
   },
 
   // Data cascade limits
@@ -75,7 +79,9 @@ const CONSTANTS = {
   PIXELS_PER_TILE: {
     absen: 200,
     BP2: 176,
-    theatrixx: 192
+    theatrixx: 192,
+    ROEGP26Full: 192,
+    ROEGP26Half: 192
   },
 
   // Distribution types
@@ -100,7 +106,9 @@ const CONSTANTS = {
     BP2B1: '#ecf7ff',
     BP2B2: '#eaffec',
     BP2V2: '#fdf7e7',
-    theatrixx: '#f3eaff'
+    theatrixx: '#f3eaff',
+    ROEGP26Full: '#ffe5f0',
+    ROEGP26Half: '#fff0e5'
   }
 };
 
@@ -130,6 +138,10 @@ const EQUIPMENT = {
   BPBO_HEAD2: { code: 'BPBOHEAD2', name: 'ROE Black Pearl header, 2W, 1m', weight: 19 },
   BPBO_BB1: { code: 'BPBOBB1', name: 'ROE Black Pearl base bar, 1W, 0.5m', weight: 16 },
   BPBO_BB2: { code: 'BPBOBB2', name: 'ROE Black Pearl base bar, 2W, 1.0m', weight: 28 },
+
+  // ROE GP2.6
+  ROEGP26FULL: { code: 'ROEGP26FULL', name: 'ROE GP2.6 Full LED tile 500x1000mm', weight: 18.96 },
+  ROEGP26HALF: { code: 'ROEGP26HALF', name: 'ROE GP2.6 Half LED tile 500x500mm', weight: 11.24 },
 
   // Theatrixx
   TX_NOMAD26: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm', weight: 17.6 },

@@ -901,6 +901,11 @@ const CanvasRenderer = {
         pixelsPerTile = 192;
         depth = '47"';
         break;
+      case 'ROEGP26Full':
+      case 'ROEGP26Half':
+        pixelsPerTile = 192;
+        depth = '80mm (3.15")';
+        break;
       case 'absen':
       default:
         pixelsPerTile = 200;
