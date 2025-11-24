@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<!-- Version: 2025-11-21-v3 - Side lines removed -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Screen Views - LED Wall Calculator</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      margin: 20px;
+      background: var(--bg-gradient);
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 95%;
+      margin: 0 auto;
+      background: var(--card-gradient);
+      padding: 30px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--text-dark);
+      margin-bottom: 10px;
+    }
+
+    .screen-info {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 15px;
+      background: rgba(220, 38, 38, 0.05);
+      border-radius: 8px;
+      border: 1px solid rgba(220, 38, 38, 0.1);
+    }
+
+    .screen-info h2 {
+      margin: 5px 0;
+      color: var(--text-dark);
+      font-size: 18px;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: rgba(220, 38, 38, 0.05);
+      border-radius: 8px;
+      border: 1px solid rgba(220, 38, 38, 0.1);
+    }
+
+    .controls label {
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .controls input[type="range"] {
+      width: 300px;
+      cursor: pointer;
+    }
+
+    .controls .curve-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--primary-color);
+      min-width: 80px;
+      text-align: center;
+    }
+
+    .curve-type {
+      font-size: 14px;
+      color: #666;
+      font-style: italic;
+    }
+
+    .views-container {
+      display: flex;
+      gap: 30px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .view-section {
+      flex: 1;
+      min-width: 600px;
+      max-width: 1200px;
+    }
+
+    .view-section h3 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 20px;
+    }
+
+    .canvas-wrapper {
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      background: #fff;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      display: block;
+      max-width: 100%;
+    }
+
+    .back-button {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 10px 20px;
+      background: var(--primary-color);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: bold;
+      transition: var(--transition-base);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .back-button:hover {
+      background: #b91c1c;
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .reset-button {
+      display: inline-block;
+      padding: 8px 16px;
+      background: #6c757d;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      margin-left: 15px;
+    }
+
+    .reset-button:hover {
+      background: #5a6268;
+    }
+
+    .zoom-controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .zoom-button {
+      padding: 8px 16px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .zoom-button:hover {
+      background: #218838;
+    }
+
+    .zoom-level {
+      padding: 8px 16px;
+      background: #f0f0f0;
+      border-radius: 5px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+    }
+
+    .capture-button {
+      display: inline-block;
+      padding: 8px 16px;
+      background: #17a2b8;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .capture-button:hover {
+      background: #138496;
+    }
+
+    .info-text {
+      text-align: center;
+      color: #666;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-button" id="backButton">← Back to Calculator</a>
+
+    <h1>Screen Views</h1>
+
+    <div class="screen-info">
+      <h2 id="productInfo">Product: Loading...</h2>
+      <h2 id="dimensionsInfo">Screen Size: Loading...</h2>
+    </div>
+
+    <div class="controls">
+      <label for="curveSlider">Curve Adjustment:</label>
+      <input type="range" id="curveSlider" min="-5" max="5" step="2.5" value="0">
+      <div>
+        <div class="curve-value" id="curveValue">0°</div>
+        <div class="curve-type" id="curveType">Flat</div>
+      </div>
+      <button type="button" class="reset-button" id="resetButton">Reset View</button>
+    </div>
+
+    <div class="views-container">
+      <div class="view-section">
+        <h3>Front View</h3>
+        <div class="canvas-wrapper">
+          <canvas id="frontViewCanvas" width="1000" height="600"></canvas>
+        </div>
+        <div style="text-align: center;">
+          <button type="button" class="capture-button" id="captureFrontButton">📸 Capture Front View</button>
+        </div>
+      </div>
+
+      <div class="view-section">
+        <h3>Top View</h3>
+        <div class="canvas-wrapper">
+          <canvas id="topViewCanvas" width="1000" height="600"></canvas>
+        </div>
+        <div class="zoom-controls">
+          <button type="button" class="zoom-button" id="zoomOutButton">Zoom Out</button>
+          <div class="zoom-level" id="zoomLevel">50%</div>
+          <button type="button" class="zoom-button" id="zoomInButton">Zoom In</button>
+        </div>
+        <div style="text-align: center;">
+          <button type="button" class="capture-button" id="captureTopButton">📸 Capture Top View</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-text">
+      <p id="rangeInfo"><strong>Convex:</strong> Negative angles | <strong>Flat:</strong> 0° | <strong>Concave:</strong> Positive angles</p>
+    </div>
+  </div>
+
+  <script>
+    // Get screen parameters from URL or localStorage
+    function getScreenParameters() {
+      const urlParams = new URLSearchParams(window.location.search);
+
+      const productType = (urlParams.get('product') || localStorage.getItem('screenProduct') || 'absen').toLowerCase();
+
+      return {
+        productType: productType,
+        blocksHor: parseInt(urlParams.get('blocksHor') || localStorage.getItem('screenBlocksHor') || '10'),
+        blocksVer: parseInt(urlParams.get('blocksVer') || localStorage.getItem('screenBlocksVer') || '6'),
+        powerDistroType: urlParams.get('powerDistroType') || localStorage.getItem('screenPowerDistroType') || '208',
+        blockWidth: 500,  // mm - Both Absen and Theatrixx use 500mm blocks
+        blockHeight: 500  // mm - Both Absen and Theatrixx use 500mm blocks
+      };
+    }
+
+    const params = getScreenParameters();
+
+    // Product-specific configuration
+    const productConfig = {
+      absen: {
+        displayName: 'Absen PL2.5',
+        minCurve: -7.5,
+        maxCurve: 10,
+        step: 2.5,
+        rangeText: '(-7.5° to 0°) | <strong>Flat:</strong> 0° | <strong>Concave:</strong> Positive angles (0° to +10°)'
+      },
+      theatrixx: {
+        displayName: 'Theatrixx Nomad 2.6',
+        minCurve: -5,
+        maxCurve: 5,
+        step: 2.5,
+        rangeText: '(-5° to 0°) | <strong>Flat:</strong> 0° | <strong>Concave:</strong> Positive angles (0° to +5°)'
+      },
+      bp2b1: {
+        displayName: 'ROE Black Pearl BP2B1',
+        minCurve: 0,
+        maxCurve: 5,
+        step: 5,
+        rangeText: '| <strong>Flat:</strong> 0° | <strong>Concave:</strong> +5°'
+      },
+      bp2b2: {
+        displayName: 'ROE Black Pearl BP2B2',
+        minCurve: 0,
+        maxCurve: 5,
+        step: 5,
+        rangeText: '| <strong>Flat:</strong> 0° | <strong>Concave:</strong> +5°'
+      },
+      bp2v2: {
+        displayName: 'ROE Black Pearl BP2V2',
+        minCurve: 0,
+        maxCurve: 5,
+        step: 5,
+        rangeText: '| <strong>Flat:</strong> 0° | <strong>Concave:</strong> +5°'
+      }
+    };
+
+    const config = productConfig[params.productType] || productConfig.absen;
+
+    // Update info display
+    document.getElementById('productInfo').textContent = `Product: ${config.displayName}`;
+    document.getElementById('dimensionsInfo').textContent =
+      `Screen Size: ${params.blocksHor} × ${params.blocksVer} tiles (${(params.blocksHor * params.blockWidth / 1000).toFixed(2)}m × ${(params.blocksVer * params.blockHeight / 1000).toFixed(2)}m)`;
+
+    // Update range info text
+    const convexText = config.minCurve < 0 ? '<strong>Convex:</strong> Negative angles ' : '';
+    document.getElementById('rangeInfo').innerHTML = `${convexText}${config.rangeText}`;
+
+    // Update back button to preserve calculator state
+    const backButton = document.getElementById('backButton');
+    backButton.href = `index.html?product=${encodeURIComponent(params.productType)}&blocksHor=${params.blocksHor}&blocksVer=${params.blocksVer}&powerDistroType=${params.powerDistroType}`;
+
+    // Curve control
+    const curveSlider = document.getElementById('curveSlider');
+    const curveValue = document.getElementById('curveValue');
+    const curveType = document.getElementById('curveType');
+
+    // Set slider range based on product type
+    curveSlider.min = config.minCurve;
+    curveSlider.max = config.maxCurve;
+    curveSlider.step = config.step;
+    curveSlider.value = 0;
+
+    // Zoom control for top view
+    let topViewZoomLevel = 0.5;
+    const zoomStep = 0.25;
+    const minZoom = 0.5;
+    const maxZoom = 3.0;
+
+    function updateCurveDisplay(angle) {
+      curveValue.textContent = `${angle > 0 ? '+' : ''}${angle}°`;
+
+      if (angle < 0) {
+        curveType.textContent = 'Convex';
+        curveType.style.color = '#dc2626';
+      } else if (angle > 0) {
+        curveType.textContent = 'Concave';
+        curveType.style.color = '#dc2626';
+      } else {
+        curveType.textContent = 'Flat';
+        curveType.style.color = '#666';
+      }
+    }
+
+    // Draw front view
+    function drawFrontView() {
+      const canvas = document.getElementById('frontViewCanvas');
+      const ctx = canvas.getContext('2d');
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Calculate dimensions
+      const padding = 50;
+      const availableWidth = canvas.width - (padding * 2);
+      const availableHeight = canvas.height - (padding * 2);
+
+      const aspectRatio = params.blocksHor / params.blocksVer;
+      let screenWidth, screenHeight;
+
+      if (availableWidth / availableHeight > aspectRatio) {
+        screenHeight = availableHeight;
+        screenWidth = screenHeight * aspectRatio;
+      } else {
+        screenWidth = availableWidth;
+        screenHeight = screenWidth / aspectRatio;
+      }
+
+      const startX = (canvas.width - screenWidth) / 2;
+      const startY = (canvas.height - screenHeight) / 2;
+
+      // Draw screen background
+      ctx.fillStyle = '#333';
+      ctx.fillRect(startX, startY, screenWidth, screenHeight);
+
+      // Draw tile grid
+      const tileWidth = screenWidth / params.blocksHor;
+      const tileHeight = screenHeight / params.blocksVer;
+
+      ctx.strokeStyle = '#555';
+      ctx.lineWidth = 1;
+
+      // Vertical lines
+      for (let i = 0; i <= params.blocksHor; i++) {
+        const x = startX + (i * tileWidth);
+        ctx.beginPath();
+        ctx.moveTo(x, startY);
+        ctx.lineTo(x, startY + screenHeight);
+        ctx.stroke();
+      }
+
+      // Horizontal lines
+      for (let i = 0; i <= params.blocksVer; i++) {
+        const y = startY + (i * tileHeight);
+        ctx.beginPath();
+        ctx.moveTo(startX, y);
+        ctx.lineTo(startX + screenWidth, y);
+        ctx.stroke();
+      }
+
+      // Draw border
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(startX, startY, screenWidth, screenHeight);
+
+      // Add dimensions text
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${params.blocksHor} tiles`, startX + screenWidth / 2, startY - 15);
+
+      ctx.save();
+      ctx.translate(startX - 15, startY + screenHeight / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText(`${params.blocksVer} tiles`, 0, 0);
+      ctx.restore();
+    }
+
+    // Draw top view with curve
+    function drawTopView(curveAngle) {
+      const canvas = document.getElementById('topViewCanvas');
+      const ctx = canvas.getContext('2d');
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Apply zoom transformation
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.scale(topViewZoomLevel, topViewZoomLevel);
+      ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+
+      // Scale factor for visualization
+      const scale = 30; // pixels per tile
+      const screenWidth = params.blocksHor * scale;
+      const depth = 40; // Depth representation in pixels
+
+      if (curveAngle === 0) {
+        // Draw flat screen
+        const startX = centerX - screenWidth / 2;
+
+        // Draw screen
+        ctx.fillStyle = '#333';
+        ctx.fillRect(startX, centerY - depth / 2, screenWidth, depth);
+
+        // Draw tile divisions
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= params.blocksHor; i++) {
+          const x = startX + (i * scale);
+          ctx.beginPath();
+          ctx.moveTo(x, centerY - depth / 2);
+          ctx.lineTo(x, centerY + depth / 2);
+          ctx.stroke();
+        }
+
+        // Draw border
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(startX, centerY - depth / 2, screenWidth, depth);
+
+      } else {
+        // Draw curved screen
+        const angleRad = Math.abs((curveAngle * Math.PI) / 180);
+        const totalAngle = angleRad * params.blocksHor;
+
+        // Calculate radius
+        // Arc length = radius * angle, so radius = arc length / angle
+        const arcLength = screenWidth;
+        const radius = totalAngle > 0 ? arcLength / totalAngle : 1000;
+
+        // Determine curve direction
+        const isConcave = curveAngle > 0;
+
+        // For concave: arc center below, for convex: arc center above
+        // Adjust positioning to keep arc visible
+        let arcCenterY;
+        let baseAngle;
+
+        if (isConcave) {
+          // Concave: curves toward viewer (arc center below screen)
+          arcCenterY = centerY + radius;
+          baseAngle = -Math.PI / 2; // Start from top pointing down
+        } else {
+          // Convex: curves away from viewer (arc center above screen)
+          arcCenterY = centerY - radius;
+          baseAngle = Math.PI / 2; // Start from bottom pointing up
+        }
+
+        // Draw each tile segment
+        for (let i = 0; i < params.blocksHor; i++) {
+          const startAngle = (-totalAngle / 2) + (i * angleRad);
+          const endAngle = startAngle + angleRad;
+
+          // Draw outer arc
+          ctx.beginPath();
+          ctx.arc(centerX, arcCenterY, radius + depth / 2, baseAngle + startAngle, baseAngle + endAngle);
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Draw inner arc
+          ctx.beginPath();
+          ctx.arc(centerX, arcCenterY, radius - depth / 2, baseAngle + startAngle, baseAngle + endAngle);
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Draw tile segment
+          ctx.beginPath();
+          ctx.arc(centerX, arcCenterY, radius + depth / 2, baseAngle + startAngle, baseAngle + endAngle);
+          ctx.arc(centerX, arcCenterY, radius - depth / 2, baseAngle + endAngle, baseAngle + startAngle, true);
+          ctx.closePath();
+          ctx.fillStyle = '#333';
+          ctx.fill();
+          ctx.strokeStyle = '#555';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+
+      // Add labels
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Audience View', centerX, 30);
+
+      // Restore context after zoom transformation
+      ctx.restore();
+    }
+
+    // Update displays
+    function updateViews() {
+      const angle = parseFloat(curveSlider.value);
+      updateCurveDisplay(angle);
+      drawFrontView();
+      drawTopView(angle);
+    }
+
+    // Reset function
+    function resetView() {
+      curveSlider.value = 0;
+      topViewZoomLevel = 0.5;
+      updateZoomDisplay();
+      updateViews();
+    }
+
+    // Zoom functions
+    function zoomIn() {
+      if (topViewZoomLevel < maxZoom) {
+        topViewZoomLevel += zoomStep;
+        updateZoomDisplay();
+        drawTopView(parseFloat(curveSlider.value));
+      }
+    }
+
+    function zoomOut() {
+      if (topViewZoomLevel > minZoom) {
+        topViewZoomLevel -= zoomStep;
+        updateZoomDisplay();
+        drawTopView(parseFloat(curveSlider.value));
+      }
+    }
+
+    function updateZoomDisplay() {
+      const zoomPercentage = Math.round(topViewZoomLevel * 100);
+      document.getElementById('zoomLevel').textContent = `${zoomPercentage}%`;
+    }
+
+    // Capture functions
+    function captureCanvas(canvasId, filename, includeInfo = true) {
+      const originalCanvas = document.getElementById(canvasId);
+
+      // Create a temporary canvas with extra height for info text
+      const tempCanvas = document.createElement('canvas');
+      const infoHeight = includeInfo ? 60 : 0;
+      tempCanvas.width = originalCanvas.width;
+      tempCanvas.height = originalCanvas.height + infoHeight;
+      const ctx = tempCanvas.getContext('2d');
+
+      // Fill with white background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+      // Copy original canvas content
+      ctx.drawImage(originalCanvas, 0, 0);
+
+      // Add info text at the bottom if requested
+      if (includeInfo) {
+        const curveAngle = parseFloat(curveSlider.value);
+        let curveText = '';
+
+        if (canvasId === 'topViewCanvas') {
+          if (curveAngle === 0) {
+            curveText = 'Flat (0°)';
+          } else if (curveAngle > 0) {
+            curveText = `Concave (+${curveAngle}°)`;
+          } else {
+            curveText = `Convex (${curveAngle}°)`;
+          }
+        } else {
+          curveText = 'Front View';
+        }
+
+        // Draw info section background
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fillRect(0, originalCanvas.height, tempCanvas.width, infoHeight);
+
+        // Draw text
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(curveText, tempCanvas.width / 2, originalCanvas.height + 25);
+
+        // Add product and dimensions info
+        ctx.font = '14px Arial';
+        ctx.fillText(`${config.displayName} - ${params.blocksHor} × ${params.blocksVer} tiles`, tempCanvas.width / 2, originalCanvas.height + 45);
+      }
+
+      // Convert to data URL and download
+      const dataURL = tempCanvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataURL;
+      link.click();
+    }
+
+    function captureFrontView() {
+      const productName = config.displayName.replace(/\s+/g, '_');
+      const dimensions = `${params.blocksHor}x${params.blocksVer}`;
+      const filename = `${productName}_Front_View_${dimensions}.png`;
+      captureCanvas('frontViewCanvas', filename);
+    }
+
+    function captureTopView() {
+      const productName = config.displayName.replace(/\s+/g, '_');
+      const dimensions = `${params.blocksHor}x${params.blocksVer}`;
+      const curveAngle = parseFloat(curveSlider.value);
+      const curveText = curveAngle === 0 ? 'Flat' : `${curveAngle > 0 ? 'Concave' : 'Convex'}_${Math.abs(curveAngle)}deg`;
+      const filename = `${productName}_Top_View_${dimensions}_${curveText}.png`;
+      captureCanvas('topViewCanvas', filename);
+    }
+
+    // Event listeners
+    curveSlider.addEventListener('input', updateViews);
+    document.getElementById('resetButton').addEventListener('click', resetView);
+    document.getElementById('zoomInButton').addEventListener('click', zoomIn);
+    document.getElementById('zoomOutButton').addEventListener('click', zoomOut);
+    document.getElementById('captureFrontButton').addEventListener('click', captureFrontView);
+    document.getElementById('captureTopButton').addEventListener('click', captureTopView);
+
+    // Initial draw
+    updateViews();
+    updateZoomDisplay();
+  </script>
+</body>
+</html>

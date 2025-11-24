@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Technical View - LED Wall Calculator</title>
+
+  <!-- Link to main stylesheet for consistent design -->
+  <link rel="stylesheet" href="css/main.css">
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      margin: 10px;
+      background: var(--bg-gradient);
+      padding: 10px;
+    }
+
+    .container {
+      max-width: 95%;
+      margin: 0 auto;
+      background: var(--card-gradient);
+      padding: 15px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--text-dark);
+      margin-bottom: 10px;
+      font-size: 24px;
+    }
+
+    .screen-info {
+      margin-bottom: 15px;
+      padding: 12px;
+      background: rgba(220, 38, 38, 0.05);
+      border-radius: 8px;
+      border: 1px solid rgba(220, 38, 38, 0.1);
+    }
+
+    .screen-info-header {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .screen-info-header h2 {
+      margin: 5px 0;
+      color: var(--text-dark);
+      font-size: 16px;
+    }
+
+    .screen-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+    }
+
+    .info-box {
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      border-left: 4px solid var(--primary-color);
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition-base);
+    }
+
+    .info-box:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .info-box h3 {
+      margin: 0 0 6px 0;
+      font-size: 13px;
+      color: var(--text-dark);
+      font-weight: 600;
+    }
+
+    .info-box p {
+      margin: 2px 0;
+      font-size: 12px;
+      color: #555;
+    }
+
+    .info-box .value {
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+
+    .diagram-section {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: var(--card-gradient);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .diagram-section h2 {
+      text-align: center;
+      color: var(--text-dark);
+      margin-bottom: 12px;
+      font-size: 20px;
+    }
+
+    .controls {
+      margin-bottom: 12px;
+      padding: 12px;
+      background: rgba(220, 38, 38, 0.05);
+      border-radius: 8px;
+      border: 1px solid rgba(220, 38, 38, 0.1);
+    }
+
+    .controls-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .input-group label {
+      font-weight: bold;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .input-group select {
+      padding: 5px 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .canvas-container {
+      text-align: center;
+      overflow-x: auto;
+      padding: 10px;
+      background: white;
+      border: 2px solid rgba(220, 38, 38, 0.2);
+      border-radius: 8px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .back-button {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 10px 20px;
+      background: var(--primary-color);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: bold;
+      transition: var(--transition-base);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .back-button:hover {
+      background: #b91c1c;
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .capture-button {
+      display: inline-block;
+      padding: 10px 20px;
+      background: #17a2b8;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 15px;
+    }
+
+    .capture-button:hover {
+      background: #138496;
+    }
+
+    .capture-container {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .zoom-controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .zoom-button {
+      padding: 8px 16px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .zoom-button:hover {
+      background: #218838;
+    }
+
+    .zoom-level {
+      padding: 8px 16px;
+      background: #f0f0f0;
+      border-radius: 5px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+    }
+
+    .capture-both-container {
+      text-align: center;
+      margin: 30px 0;
+      padding: 20px;
+      background: #e8f4f8;
+      border-radius: 8px;
+    }
+
+    .capture-both-button {
+      display: inline-block;
+      padding: 15px 30px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .capture-both-button:hover {
+      background: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-button" id="backButton">← Back to Calculator</a>
+
+    <h1>Technical View - Wiring Diagrams</h1>
+
+    <div class="screen-info">
+      <div class="screen-info-header">
+        <h2 id="productInfo">Product: Loading...</h2>
+      </div>
+      <div class="screen-info-grid">
+        <div class="info-box">
+          <h3>Screen Size</h3>
+          <p>Tiles: <span class="value" id="tileDimensions">-</span></p>
+          <p>Size (ft): <span class="value" id="sizeFeet">-</span></p>
+          <p>Size (m): <span class="value" id="sizeMeters">-</span></p>
+        </div>
+        <div class="info-box">
+          <h3>Pixels</h3>
+          <p>Horizontal: <span class="value" id="pixelsHor">-</span></p>
+          <p>Vertical: <span class="value" id="pixelsVer">-</span></p>
+          <p>Total: <span class="value" id="pixelsTotal">-</span></p>
+        </div>
+        <div class="info-box">
+          <h3>Tiles</h3>
+          <p>Total Tiles: <span class="value" id="totalTiles">-</span></p>
+          <p>Weight: <span class="value" id="totalWeight">-</span></p>
+        </div>
+        <div class="info-box">
+          <h3>Power</h3>
+          <p>Voltage: <span class="value" id="powerVoltage">-</span></p>
+          <p>Amperage: <span class="value" id="powerAmps">-</span></p>
+          <p>Watts: <span class="value" id="powerWatts">-</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Wiring Section -->
+    <div class="diagram-section">
+      <h2>Data Wiring Diagram</h2>
+
+      <div class="controls">
+        <div class="controls-row">
+          <div class="input-group">
+            <label for="wiringDirection">Wiring Direction:</label>
+            <select id="wiringDirection" name="wiringDirection">
+              <option value="horizontal">Horizontal</option>
+              <option value="vertical">Vertical</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="wiringStartPosition">Start Position:</label>
+            <select id="wiringStartPosition" name="wiringStartPosition">
+              <option value="bottom-left">Bottom Left</option>
+              <option value="bottom-right">Bottom Right</option>
+              <option value="top-left">Top Left</option>
+              <option value="top-right">Top Right</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="canvas-container">
+        <canvas id="dataWiringCanvas"></canvas>
+      </div>
+
+      <div class="zoom-controls">
+        <button type="button" class="zoom-button" id="dataZoomOutButton">Zoom Out</button>
+        <div class="zoom-level" id="dataZoomLevel">Zoom: 1</div>
+        <button type="button" class="zoom-button" id="dataZoomInButton">Zoom In</button>
+      </div>
+
+      <div class="capture-container">
+        <button type="button" class="capture-button" id="captureDataButton">📸 Capture Data Wiring</button>
+      </div>
+    </div>
+
+    <!-- Power Wiring Section -->
+    <div class="diagram-section">
+      <h2>Power Wiring Diagram</h2>
+
+      <div class="controls">
+        <div class="controls-row">
+          <div class="input-group">
+            <label for="powerDirection">Wiring Direction:</label>
+            <select id="powerDirection" name="powerDirection">
+              <option value="horizontal">Horizontal</option>
+              <option value="vertical">Vertical</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="powerStartPosition">Start Position:</label>
+            <select id="powerStartPosition" name="powerStartPosition">
+              <option value="bottom-left">Bottom Left</option>
+              <option value="bottom-right">Bottom Right</option>
+              <option value="top-left">Top Left</option>
+              <option value="top-right">Top Right</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="powerDistroType">Power Voltage:</label>
+            <select id="powerDistroType" name="powerDistroType">
+              <option value="110">110V</option>
+              <option value="208">208V</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="canvas-container">
+        <canvas id="powerWiringCanvas"></canvas>
+      </div>
+
+      <div class="zoom-controls">
+        <button type="button" class="zoom-button" id="powerZoomOutButton">Zoom Out</button>
+        <div class="zoom-level" id="powerZoomLevel">Zoom: 1</div>
+        <button type="button" class="zoom-button" id="powerZoomInButton">Zoom In</button>
+      </div>
+
+      <div class="capture-container">
+        <button type="button" class="capture-button" id="capturePowerButton">📸 Capture Power Wiring</button>
+      </div>
+    </div>
+
+    <!-- Capture Both Screens Button -->
+    <div class="capture-both-container">
+      <button type="button" class="capture-both-button" id="captureBothButton">📸 Capture Both Diagrams</button>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // SELF-CONTAINED TECHNICAL VIEW - NO EXTERNAL DEPENDENCIES
+    // ============================================
+
+    // Get screen parameters from URL
+    function getScreenParameters() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return {
+        productType: urlParams.get('product') || localStorage.getItem('screenProduct') || 'absen',
+        blocksHor: parseInt(urlParams.get('blocksHor') || localStorage.getItem('screenBlocksHor') || '10'),
+        blocksVer: parseInt(urlParams.get('blocksVer') || localStorage.getItem('screenBlocksVer') || '6'),
+        powerDistroType: urlParams.get('powerDistroType') || localStorage.getItem('screenPowerDistroType') || '208'
+      };
+    }
+
+    const params = getScreenParameters();
+
+    // Product display names
+    const productNames = {
+      'absen': 'Absen PL2.5',
+      'theatrixx': 'Theatrixx Nomad 2.6',
+      'BP2B1': 'ROE Black Pearl BP2B1',
+      'BP2B2': 'ROE Black Pearl BP2B2',
+      'BP2V2': 'ROE Black Pearl BP2V2'
+    };
+
+    // Daisy chain limits by product
+    const daisyChainLimits = {
+      'absen': 10,
+      'BP2B1': 13,
+      'BP2B2': 13,
+      'BP2V2': 13,
+      'theatrixx': 10
+    };
+
+    // Power tile limits by product and voltage
+    const powerTileLimits = {
+      'absen': { 110: 10, 208: 30 },
+      'BP2B1': { 110: 11, 208: 32 },
+      'BP2B2': { 110: 11, 208: 32 },
+      'BP2V2': { 110: 11, 208: 32 },
+      'theatrixx': { 110: 10, 208: 30 }
+    };
+
+    // Pixels per tile by product
+    const pixelsPerTile = {
+      'absen': 200,
+      'theatrixx': 192,
+      'BP2B1': 176,
+      'BP2B2': 176,
+      'BP2V2': 176
+    };
+
+    // Weight per tile by product (lbs)
+    const weightPerTile = {
+      'absen': 20.61,
+      'theatrixx': 17.6,
+      'BP2B1': 20.61,
+      'BP2B2': 20.61,
+      'BP2V2': 20.61
+    };
+
+    // Power specs per tile by product (amps at different voltages)
+    const ampsPerTile = {
+      'absen': { 110: 1.75, 208: 0.923 },
+      'theatrixx': { 110: 2.41, 208: 1.27403 },
+      'BP2B1': { 110: 1.73, 208: 0.914 },
+      'BP2B2': { 110: 1.73, 208: 0.914 },
+      'BP2V2': { 110: 1.73, 208: 0.914 }
+    };
+
+    // Update info display
+    const displayName = productNames[params.productType] || params.productType.toUpperCase();
+    document.getElementById('productInfo').textContent = `Product: ${displayName}`;
+
+    // Calculate all screen info
+    const totalTiles = params.blocksHor * params.blocksVer;
+    const pxPerTile = pixelsPerTile[params.productType] || 200;
+    const horizontalPixels = params.blocksHor * pxPerTile;
+    const verticalPixels = params.blocksVer * pxPerTile;
+    const totalPixels = horizontalPixels * verticalPixels;
+
+    const widthFeet = (params.blocksHor * 1.64).toFixed(2);
+    const heightFeet = (params.blocksVer * 1.64).toFixed(2);
+    const widthMeters = (params.blocksHor * 0.5).toFixed(2);
+    const heightMeters = (params.blocksVer * 0.5).toFixed(2);
+
+    const weight = (totalTiles * (weightPerTile[params.productType] || 20)).toFixed(1);
+
+    const voltage = params.powerDistroType === '110' ? 110 : 208;
+    const amps = totalTiles * (ampsPerTile[params.productType]?.[voltage] || 1);
+    const watts = amps * voltage;
+
+    // Display all info
+    document.getElementById('tileDimensions').textContent = `${params.blocksHor} × ${params.blocksVer}`;
+    document.getElementById('sizeFeet').textContent = `${widthFeet}' × ${heightFeet}'`;
+    document.getElementById('sizeMeters').textContent = `${widthMeters}m × ${heightMeters}m`;
+    document.getElementById('pixelsHor').textContent = horizontalPixels.toLocaleString();
+    document.getElementById('pixelsVer').textContent = verticalPixels.toLocaleString();
+    document.getElementById('pixelsTotal').textContent = totalPixels.toLocaleString();
+    document.getElementById('totalTiles').textContent = totalTiles;
+    document.getElementById('totalWeight').textContent = `${weight} lbs`;
+    document.getElementById('powerVoltage').textContent = `${voltage}V`;
+    document.getElementById('powerAmps').textContent = `${amps.toFixed(2)} A`;
+    document.getElementById('powerWatts').textContent = `${watts.toFixed(0)} W`;
+
+    // Update back button
+    const backButton = document.getElementById('backButton');
+    backButton.href = `index.html?product=${encodeURIComponent(params.productType)}&blocksHor=${params.blocksHor}&blocksVer=${params.blocksVer}&powerDistroType=${params.powerDistroType}`;
+
+    // Set power distro type
+    const powerDistroTypeSelect = document.getElementById('powerDistroType');
+    if (powerDistroTypeSelect) {
+      powerDistroTypeSelect.value = params.powerDistroType;
+    }
+
+    // State variables
+    let dataZoomLevel = 1;
+    let powerZoomLevel = 1;
+    let wiringDirection = 'horizontal';
+    let wiringStartPosition = 'bottom-left';
+    let powerDirection = 'horizontal';
+    let powerStartPosition = 'bottom-left';
+
+    // Configuration
+    const baseBlockPixels = 200;
+    const padding = 10;
+
+    // Chain colors for data wiring
+    const dataChainColors = [
+      '#FF3366', '#33FF66', '#3366FF', '#FFFF33', '#FF9933',
+      '#CC33FF', '#33FFFF', '#FF3399', '#99FF33', '#FF6633',
+      '#33FF99', '#9933FF', '#FFCC33', '#33CCFF', '#FF33CC'
+    ];
+
+    // Chain colors for power wiring (warmer tones)
+    const powerChainColors = [
+      '#FF6B35', '#FFB627', '#FF1744', '#FF9100', '#FFD600',
+      '#DD2C00', '#FF6F00', '#F4511E', '#FB8C00', '#FFA726',
+      '#FFAB40', '#FFC107', '#FFD54F', '#FF7043', '#FF5722'
+    ];
+
+    // Generate tile path based on direction and start position
+    function generateTilePath(blocksHor, blocksVer, direction, startPosition) {
+      const tiles = [];
+
+      if (direction === 'horizontal') {
+        if (startPosition === 'bottom-left') {
+          for (let row = blocksVer - 1; row >= 0; row--) {
+            const rowIndex = blocksVer - 1 - row;
+            if (rowIndex % 2 === 0) {
+              for (let col = 0; col < blocksHor; col++) tiles.push({ row, col });
+            } else {
+              for (let col = blocksHor - 1; col >= 0; col--) tiles.push({ row, col });
+            }
+          }
+        } else if (startPosition === 'bottom-right') {
+          for (let row = blocksVer - 1; row >= 0; row--) {
+            const rowIndex = blocksVer - 1 - row;
+            if (rowIndex % 2 === 0) {
+              for (let col = blocksHor - 1; col >= 0; col--) tiles.push({ row, col });
+            } else {
+              for (let col = 0; col < blocksHor; col++) tiles.push({ row, col });
+            }
+          }
+        } else if (startPosition === 'top-left') {
+          for (let row = 0; row < blocksVer; row++) {
+            if (row % 2 === 0) {
+              for (let col = 0; col < blocksHor; col++) tiles.push({ row, col });
+            } else {
+              for (let col = blocksHor - 1; col >= 0; col--) tiles.push({ row, col });
+            }
+          }
+        } else if (startPosition === 'top-right') {
+          for (let row = 0; row < blocksVer; row++) {
+            if (row % 2 === 0) {
+              for (let col = blocksHor - 1; col >= 0; col--) tiles.push({ row, col });
+            } else {
+              for (let col = 0; col < blocksHor; col++) tiles.push({ row, col });
+            }
+          }
+        }
+      } else {
+        // Vertical wiring
+        if (startPosition === 'bottom-left') {
+          for (let col = 0; col < blocksHor; col++) {
+            if (col % 2 === 0) {
+              for (let row = blocksVer - 1; row >= 0; row--) tiles.push({ row, col });
+            } else {
+              for (let row = 0; row < blocksVer; row++) tiles.push({ row, col });
+            }
+          }
+        } else if (startPosition === 'bottom-right') {
+          for (let col = blocksHor - 1; col >= 0; col--) {
+            const colIndex = blocksHor - 1 - col;
+            if (colIndex % 2 === 0) {
+              for (let row = blocksVer - 1; row >= 0; row--) tiles.push({ row, col });
+            } else {
+              for (let row = 0; row < blocksVer; row++) tiles.push({ row, col });
+            }
+          }
+        } else if (startPosition === 'top-left') {
+          for (let col = 0; col < blocksHor; col++) {
+            if (col % 2 === 0) {
+              for (let row = 0; row < blocksVer; row++) tiles.push({ row, col });
+            } else {
+              for (let row = blocksVer - 1; row >= 0; row--) tiles.push({ row, col });
+            }
+          }
+        } else if (startPosition === 'top-right') {
+          for (let col = blocksHor - 1; col >= 0; col--) {
+            const colIndex = blocksHor - 1 - col;
+            if (colIndex % 2 === 0) {
+              for (let row = 0; row < blocksVer; row++) tiles.push({ row, col });
+            } else {
+              for (let row = blocksVer - 1; row >= 0; row--) tiles.push({ row, col });
+            }
+          }
+        }
+      }
+
+      return tiles;
+    }
+
+    // Draw wiring diagram on canvas
+    function drawWiringDiagram(canvas, blocksHor, blocksVer, zoomLevel, chainLimit, colors, direction, startPosition, isDashed = false) {
+      const ctx = canvas.getContext('2d');
+      const blockSize = (baseBlockPixels / 4) * zoomLevel;
+
+      // Set canvas size
+      canvas.width = blocksHor * blockSize + padding * 2;
+      canvas.height = blocksVer * blockSize + padding * 2;
+
+      // Clear and fill background
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(padding, padding, blocksHor * blockSize, blocksVer * blockSize);
+
+      // Draw grid lines
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+
+      for (let col = 0; col <= blocksHor; col++) {
+        const x = padding + col * blockSize;
+        ctx.beginPath();
+        ctx.moveTo(x, padding);
+        ctx.lineTo(x, padding + blocksVer * blockSize);
+        ctx.stroke();
+      }
+
+      for (let row = 0; row <= blocksVer; row++) {
+        const y = padding + row * blockSize;
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(padding + blocksHor * blockSize, y);
+        ctx.stroke();
+      }
+
+      // Generate tile path
+      const tiles = generateTilePath(blocksHor, blocksVer, direction, startPosition);
+
+      // Draw wiring
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      if (isDashed) ctx.setLineDash([10, 5]);
+
+      let tilesInCurrentChain = 0;
+      let chainNumber = 0;
+      let chainPath = [];
+      let chainStartX = 0;
+      let chainStartY = 0;
+
+      for (let i = 0; i < tiles.length; i++) {
+        const tile = tiles[i];
+        const posX = padding + tile.col * blockSize + blockSize / 2;
+        const posY = padding + tile.row * blockSize + blockSize / 2;
+
+        if (tilesInCurrentChain === 0) {
+          chainNumber++;
+          chainPath = [{ x: posX, y: posY }];
+          chainStartX = posX;
+          chainStartY = posY;
+          tilesInCurrentChain = 1;
+        } else {
+          chainPath.push({ x: posX, y: posY });
+          tilesInCurrentChain++;
+        }
+
+        if (tilesInCurrentChain === chainLimit || i === tiles.length - 1) {
+          const chainColor = colors[(chainNumber - 1) % colors.length];
+
+          // Draw black outline
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 8;
+          ctx.beginPath();
+          ctx.moveTo(chainPath[0].x, chainPath[0].y);
+          for (let j = 1; j < chainPath.length; j++) {
+            ctx.lineTo(chainPath[j].x, chainPath[j].y);
+          }
+          ctx.stroke();
+
+          // Draw colored line
+          ctx.strokeStyle = chainColor;
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(chainPath[0].x, chainPath[0].y);
+          for (let j = 1; j < chainPath.length; j++) {
+            ctx.lineTo(chainPath[j].x, chainPath[j].y);
+          }
+          ctx.stroke();
+
+          // Draw port label
+          ctx.fillStyle = chainColor;
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 3;
+          ctx.font = `bold ${Math.max(14, blockSize / 3)}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const labelText = isDashed ? `Pwr ${chainNumber}` : `Port ${chainNumber}`;
+          ctx.strokeText(labelText, chainStartX, chainStartY);
+          ctx.fillText(labelText, chainStartX, chainStartY);
+
+          tilesInCurrentChain = 0;
+          chainPath = [];
+        }
+      }
+
+      ctx.setLineDash([]);
+    }
+
+    // Render data wiring
+    function renderDataWiring() {
+      const canvas = document.getElementById('dataWiringCanvas');
+      const chainLimit = daisyChainLimits[params.productType] || 10;
+      drawWiringDiagram(canvas, params.blocksHor, params.blocksVer, dataZoomLevel, chainLimit, dataChainColors, wiringDirection, wiringStartPosition, false);
+      document.getElementById('dataZoomLevel').textContent = `Zoom: ${dataZoomLevel}`;
+    }
+
+    // Render power wiring
+    function renderPowerWiring() {
+      const canvas = document.getElementById('powerWiringCanvas');
+      const voltage = parseInt(powerDistroTypeSelect.value);
+      const chainLimit = powerTileLimits[params.productType]?.[voltage] || 10;
+      drawWiringDiagram(canvas, params.blocksHor, params.blocksVer, powerZoomLevel, chainLimit, powerChainColors, powerDirection, powerStartPosition, true);
+      document.getElementById('powerZoomLevel').textContent = `Zoom: ${powerZoomLevel}`;
+    }
+
+    // Zoom functions
+    function dataZoomIn() { if (dataZoomLevel < 8) { dataZoomLevel++; renderDataWiring(); } }
+    function dataZoomOut() { if (dataZoomLevel > 1) { dataZoomLevel--; renderDataWiring(); } }
+    function powerZoomIn() { if (powerZoomLevel < 8) { powerZoomLevel++; renderPowerWiring(); } }
+    function powerZoomOut() { if (powerZoomLevel > 1) { powerZoomLevel--; renderPowerWiring(); } }
+
+    // Capture functions
+    function captureCanvas(canvas, title, filename) {
+      const tempCanvas = document.createElement('canvas');
+      const infoHeight = 80;
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height + infoHeight;
+      const ctx = tempCanvas.getContext('2d');
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+      ctx.drawImage(canvas, 0, 0);
+
+      ctx.fillStyle = '#f0f0f0';
+      ctx.fillRect(0, canvas.height, tempCanvas.width, infoHeight);
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 20px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(title, tempCanvas.width / 2, canvas.height + 30);
+      ctx.font = '16px Arial';
+      ctx.fillText(`${displayName} - ${params.blocksHor} × ${params.blocksVer} tiles`, tempCanvas.width / 2, canvas.height + 55);
+
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = tempCanvas.toDataURL('image/png');
+      link.click();
+    }
+
+    function captureDataWiring() {
+      captureCanvas(document.getElementById('dataWiringCanvas'), 'Data Wiring Diagram',
+        `${params.productType.toUpperCase()}_Data_Wiring_${params.blocksHor}x${params.blocksVer}.png`);
+    }
+
+    function capturePowerWiring() {
+      const voltage = powerDistroTypeSelect.value;
+      captureCanvas(document.getElementById('powerWiringCanvas'), `Power Wiring Diagram (${voltage}V)`,
+        `${params.productType.toUpperCase()}_Power_Wiring_${voltage}V_${params.blocksHor}x${params.blocksVer}.png`);
+    }
+
+    function captureBothDiagrams() {
+      const dataCanvas = document.getElementById('dataWiringCanvas');
+      const powerCanvas = document.getElementById('powerWiringCanvas');
+      const headerHeight = 140;
+      const labelHeight = 50;
+      const spacing = 20;
+
+      const tempCanvas = document.createElement('canvas');
+      const maxWidth = Math.max(dataCanvas.width, powerCanvas.width, 600);
+      tempCanvas.width = maxWidth;
+      tempCanvas.height = headerHeight + dataCanvas.height + labelHeight + spacing + powerCanvas.height + labelHeight;
+      const ctx = tempCanvas.getContext('2d');
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+      // Draw header with screen info
+      ctx.fillStyle = '#f0f0f0';
+      ctx.fillRect(0, 0, tempCanvas.width, headerHeight);
+
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 22px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(displayName, tempCanvas.width / 2, 28);
+
+      // Info grid
+      ctx.font = '14px Arial';
+      ctx.textAlign = 'left';
+      const col1 = 20;
+      const col2 = maxWidth / 4 + 10;
+      const col3 = maxWidth / 2 + 10;
+      const col4 = (maxWidth * 3) / 4 + 10;
+
+      // Screen Size column
+      ctx.font = 'bold 14px Arial';
+      ctx.fillText('Screen Size', col1, 55);
+      ctx.font = '13px Arial';
+      ctx.fillText(`Tiles: ${params.blocksHor} × ${params.blocksVer}`, col1, 75);
+      ctx.fillText(`Size: ${widthFeet}' × ${heightFeet}'`, col1, 92);
+      ctx.fillText(`${widthMeters}m × ${heightMeters}m`, col1, 109);
+
+      // Pixels column
+      ctx.font = 'bold 14px Arial';
+      ctx.fillText('Pixels', col2, 55);
+      ctx.font = '13px Arial';
+      ctx.fillText(`Horizontal: ${horizontalPixels.toLocaleString()}`, col2, 75);
+      ctx.fillText(`Vertical: ${verticalPixels.toLocaleString()}`, col2, 92);
+      ctx.fillText(`Total: ${totalPixels.toLocaleString()}`, col2, 109);
+
+      // Tiles column
+      ctx.font = 'bold 14px Arial';
+      ctx.fillText('Tiles', col3, 55);
+      ctx.font = '13px Arial';
+      ctx.fillText(`Total: ${totalTiles}`, col3, 75);
+      ctx.fillText(`Weight: ${weight} lbs`, col3, 92);
+
+      // Power column
+      ctx.font = 'bold 14px Arial';
+      ctx.fillText('Power', col4, 55);
+      ctx.font = '13px Arial';
+      ctx.fillText(`Voltage: ${voltage}V`, col4, 75);
+      ctx.fillText(`Amperage: ${amps.toFixed(2)} A`, col4, 92);
+      ctx.fillText(`Watts: ${watts.toFixed(0)} W`, col4, 109);
+
+      // Data wiring diagram
+      let y = headerHeight;
+      ctx.drawImage(dataCanvas, (maxWidth - dataCanvas.width) / 2, y);
+      y += dataCanvas.height;
+      ctx.fillStyle = '#e8f4f8';
+      ctx.fillRect(0, y, tempCanvas.width, labelHeight);
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 18px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Data Wiring Diagram', tempCanvas.width / 2, y + 30);
+
+      // Power wiring diagram
+      y += labelHeight + spacing;
+      ctx.drawImage(powerCanvas, (maxWidth - powerCanvas.width) / 2, y);
+      y += powerCanvas.height;
+      ctx.fillStyle = '#e8f4f8';
+      ctx.fillRect(0, y, tempCanvas.width, labelHeight);
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 18px Arial';
+      ctx.fillText(`Power Wiring Diagram (${powerDistroTypeSelect.value}V)`, tempCanvas.width / 2, y + 30);
+
+      const link = document.createElement('a');
+      link.download = `${params.productType.toUpperCase()}_Complete_Wiring_${params.blocksHor}x${params.blocksVer}.png`;
+      link.href = tempCanvas.toDataURL('image/png');
+      link.click();
+    }
+
+    // Event listeners
+    document.getElementById('wiringDirection').addEventListener('change', (e) => { wiringDirection = e.target.value; renderDataWiring(); });
+    document.getElementById('wiringStartPosition').addEventListener('change', (e) => { wiringStartPosition = e.target.value; renderDataWiring(); });
+    document.getElementById('powerDirection').addEventListener('change', (e) => { powerDirection = e.target.value; renderPowerWiring(); });
+    document.getElementById('powerStartPosition').addEventListener('change', (e) => { powerStartPosition = e.target.value; renderPowerWiring(); });
+    document.getElementById('powerDistroType').addEventListener('change', () => { renderPowerWiring(); });
+
+    document.getElementById('dataZoomInButton').addEventListener('click', dataZoomIn);
+    document.getElementById('dataZoomOutButton').addEventListener('click', dataZoomOut);
+    document.getElementById('powerZoomInButton').addEventListener('click', powerZoomIn);
+    document.getElementById('powerZoomOutButton').addEventListener('click', powerZoomOut);
+
+    document.getElementById('captureDataButton').addEventListener('click', captureDataWiring);
+    document.getElementById('capturePowerButton').addEventListener('click', capturePowerWiring);
+    document.getElementById('captureBothButton').addEventListener('click', captureBothDiagrams);
+
+    // Initial render
+    renderDataWiring();
+    renderPowerWiring();
+  </script>
+</body>
+</html>
