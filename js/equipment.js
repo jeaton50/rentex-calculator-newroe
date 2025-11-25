@@ -190,6 +190,16 @@ const EquipmentCalculator = {
         watts = totalTiles * 190;
         break;
 
+      case "ROEGP26Full":
+        amps = (voltage === 110) ? totalTiles * 2.27 : totalTiles * 1.20;
+        watts = totalTiles * 250;
+        break;
+
+      case "ROEGP26Half":
+        amps = (voltage === 110) ? totalTiles * 1.14 : totalTiles * 0.60;
+        watts = totalTiles * 125;
+        break;
+
       default:
         amps = 0;
         watts = 0;
@@ -391,6 +401,12 @@ const EquipmentCalculator = {
     } else if (productType === "theatrixx") {
       amps110 = totalTiles * 2.40909;
       amps208 = totalTiles * 1.27403;
+    } else if (productType === "ROEGP26Full") {
+      amps110 = totalTiles * 2.27;
+      amps208 = totalTiles * 1.20;
+    } else if (productType === "ROEGP26Half") {
+      amps110 = totalTiles * 1.14;
+      amps208 = totalTiles * 0.60;
     }
 
     // Calculate distro unit requirements

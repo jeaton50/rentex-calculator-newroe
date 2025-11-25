@@ -33,6 +33,16 @@ const CONSTANTS = {
       ampsPer208Divisor: 1000,
       ampsPer208Multiplier: 865.38461,
       wattsPerTile: 190
+    },
+    ROEGP26Full: {
+      ampsPer110: 2.27,
+      ampsPer208: 1.20,
+      wattsPerTile: 250
+    },
+    ROEGP26Half: {
+      ampsPer110: 1.14,
+      ampsPer208: 0.60,
+      wattsPerTile: 125
     }
   },
 
