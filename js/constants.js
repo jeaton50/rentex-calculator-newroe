@@ -64,8 +64,8 @@ const CONSTANTS = {
     BP2B2: 12,
     BP2V2: 13,
     theatrixx: 13,
-    ROEGP26Full: 13,
-    ROEGP26Half: 13
+    ROEGP26Full: 6,
+    ROEGP26Half: 12
   },
 
   // Data cascade limits

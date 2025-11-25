@@ -135,6 +135,10 @@ const UI = {
       productVal = 11;  // vertical tile threshold for Absen
     } else if (product === 'BP2B1' || product === 'BP2B2' || product === 'BP2V2' || product === 'theatrixx') {
       productVal = 13;  // vertical tile threshold for ROE & Theatrixx
+    } else if (product === 'ROEGP26Full') {
+      productVal = 6;   // vertical tile threshold for ROE GP2.6 Full
+    } else if (product === 'ROEGP26Half') {
+      productVal = 12;  // vertical tile threshold for ROE GP2.6 Half
     } else {
       productVal = 12;  // fallback
     }
@@ -178,27 +182,59 @@ const UI = {
 
     } else {
       // User is entering tile counts
-      const blocksVer = parseInt(blocksVerInput.value, 10);
-      if (isNaN(blocksVer) || blocksVer < 1) {
-        // If invalid input, clear warnings
-        blockWarningSpan.textContent = '';
+      // Check if ROE Graphite Mix mode is enabled
+      const roeGraphiteMixEnabled = document.getElementById('roeGraphicMix')?.checked || false;
+
+      if (roeGraphiteMixEnabled) {
+        // ROE Graphite Mix mode: check both Half and Full tile vertical limits
+        const halfVertical = parseInt(document.getElementById('halfVertical')?.value || 0, 10);
+        const fullVertical = parseInt(document.getElementById('fullVertical')?.value || 0, 10);
+
+        const halfLimit = 12;  // ROE GP2.6 Half max stack
+        const fullLimit = 6;   // ROE GP2.6 Full max stack
+
+        const halfExceeds = halfVertical > halfLimit;
+        const fullExceeds = fullVertical > fullLimit;
+
+        if (!flownSupportCheckbox?.checked) {
+          if (halfExceeds && fullExceeds) {
+            blockWarningSpan.textContent = '*** EXCEEDS LIMIT (Half > 12, Full > 6), MUST FLY***';
+          } else if (halfExceeds) {
+            blockWarningSpan.textContent = '*** EXCEEDS LIMIT (Half > 12), MUST FLY***';
+          } else if (fullExceeds) {
+            blockWarningSpan.textContent = '*** EXCEEDS LIMIT (Full > 6), MUST FLY***';
+          } else {
+            blockWarningSpan.textContent = '';
+          }
+        } else {
+          blockWarningSpan.textContent = '';
+        }
+
         dimensionWarningSpan.textContent = '';
-        return;
-      }
-
-      // For ROE (BP2/BP2V2) and Theatrixx: if vertical tiles are 9..12 & flown support is not checked
-      if ((product === 'BP2B1' || product === 'BP2B2' || product === 'BP2V2' || product === 'theatrixx') &&
-          blocksVer >= 9 && blocksVer <= 12 &&
-          !flownSupportCheckbox?.checked) {
-        blockWarningSpan.textContent = 'Will need to add schedule 40 pipe and hardware.Check with LED team';
-      } else if (blocksVer >= productVal && !flownSupportCheckbox?.checked) {
-        blockWarningSpan.textContent = '*** EXCEEDS LIMIT, MUST FLY***';
       } else {
-        blockWarningSpan.textContent = '';
-      }
+        // Normal mode: single product type
+        const blocksVer = parseInt(blocksVerInput.value, 10);
+        if (isNaN(blocksVer) || blocksVer < 1) {
+          // If invalid input, clear warnings
+          blockWarningSpan.textContent = '';
+          dimensionWarningSpan.textContent = '';
+          return;
+        }
 
-      // Clear dimension warning since we're in tile mode
-      dimensionWarningSpan.textContent = '';
+        // For ROE (BP2/BP2V2) and Theatrixx: if vertical tiles are 9..12 & flown support is not checked
+        if ((product === 'BP2B1' || product === 'BP2B2' || product === 'BP2V2' || product === 'theatrixx') &&
+            blocksVer >= 9 && blocksVer <= 12 &&
+            !flownSupportCheckbox?.checked) {
+          blockWarningSpan.textContent = 'Will need to add schedule 40 pipe and hardware.Check with LED team';
+        } else if (blocksVer >= productVal && !flownSupportCheckbox?.checked) {
+          blockWarningSpan.textContent = '*** EXCEEDS LIMIT, MUST FLY***';
+        } else {
+          blockWarningSpan.textContent = '';
+        }
+
+        // Clear dimension warning since we're in tile mode
+        dimensionWarningSpan.textContent = '';
+      }
     }
   },
 
