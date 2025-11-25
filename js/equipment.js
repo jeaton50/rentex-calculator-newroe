@@ -172,37 +172,75 @@ const EquipmentCalculator = {
   calculatePower(productType, totalTiles, voltage) {
     let amps, watts;
 
-    switch (productType) {
-      case "absen":
-        amps = (voltage === 110) ? totalTiles * 0.59 : totalTiles * 0.312;
-        watts = totalTiles * 192;
-        break;
+    // Check if ROE Graphite (mixed tile) mode is enabled
+    const roeGraphiteEnabled = document.getElementById('roeGraphicMix')?.checked || false;
 
-      case "BP2B1":
-      case "BP2B2":
-      case "BP2V2":
-        amps = (voltage === 110) ? (totalTiles * 95) / 110 : (totalTiles * 95) / 208;
-        watts = totalTiles * 190;
-        break;
+    if (roeGraphiteEnabled) {
+      // Get tile counts for both Half and Full tiles
+      const halfHorizontal = parseInt(document.getElementById('halfHorizontal')?.value || 0, 10);
+      const halfVertical = parseInt(document.getElementById('halfVertical')?.value || 0, 10);
+      const fullHorizontal = parseInt(document.getElementById('fullHorizontal')?.value || 0, 10);
+      const fullVertical = parseInt(document.getElementById('fullVertical')?.value || 0, 10);
 
-      case "theatrixx":
-        amps = (voltage === 110) ? totalTiles * 1.63636 : (totalTiles * 865.38461) / 1000;
-        watts = totalTiles * 190;
-        break;
+      const halfTileCount = halfHorizontal * halfVertical;
+      const fullTileCount = fullHorizontal * fullVertical;
 
-      case "ROEGP26Full":
-        amps = (voltage === 110) ? totalTiles * 2.27 : totalTiles * 1.20;
-        watts = totalTiles * 250;
-        break;
+      // Calculate power for Half tiles
+      const halfAmps = (voltage === 110) ? halfTileCount * 1.14 : halfTileCount * 0.60;
+      const halfWatts = halfTileCount * 125;
 
-      case "ROEGP26Half":
-        amps = (voltage === 110) ? totalTiles * 1.14 : totalTiles * 0.60;
-        watts = totalTiles * 125;
-        break;
+      // Calculate power for Full tiles
+      const fullAmps = (voltage === 110) ? fullTileCount * 2.27 : fullTileCount * 1.20;
+      const fullWatts = fullTileCount * 250;
 
-      default:
-        amps = 0;
-        watts = 0;
+      // Combine totals
+      amps = halfAmps + fullAmps;
+      watts = halfWatts + fullWatts;
+
+      console.log('ROE Graphite power calculation:', {
+        halfTiles: halfTileCount,
+        fullTiles: fullTileCount,
+        halfAmps,
+        fullAmps,
+        halfWatts,
+        fullWatts,
+        totalAmps: amps,
+        totalWatts: watts
+      });
+    } else {
+      // Normal mode - single product type
+      switch (productType) {
+        case "absen":
+          amps = (voltage === 110) ? totalTiles * 0.59 : totalTiles * 0.312;
+          watts = totalTiles * 192;
+          break;
+
+        case "BP2B1":
+        case "BP2B2":
+        case "BP2V2":
+          amps = (voltage === 110) ? (totalTiles * 95) / 110 : (totalTiles * 95) / 208;
+          watts = totalTiles * 190;
+          break;
+
+        case "theatrixx":
+          amps = (voltage === 110) ? totalTiles * 1.63636 : (totalTiles * 865.38461) / 1000;
+          watts = totalTiles * 190;
+          break;
+
+        case "ROEGP26Full":
+          amps = (voltage === 110) ? totalTiles * 2.27 : totalTiles * 1.20;
+          watts = totalTiles * 250;
+          break;
+
+        case "ROEGP26Half":
+          amps = (voltage === 110) ? totalTiles * 1.14 : totalTiles * 0.60;
+          watts = totalTiles * 125;
+          break;
+
+        default:
+          amps = 0;
+          watts = 0;
+      }
     }
 
     return { amps, watts };
@@ -392,21 +430,49 @@ const EquipmentCalculator = {
 
     // Calculate amps based on product type
     let amps110, amps208;
-    if (productType === "absen") {
-      amps110 = totalTiles * 1.745;
-      amps208 = totalTiles * 0.923;
-    } else if (productType === "BP2V2" || productType === "BP2B1" || productType === "BP2B2") {
-      amps110 = (totalTiles * 160) / 110;
-      amps208 = (totalTiles * 190) / 208;
-    } else if (productType === "theatrixx") {
-      amps110 = totalTiles * 2.40909;
-      amps208 = totalTiles * 1.27403;
-    } else if (productType === "ROEGP26Full") {
-      amps110 = totalTiles * 2.27;
-      amps208 = totalTiles * 1.20;
-    } else if (productType === "ROEGP26Half") {
-      amps110 = totalTiles * 1.14;
-      amps208 = totalTiles * 0.60;
+
+    // Check if ROE Graphite (mixed tile) mode is enabled
+    const roeGraphiteEnabled = document.getElementById('roeGraphicMix')?.checked || false;
+
+    if (roeGraphiteEnabled) {
+      // Get tile counts for both Half and Full tiles
+      const halfHorizontal = parseInt(document.getElementById('halfHorizontal')?.value || 0, 10);
+      const halfVertical = parseInt(document.getElementById('halfVertical')?.value || 0, 10);
+      const fullHorizontal = parseInt(document.getElementById('fullHorizontal')?.value || 0, 10);
+      const fullVertical = parseInt(document.getElementById('fullVertical')?.value || 0, 10);
+
+      const halfTileCount = halfHorizontal * halfVertical;
+      const fullTileCount = fullHorizontal * fullVertical;
+
+      // Calculate power for Half tiles
+      const halfAmps110 = halfTileCount * 1.14;
+      const halfAmps208 = halfTileCount * 0.60;
+
+      // Calculate power for Full tiles
+      const fullAmps110 = fullTileCount * 2.27;
+      const fullAmps208 = fullTileCount * 1.20;
+
+      // Combine totals
+      amps110 = halfAmps110 + fullAmps110;
+      amps208 = halfAmps208 + fullAmps208;
+    } else {
+      // Normal mode - single product type
+      if (productType === "absen") {
+        amps110 = totalTiles * 1.745;
+        amps208 = totalTiles * 0.923;
+      } else if (productType === "BP2V2" || productType === "BP2B1" || productType === "BP2B2") {
+        amps110 = (totalTiles * 160) / 110;
+        amps208 = (totalTiles * 190) / 208;
+      } else if (productType === "theatrixx") {
+        amps110 = totalTiles * 2.40909;
+        amps208 = totalTiles * 1.27403;
+      } else if (productType === "ROEGP26Full") {
+        amps110 = totalTiles * 2.27;
+        amps208 = totalTiles * 1.20;
+      } else if (productType === "ROEGP26Half") {
+        amps110 = totalTiles * 1.14;
+        amps208 = totalTiles * 0.60;
+      }
     }
 
     // Calculate distro unit requirements

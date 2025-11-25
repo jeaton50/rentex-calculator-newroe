@@ -1669,12 +1669,52 @@ document.getElementById('powerDistroType')?.addEventListener('change', () => {
     window.displayTotalPower = function(voltage, amps, watts) {
       const totalPowerDiv = document.getElementById('totalPower');
       if (!totalPowerDiv) return;
-      totalPowerDiv.innerHTML = `
-        <strong>Average Power Consumption:</strong><br>
-        Voltage: ${voltage}V<br>
-        Total Amperage: ${amps.toFixed(2)} A<br>
-        Total Max Watts: ${watts.toFixed(2)} W
-      `;
+
+      // Check if ROE Graphite (mixed tile) mode is enabled
+      const roeGraphiteEnabled = document.getElementById('roeGraphicMix')?.checked || false;
+
+      let powerHTML = '<strong>Average Power Consumption:</strong><br>';
+
+      if (roeGraphiteEnabled) {
+        // Get tile counts
+        const halfHorizontal = parseInt(document.getElementById('halfHorizontal')?.value || 0, 10);
+        const halfVertical = parseInt(document.getElementById('halfVertical')?.value || 0, 10);
+        const fullHorizontal = parseInt(document.getElementById('fullHorizontal')?.value || 0, 10);
+        const fullVertical = parseInt(document.getElementById('fullVertical')?.value || 0, 10);
+
+        const halfTileCount = halfHorizontal * halfVertical;
+        const fullTileCount = fullHorizontal * fullVertical;
+
+        // Calculate individual power specs
+        const halfAmps = (voltage === 110) ? halfTileCount * 1.14 : halfTileCount * 0.60;
+        const halfWatts = halfTileCount * 125;
+        const fullAmps = (voltage === 110) ? fullTileCount * 2.27 : fullTileCount * 1.20;
+        const fullWatts = fullTileCount * 250;
+
+        // Display breakdown
+        powerHTML += `
+          <strong>ROE Graphite Mixed Configuration:</strong><br>
+          <div style="margin-left: 15px; margin-top: 5px;">
+            <strong>Half Tiles (500x500mm):</strong> ${halfTileCount} tiles<br>
+            - ${voltage}V: ${halfAmps.toFixed(2)} A, ${halfWatts.toFixed(2)} W<br>
+            <strong>Full Tiles (500x1000mm):</strong> ${fullTileCount} tiles<br>
+            - ${voltage}V: ${fullAmps.toFixed(2)} A, ${fullWatts.toFixed(2)} W<br>
+          </div>
+          <strong style="margin-top: 5px; display: block;">Combined Total:</strong><br>
+          Voltage: ${voltage}V<br>
+          Total Amperage: ${amps.toFixed(2)} A<br>
+          Total Max Watts: ${watts.toFixed(2)} W
+        `;
+      } else {
+        // Normal mode - single product
+        powerHTML += `
+          Voltage: ${voltage}V<br>
+          Total Amperage: ${amps.toFixed(2)} A<br>
+          Total Max Watts: ${watts.toFixed(2)} W
+        `;
+      }
+
+      totalPowerDiv.innerHTML = powerHTML;
 
       // Show 110V circuits if applicable
       if (typeof display110Circuits === 'function') {
