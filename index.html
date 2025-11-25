@@ -261,12 +261,12 @@ window.addEventListener("DOMContentLoaded", () => {
           <label for="dimensionInput">Input Dimensions</label>
         </div>
 
-        <!-- ROE Graphite Section -->
+        <!-- ROE Graphite Mix Section -->
         <div id="roeGraphicMixContainer" style="margin-top:10px; margin-bottom:15px;">
           <input type="checkbox" id="roeGraphicMix" name="roeGraphicMix">
-          <label for="roeGraphicMix"><strong>ROE Graphite</strong></label>
+          <label for="roeGraphicMix"><strong>ROE Graphite Mix</strong></label>
 
-          <!-- Mixed tile inputs (shown when ROE Graphite is enabled) -->
+          <!-- Mixed tile inputs (shown when ROE Graphite Mix is enabled) -->
           <div id="mixedTileInputs" style="display:none; margin-top:10px; padding:10px; border:1px solid #ddd; border-radius:5px; background-color:#f9f9f9;">
             <div style="margin-bottom:10px;">
               <label><strong>ROE GP2.6 Half Tiles (Bottom):</strong></label>
@@ -896,7 +896,7 @@ window.addEventListener("DOMContentLoaded", () => {
     document.getElementById('multipleScreensOptions').style.display = 'none';
   }
 
-  // ROE Graphite toggle
+  // ROE Graphite Mix toggle
   const roeGraphicMixCheckbox = document.getElementById('roeGraphicMix');
   if (roeGraphicMixCheckbox) {
     roeGraphicMixCheckbox.addEventListener('change', function() {
@@ -1670,7 +1670,7 @@ document.getElementById('powerDistroType')?.addEventListener('change', () => {
       const totalPowerDiv = document.getElementById('totalPower');
       if (!totalPowerDiv) return;
 
-      // Check if ROE Graphite (mixed tile) mode is enabled
+      // Check if ROE Graphite Mix (mixed tile) mode is enabled
       const roeGraphiteEnabled = document.getElementById('roeGraphicMix')?.checked || false;
 
       let powerHTML = '<strong>Average Power Consumption:</strong><br>';
@@ -1693,7 +1693,7 @@ document.getElementById('powerDistroType')?.addEventListener('change', () => {
 
         // Display breakdown
         powerHTML += `
-          <strong>ROE Graphite Mixed Configuration:</strong><br>
+          <strong>ROE Graphite Mix Configuration:</strong><br>
           <div style="margin-left: 15px; margin-top: 5px;">
             <strong>Half Tiles (500x500mm):</strong> ${halfTileCount} tiles<br>
             - ${voltage}V: ${halfAmps.toFixed(2)} A, ${halfWatts.toFixed(2)} W<br>
@@ -1802,13 +1802,32 @@ document.getElementById('powerDistroType')?.addEventListener('change', () => {
         // If EDT110M not found in table, calculate it directly based on product type
         if (edt110mQuantity === 0) {
           const productType = document.getElementById('productType').value;
-          const blocksHor = parseInt(document.getElementById('blocksHor').value, 10);
-          const blocksVer = parseInt(document.getElementById('blocksVer').value, 10);
-          const totalBlocks = blocksHor * blocksVer;
+          const roeGraphiteEnabled = document.getElementById('roeGraphicMix')?.checked || false;
+
+          let totalBlocks;
+
+          if (roeGraphiteEnabled) {
+            // ROE Graphite Mix mode: calculate based on combined Half and Full tiles
+            const halfHorizontal = parseInt(document.getElementById('halfHorizontal')?.value || 0, 10);
+            const halfVertical = parseInt(document.getElementById('halfVertical')?.value || 0, 10);
+            const fullHorizontal = parseInt(document.getElementById('fullHorizontal')?.value || 0, 10);
+            const fullVertical = parseInt(document.getElementById('fullVertical')?.value || 0, 10);
+            totalBlocks = (halfHorizontal * halfVertical) + (fullHorizontal * fullVertical);
+          } else {
+            // Normal mode
+            const blocksHor = parseInt(document.getElementById('blocksHor').value, 10);
+            const blocksVer = parseInt(document.getElementById('blocksVer').value, 10);
+            totalBlocks = blocksHor * blocksVer;
+          }
 
           let O32, P32;
 
-          if (productType === "absen") {
+          if (roeGraphiteEnabled || productType === "ROEGP26Full" || productType === "ROEGP26Half") {
+            // ROE Graphite Mix and ROE GP2.6 products: same calculation as other ROE products
+            O32 = Math.ceil(totalBlocks / 11);
+            P32 = Math.ceil(O32 + (O32 * 0.05));
+            edt110mQuantity = P32;
+          } else if (productType === "absen") {
             // For Absen: Math.ceil(totalBlocksWithSpares / 8)
             const totalSpares = window.calcSpares(totalBlocks, 8, 1.5);
             const totalBlocksWithSpares = totalBlocks + totalSpares;

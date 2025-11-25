@@ -112,7 +112,7 @@ const CanvasRenderer = {
     // Use provided blockImage or fall back to loaded image or create fallback
     const tileImage = blockImage || this.images.block;
 
-    // Check if ROE Graphite mode is enabled
+    // Check if ROE Graphite Mix mode is enabled
     const roeGraphicMixEnabled = document.getElementById('roeGraphicMix')?.checked || false;
 
     // Get product type to determine tile dimensions
@@ -124,7 +124,7 @@ const CanvasRenderer = {
     let blockWidth = (this.config.baseBlockPixels / 4) * zoomLevel;
     let blockHeight = (this.config.baseBlockPixels / 4) * zoomLevel;
 
-    // Handle ROE Graphite mode (mixed Half and Full tiles)
+    // Handle ROE Graphite Mix mode (mixed Half and Full tiles)
     let mixedTileMode = false;
     let halfHorizontal = 0, halfVertical = 0;
     let fullHorizontal = 0, fullVertical = 0;
@@ -137,7 +137,7 @@ const CanvasRenderer = {
       halfVertical = parseInt(document.getElementById('halfVertical')?.value || 0, 10);
       fullHorizontal = parseInt(document.getElementById('fullHorizontal')?.value || 0, 10);
       fullVertical = parseInt(document.getElementById('fullVertical')?.value || 0, 10);
-      console.log('ROE Graphite mode:', { halfHorizontal, halfVertical, fullHorizontal, fullVertical });
+      console.log('ROE Graphite Mix mode:', { halfHorizontal, halfVertical, fullHorizontal, fullVertical });
     } else if (productType === 'ROEGP26Full') {
       blockHeight = blockHeight * 2; // 1000mm is 2x the standard 500mm
       console.log('ROE GP2.6 Full visualization: using tall rectangles', { blockWidth, blockHeight });

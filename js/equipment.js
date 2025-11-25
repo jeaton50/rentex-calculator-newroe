@@ -172,7 +172,7 @@ const EquipmentCalculator = {
   calculatePower(productType, totalTiles, voltage) {
     let amps, watts;
 
-    // Check if ROE Graphite (mixed tile) mode is enabled
+    // Check if ROE Graphite Mix (mixed tile) mode is enabled
     const roeGraphiteEnabled = document.getElementById('roeGraphicMix')?.checked || false;
 
     if (roeGraphiteEnabled) {
@@ -197,7 +197,7 @@ const EquipmentCalculator = {
       amps = halfAmps + fullAmps;
       watts = halfWatts + fullWatts;
 
-      console.log('ROE Graphite power calculation:', {
+      console.log('ROE Graphite Mix power calculation:', {
         halfTiles: halfTileCount,
         fullTiles: fullTileCount,
         halfAmps,
@@ -431,7 +431,7 @@ const EquipmentCalculator = {
     // Calculate amps based on product type
     let amps110, amps208;
 
-    // Check if ROE Graphite (mixed tile) mode is enabled
+    // Check if ROE Graphite Mix (mixed tile) mode is enabled
     const roeGraphiteEnabled = document.getElementById('roeGraphicMix')?.checked || false;
 
     if (roeGraphiteEnabled) {
