@@ -140,8 +140,8 @@ const Calculator = {
       'BP2B2': 13,
       'BP2V2': 13,
       'theatrixx': 13,
-      'ROEGP26Full': 6,
-      'ROEGP26Half': 12
+      'ROEGP26Full': 7,
+      'ROEGP26Half': 13
     };
 
     const limit = maxTiles[productType] || 13;
