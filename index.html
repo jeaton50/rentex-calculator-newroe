@@ -261,12 +261,12 @@ window.addEventListener("DOMContentLoaded", () => {
           <label for="dimensionInput">Input Dimensions</label>
         </div>
 
-        <!-- ROE Graphic Mix Section -->
+        <!-- ROE Graphite Section -->
         <div id="roeGraphicMixContainer" style="margin-top:10px; margin-bottom:15px;">
           <input type="checkbox" id="roeGraphicMix" name="roeGraphicMix">
-          <label for="roeGraphicMix"><strong>ROE Graphic Mix</strong></label>
+          <label for="roeGraphicMix"><strong>ROE Graphite</strong></label>
 
-          <!-- Mixed tile inputs (shown when ROE Graphic Mix is enabled) -->
+          <!-- Mixed tile inputs (shown when ROE Graphite is enabled) -->
           <div id="mixedTileInputs" style="display:none; margin-top:10px; padding:10px; border:1px solid #ddd; border-radius:5px; background-color:#f9f9f9;">
             <div style="margin-bottom:10px;">
               <label><strong>ROE GP2.6 Half Tiles (Bottom):</strong></label>
@@ -896,7 +896,7 @@ window.addEventListener("DOMContentLoaded", () => {
     document.getElementById('multipleScreensOptions').style.display = 'none';
   }
 
-  // ROE Graphic Mix toggle
+  // ROE Graphite toggle
   const roeGraphicMixCheckbox = document.getElementById('roeGraphicMix');
   if (roeGraphicMixCheckbox) {
     roeGraphicMixCheckbox.addEventListener('change', function() {

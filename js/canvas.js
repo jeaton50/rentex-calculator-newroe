@@ -112,7 +112,7 @@ const CanvasRenderer = {
     // Use provided blockImage or fall back to loaded image or create fallback
     const tileImage = blockImage || this.images.block;
 
-    // Check if ROE Graphic Mix mode is enabled
+    // Check if ROE Graphite mode is enabled
     const roeGraphicMixEnabled = document.getElementById('roeGraphicMix')?.checked || false;
 
     // Get product type to determine tile dimensions
@@ -124,7 +124,7 @@ const CanvasRenderer = {
     let blockWidth = (this.config.baseBlockPixels / 4) * zoomLevel;
     let blockHeight = (this.config.baseBlockPixels / 4) * zoomLevel;
 
-    // Handle ROE Graphic Mix mode (mixed Half and Full tiles)
+    // Handle ROE Graphite mode (mixed Half and Full tiles)
     let mixedTileMode = false;
     let halfHorizontal = 0, halfVertical = 0;
     let fullHorizontal = 0, fullVertical = 0;
@@ -137,7 +137,7 @@ const CanvasRenderer = {
       halfVertical = parseInt(document.getElementById('halfVertical')?.value || 0, 10);
       fullHorizontal = parseInt(document.getElementById('fullHorizontal')?.value || 0, 10);
       fullVertical = parseInt(document.getElementById('fullVertical')?.value || 0, 10);
-      console.log('ROE Graphic Mix mode:', { halfHorizontal, halfVertical, fullHorizontal, fullVertical });
+      console.log('ROE Graphite mode:', { halfHorizontal, halfVertical, fullHorizontal, fullVertical });
     } else if (productType === 'ROEGP26Full') {
       blockHeight = blockHeight * 2; // 1000mm is 2x the standard 500mm
       console.log('ROE GP2.6 Full visualization: using tall rectangles', { blockWidth, blockHeight });
@@ -358,12 +358,12 @@ const CanvasRenderer = {
         }
       }
 
-      // Draw support structures
-      if (wallData.flownSupport) {
+      // Draw support structures (skip when in mixed tile mode)
+      if (wallData.flownSupport && !mixedTileMode) {
         this.drawFlownSupports(ctx, wallData.blocksHor, blockWidth, xOffset, supportHeight, zoomLevel);
       }
 
-      if (wallData.groundSupport) {
+      if (wallData.groundSupport && !mixedTileMode) {
         this.drawGroundBases(ctx, wallData.blocksHor, wallData.blocksVer, blockWidth, blockHeight, xOffset, supportHeight, zoomLevel);
       }
 
