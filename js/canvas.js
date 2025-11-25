@@ -195,33 +195,44 @@ const CanvasRenderer = {
         : tileImage;
 
       if (mixedTileMode) {
-        // Mixed mode: draw Half tiles on bottom, Full tiles on top
+        // Get Full tile position preference
+        const fullTilePositionTop = document.querySelector('input[name="fullTilePosition"]:checked')?.value === 'top';
+
+        // Mixed mode: draw tiles based on position preference
         const maxHorizontal = Math.max(halfHorizontal, fullHorizontal);
         const wallWidth = maxHorizontal * blockWidth;
         const halfSectionHeight = halfVertical * halfBlockHeight;
         const fullSectionHeight = fullVertical * fullBlockHeight;
 
-        // Draw Half tile section (bottom)
+        // Determine positions based on user preference
+        const firstSectionY = wallY;
+        const secondSectionY = wallY + (fullTilePositionTop ? fullSectionHeight : halfSectionHeight);
+        const firstSectionHeight = fullTilePositionTop ? fullSectionHeight : halfSectionHeight;
+        const secondSectionHeight = fullTilePositionTop ? halfSectionHeight : fullSectionHeight;
+        const firstSectionColor = fullTilePositionTop ? '#555' : '#444';
+        const secondSectionColor = fullTilePositionTop ? '#444' : '#555';
+
+        // Draw first section
         if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
           ctx.globalAlpha = 0.55;
-          ctx.drawImage(imageToUse, wallX, wallY, wallWidth, halfSectionHeight);
+          ctx.drawImage(imageToUse, wallX, firstSectionY, wallWidth, firstSectionHeight);
           ctx.globalAlpha = 1.0;
         } else {
           ctx.globalAlpha = 0.55;
-          ctx.fillStyle = '#444';
-          ctx.fillRect(wallX, wallY, wallWidth, halfSectionHeight);
+          ctx.fillStyle = firstSectionColor;
+          ctx.fillRect(wallX, firstSectionY, wallWidth, firstSectionHeight);
           ctx.globalAlpha = 1.0;
         }
 
-        // Draw Full tile section (top)
+        // Draw second section
         if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
           ctx.globalAlpha = 0.55;
-          ctx.drawImage(imageToUse, wallX, wallY + halfSectionHeight, wallWidth, fullSectionHeight);
+          ctx.drawImage(imageToUse, wallX, secondSectionY, wallWidth, secondSectionHeight);
           ctx.globalAlpha = 1.0;
         } else {
           ctx.globalAlpha = 0.55;
-          ctx.fillStyle = '#555'; // Slightly different color for Full section
-          ctx.fillRect(wallX, wallY + halfSectionHeight, wallWidth, fullSectionHeight);
+          ctx.fillStyle = secondSectionColor;
+          ctx.fillRect(wallX, secondSectionY, wallWidth, secondSectionHeight);
           ctx.globalAlpha = 1.0;
         }
 
@@ -238,22 +249,41 @@ const CanvasRenderer = {
           ctx.stroke();
         }
 
-        // Horizontal grid lines for Half tiles (bottom)
-        for (let row = 0; row <= halfVertical; row++) {
-          const lineY = wallY + row * halfBlockHeight;
-          ctx.beginPath();
-          ctx.moveTo(wallX, lineY);
-          ctx.lineTo(wallX + wallWidth, lineY);
-          ctx.stroke();
-        }
-
-        // Horizontal grid lines for Full tiles (top)
-        for (let row = 0; row <= fullVertical; row++) {
-          const lineY = wallY + halfSectionHeight + row * fullBlockHeight;
-          ctx.beginPath();
-          ctx.moveTo(wallX, lineY);
-          ctx.lineTo(wallX + wallWidth, lineY);
-          ctx.stroke();
+        // Horizontal grid lines - order depends on position preference
+        if (fullTilePositionTop) {
+          // Full tiles on top
+          for (let row = 0; row <= fullVertical; row++) {
+            const lineY = wallY + row * fullBlockHeight;
+            ctx.beginPath();
+            ctx.moveTo(wallX, lineY);
+            ctx.lineTo(wallX + wallWidth, lineY);
+            ctx.stroke();
+          }
+          // Half tiles on bottom
+          for (let row = 0; row <= halfVertical; row++) {
+            const lineY = wallY + fullSectionHeight + row * halfBlockHeight;
+            ctx.beginPath();
+            ctx.moveTo(wallX, lineY);
+            ctx.lineTo(wallX + wallWidth, lineY);
+            ctx.stroke();
+          }
+        } else {
+          // Half tiles on top
+          for (let row = 0; row <= halfVertical; row++) {
+            const lineY = wallY + row * halfBlockHeight;
+            ctx.beginPath();
+            ctx.moveTo(wallX, lineY);
+            ctx.lineTo(wallX + wallWidth, lineY);
+            ctx.stroke();
+          }
+          // Full tiles on bottom
+          for (let row = 0; row <= fullVertical; row++) {
+            const lineY = wallY + halfSectionHeight + row * fullBlockHeight;
+            ctx.beginPath();
+            ctx.moveTo(wallX, lineY);
+            ctx.lineTo(wallX + wallWidth, lineY);
+            ctx.stroke();
+          }
         }
       } else {
         // Normal mode: single tile type

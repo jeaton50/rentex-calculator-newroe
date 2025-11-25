@@ -282,8 +282,8 @@ window.addEventListener("DOMContentLoaded", () => {
               </div>
             </div>
 
-            <div>
-              <label><strong>ROE GP2.6 Full Tiles (Top):</strong></label>
+            <div style="margin-bottom:10px;">
+              <label><strong>ROE GP2.6 Full Tiles (500x1000mm):</strong></label>
               <div style="display:flex; gap:10px; margin-top:5px;">
                 <div>
                   <label for="fullHorizontal">Horizontal:</label>
@@ -292,6 +292,21 @@ window.addEventListener("DOMContentLoaded", () => {
                 <div>
                   <label for="fullVertical">Vertical:</label>
                   <input type="number" id="fullVertical" name="fullVertical" min="1" max="20" value="3" style="width:60px;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Full tile position selection -->
+            <div style="margin-top:10px; padding:8px; background-color:#e8f4f8; border-radius:4px;">
+              <label><strong>Full Tile Position:</strong></label>
+              <div style="display:flex; gap:15px; margin-top:5px;">
+                <div>
+                  <input type="radio" id="fullTilesTop" name="fullTilePosition" value="top" checked>
+                  <label for="fullTilesTop">Top</label>
+                </div>
+                <div>
+                  <input type="radio" id="fullTilesBottom" name="fullTilePosition" value="bottom">
+                  <label for="fullTilesBottom">Bottom</label>
                 </div>
               </div>
             </div>
@@ -936,6 +951,21 @@ window.addEventListener("DOMContentLoaded", () => {
   }
   if (fullVerticalInput) {
     fullVerticalInput.addEventListener('input', function() {
+      if (typeof generateWall === 'function') generateWall();
+    });
+  }
+
+  // Add event listeners for Full tile position radio buttons
+  const fullTilesTopRadio = document.getElementById('fullTilesTop');
+  const fullTilesBottomRadio = document.getElementById('fullTilesBottom');
+
+  if (fullTilesTopRadio) {
+    fullTilesTopRadio.addEventListener('change', function() {
+      if (typeof generateWall === 'function') generateWall();
+    });
+  }
+  if (fullTilesBottomRadio) {
+    fullTilesBottomRadio.addEventListener('change', function() {
       if (typeof generateWall === 'function') generateWall();
     });
   }
