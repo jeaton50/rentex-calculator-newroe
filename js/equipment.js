@@ -912,6 +912,10 @@ function addROEGP26Equipment(config, tbody) {
     doubleBases,
     singleHeaders,
     doubleHeaders,
+    universalBaseTruss,
+    rearTruss,
+    rearBridge,
+    wallType,
     horizontalBlocks,
     verticalBlocks,
     powerDistro
@@ -963,6 +967,23 @@ function addROEGP26Equipment(config, tbody) {
   if (doubleBases > 0) {
     addEquipmentRow('BPBOBB2', 'ROE Black Pearl base bar, 2W, 1.0m', 28, doubleBases, tbody);
   }
+  if (universalBaseTruss > 0) {
+    addEquipmentRow('BPBOBT', 'ROE Black Pearl universal base truss', 17, universalBaseTruss, tbody);
+  }
+  if (rearTruss > 0) {
+    addEquipmentRow('BPBOREAR', 'ROE Black Pearl rear truss,', 1, rearTruss, tbody);
+  }
+  if (rearBridge > 0) {
+    addEquipmentRow('BPBOBRIDGE', 'ROE Black Pearl rear bridge clamp', 1, rearBridge, tbody);
+  }
+
+  // Curved wall brackets
+  if (wallType === "Convex" || wallType === "Concave") {
+    const fiveDegBrackets = totalTiles / 2;
+    const m10Bolts = fiveDegBrackets * 4;
+    addEquipmentRow('BP25DGREE', 'ROE Black Pearl 5 Degree Bracket', 0.25, fiveDegBrackets, tbody);
+    addEquipmentRow('BP2BBOLT', 'M10x30 bolts for ROE brackets', 0.2, m10Bolts, tbody);
+  }
 
   // Sandbags
   if (sandbags > 0) {
@@ -973,8 +994,32 @@ function addROEGP26Equipment(config, tbody) {
   if (cables.ECONRJ45 > 0) {
     addEquipmentRow('ECONRJ45', "Ethercon to RJ45 (CAT6) 100'", 2.4, cables.ECONRJ45, tbody);
   }
+  if (cables.CAT5ES005 > 0) {
+    addEquipmentRow('CAT5ES005', "CAT5e ethernet cable 5'", 1, cables.CAT5ES005, tbody);
+  }
+  if (cables.ECON010C6 > 0) {
+    addEquipmentRow('ECON010C6', "Ethercon (CAT6) 10'", 1, cables.ECON010C6, tbody);
+  }
+  if (cables.ECON025C6 > 0) {
+    addEquipmentRow('ECON025C6', "Ethercon (CAT6) 25'", 1.5, cables.ECON025C6, tbody);
+  }
+  if (cables.ECON050C6 > 0) {
+    addEquipmentRow('ECON050C6', "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
+  }
+  if (cables.ECON100C6 > 0) {
+    addEquipmentRow('ECON100C6', "Ethercon (CAT6) 100'", 6, cables.ECON100C6, tbody);
+  }
   if (cables.ECON1M > 0) {
     addEquipmentRow('ECON1M', "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
+  }
+  if (cables.TRUE125FT > 0) {
+    addEquipmentRow('TRUE125FT', "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
+  }
+  if (cables.EDT110M > 0) {
+    addEquipmentRow('EDT110M', "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
+  }
+  if (cables.T11M > 0) {
+    addEquipmentRow('T11M', "True1 power cable 1M (3')", 0.44, cables.T11M, tbody);
   }
 
   // Power distribution
@@ -984,11 +1029,11 @@ function addROEGP26Equipment(config, tbody) {
   if (powerDistro.TP1 > 0) {
     addEquipmentRow('TP1', 'Indu Electric 400A Power Distro w/ (4) 208v Soca', 197, powerDistro.TP1, tbody);
   }
-  if (powerDistro.TRUE125FT > 0) {
-    addEquipmentRow('TRUE125FT', "True1 to True1 cable, 25'", 4, powerDistro.TRUE125FT, tbody);
+  if (powerDistro.L2130T1FB > 0) {
+    addEquipmentRow('L2130T1FB', 'L2130 floor box to 3x True1 with pass through', 7.5, powerDistro.L2130T1FB, tbody);
   }
-  if (powerDistro.T11M > 0) {
-    addEquipmentRow('T11M', "True1 power cable 1M (3')", 0.44, powerDistro.T11M, tbody);
+  if (powerDistro.SOCA6XTRU1 > 0) {
+    addEquipmentRow('SOCA6XTRU1', '19 Pin Socapex to 6x True1 Power Cable', 5, powerDistro.SOCA6XTRU1, tbody);
   }
 
   // Display data ports needed
