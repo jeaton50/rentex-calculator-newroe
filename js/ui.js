@@ -171,7 +171,7 @@ const UI = {
           blocksVerDim >= 9 && blocksVerDim <= 12 &&
           !flownSupportCheckbox?.checked) {
         dimensionWarningSpan.textContent = 'Will need to add schedule 40 pipe and double swivel cheeseboughs';
-      } else if (blocksVerDim >= productVal && !flownSupportCheckbox?.checked) {
+      } else if (blocksVerDim > productVal && !flownSupportCheckbox?.checked) {
         dimensionWarningSpan.textContent = '*** EXCEEDS LIMIT, MUST FLY***';
       } else {
         dimensionWarningSpan.textContent = '';
@@ -226,7 +226,7 @@ const UI = {
             blocksVer >= 9 && blocksVer <= 12 &&
             !flownSupportCheckbox?.checked) {
           blockWarningSpan.textContent = 'Will need to add schedule 40 pipe and hardware.Check with LED team';
-        } else if (blocksVer >= productVal && !flownSupportCheckbox?.checked) {
+        } else if (blocksVer > productVal && !flownSupportCheckbox?.checked) {
           blockWarningSpan.textContent = '*** EXCEEDS LIMIT, MUST FLY***';
         } else {
           blockWarningSpan.textContent = '';
