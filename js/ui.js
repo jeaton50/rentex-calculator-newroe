@@ -136,9 +136,9 @@ const UI = {
     } else if (product === 'BP2B1' || product === 'BP2B2' || product === 'BP2V2' || product === 'theatrixx') {
       productVal = 13;  // vertical tile threshold for ROE & Theatrixx
     } else if (product === 'ROEGP26Full') {
-      productVal = 7;   // vertical tile threshold for ROE GP2.6 Full
+      productVal = 6;   // vertical tile threshold for ROE GP2.6 Full
     } else if (product === 'ROEGP26Half') {
-      productVal = 13;  // vertical tile threshold for ROE GP2.6 Half
+      productVal = 12;  // vertical tile threshold for ROE GP2.6 Half
     } else {
       productVal = 12;  // fallback
     }
