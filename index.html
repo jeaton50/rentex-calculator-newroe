@@ -820,9 +820,13 @@ window.addEventListener("DOMContentLoaded", () => {
           if (productType) {
             const productSelect = document.getElementById('productType');
             if (productSelect) {
-              productSelect.value = productType;
-              // Trigger change event to update UI
-              productSelect.dispatchEvent(new Event('change'));
+              // Validate that productType is one of the valid values
+              const validProductTypes = ['absen', 'BP2B1', 'BP2B2', 'BP2V2', 'theatrixx', 'ROEGP26Full', 'ROEGP26Half'];
+              if (validProductTypes.includes(productType)) {
+                productSelect.value = productType;
+                // Trigger change event to update UI
+                productSelect.dispatchEvent(new Event('change'));
+              }
             }
           }
 

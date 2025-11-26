@@ -1401,9 +1401,9 @@ function displayEquipment(data) {
         break;
 
       default:
-        console.warn('Unknown product type:', productType);
+        console.warn('Unknown product type:', productType, '(type:', typeof productType, ')');
         if (typeof showError === 'function') {
-          showError('Unknown product type: ' + productType);
+          showError('Unknown product type: ' + productType + ' (expected: absen, BP2B1, BP2B2, BP2V2, theatrixx, ROEGP26Full, or ROEGP26Half)');
         }
     }
 
