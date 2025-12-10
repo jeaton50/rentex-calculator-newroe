@@ -75,8 +75,29 @@ const EquipmentCalculator = {
       pixelsPerTileHeight = 176;
     }
 
-    // Max data cascade per refresh/bit
-    const maxDataCascade = productType === "absen" ? 10 : 13;
+    // Max data cascade per refresh/bit (tiles per data port)
+    let maxDataCascade;
+    switch (productType) {
+      case "absen":
+        maxDataCascade = 10;
+        break;
+      case "theatrixx":
+        maxDataCascade = 10;
+        break;
+      case "ROEGP26Full":
+        maxDataCascade = 5;
+        break;
+      case "ROEGP26Half":
+        maxDataCascade = 11;
+        break;
+      case "BP2B1":
+      case "BP2B2":
+      case "BP2V2":
+        maxDataCascade = 13;
+        break;
+      default:
+        maxDataCascade = 10;
+    }
 
     // Max panels per processor type
     const maxPanelsPerS8 = Math.floor(2000 / pixelsPerTileWidth) * Math.floor(2000 / pixelsPerTileHeight);
