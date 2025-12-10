@@ -68,11 +68,13 @@ const CONSTANTS = {
     ROEGP26Half: 13
   },
 
-  // Data cascade limits
+  // Data cascade limits (tiles per data port)
   MAX_DATA_CASCADE: {
     absen: 10,
     BP2: 13,
-    theatrixx: 13
+    theatrixx: 10,
+    ROEGP26Full: 5,
+    ROEGP26Half: 11
   },
 
   // Processor limits
