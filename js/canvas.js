@@ -391,7 +391,9 @@ const CanvasRenderer = {
       'BP2B1': 13,  // ROE Black Pearl 2 B1
       'BP2B2': 13,  // ROE Black Pearl 2 B2
       'BP2V2': 13,  // ROE Black Pearl 2V2
-      'theatrixx': 10
+      'theatrixx': 10,
+      'ROEGP26Full': 5,  // ROE Graphite 2.6 Full
+      'ROEGP26Half': 11  // ROE Graphite 2.6 Half
     };
     const chainLimit = daisyChainLimits[productType] || 10;
 
