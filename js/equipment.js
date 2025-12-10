@@ -905,6 +905,7 @@ function addROEGP26Equipment(config, tbody) {
     productType,
     totalTiles,
     totalSpareTiles,
+    totalTilesWithSpares,
     processors,
     cables,
     sandbags,
@@ -932,11 +933,16 @@ function addROEGP26Equipment(config, tbody) {
   // Calculate total pixels
   const totalPixels = (horizontalBlocks * pixelWidth) * (verticalBlocks * pixelHeight);
 
-  // Tiles - product-specific
+  // Calculate package needs (6 tiles per case for ROE GP2.6)
+  const packageCount = Math.ceil(totalTilesWithSpares / 6);
+
+  // Tiles and packages - product-specific
   if (productType === "ROEGP26Full") {
+    addEquipmentRow('6GP2FULL', 'ROE GP2.6 Full 6x tile package', 0, packageCount, tbody);
     addEquipmentRow('ROEGP26FULL', 'ROE GP2.6 Full LED tile 500x1000mm', 18.96, totalTiles, tbody);
     addEquipmentRow('ROEGP26FULL', 'ROE GP2.6 Full LED tile 500x1000mm **SPARE**', 18.96, totalSpareTiles, tbody);
   } else if (productType === "ROEGP26Half") {
+    addEquipmentRow('6GP2HALF', 'ROE GP2.6 Half 6x tile package', 0, packageCount, tbody);
     addEquipmentRow('ROEGP26HALF', 'ROE GP2.6 Half LED tile 500x500mm', 11.24, totalTiles, tbody);
     addEquipmentRow('ROEGP26HALF', 'ROE GP2.6 Half LED tile 500x500mm **SPARE**', 11.24, totalSpareTiles, tbody);
   }
