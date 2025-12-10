@@ -604,8 +604,8 @@ const CanvasRenderer = {
         }
         ctx.stroke();
 
-        // Draw colored line on top (normal width)
-        ctx.strokeStyle = chainColor;
+        // Draw black line on top (instead of colored line)
+        ctx.strokeStyle = 'black';
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(chainPath[0].x, chainPath[0].y);
@@ -614,7 +614,17 @@ const CanvasRenderer = {
         }
         ctx.stroke();
 
-        // Draw port label at start of chain
+        // Draw circle at the end of the line (where it terminates)
+        const endPoint = chainPath[chainPath.length - 1];
+        ctx.fillStyle = chainColor;
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(endPoint.x, endPoint.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw port label at start of chain (with colored text)
         ctx.fillStyle = chainColor;
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 3;
