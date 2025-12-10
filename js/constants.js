@@ -35,14 +35,14 @@ const CONSTANTS = {
       wattsPerTile: 190
     },
     ROEGP26Full: {
-      ampsPer110: 2.27,
-      ampsPer208: 1.20,
-      wattsPerTile: 250
+      ampsPer110: 2.91,
+      ampsPer208: 1.54,
+      wattsPerTile: 320
     },
     ROEGP26Half: {
-      ampsPer110: 1.14,
-      ampsPer208: 0.60,
-      wattsPerTile: 125
+      ampsPer110: 1.45,
+      ampsPer208: 0.77,
+      wattsPerTile: 160
     }
   },
 

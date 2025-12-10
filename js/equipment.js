@@ -185,13 +185,13 @@ const EquipmentCalculator = {
       const halfTileCount = halfHorizontal * halfVertical;
       const fullTileCount = fullHorizontal * fullVertical;
 
-      // Calculate power for Half tiles
-      const halfAmps = (voltage === 110) ? halfTileCount * 1.14 : halfTileCount * 0.60;
-      const halfWatts = halfTileCount * 125;
+      // Calculate power for Half tiles (160W per tile)
+      const halfAmps = (voltage === 110) ? halfTileCount * 1.45 : halfTileCount * 0.77;
+      const halfWatts = halfTileCount * 160;
 
-      // Calculate power for Full tiles
-      const fullAmps = (voltage === 110) ? fullTileCount * 2.27 : fullTileCount * 1.20;
-      const fullWatts = fullTileCount * 250;
+      // Calculate power for Full tiles (320W per tile)
+      const fullAmps = (voltage === 110) ? fullTileCount * 2.91 : fullTileCount * 1.54;
+      const fullWatts = fullTileCount * 320;
 
       // Combine totals
       amps = halfAmps + fullAmps;
@@ -228,13 +228,13 @@ const EquipmentCalculator = {
           break;
 
         case "ROEGP26Full":
-          amps = (voltage === 110) ? totalTiles * 2.27 : totalTiles * 1.20;
-          watts = totalTiles * 250;
+          amps = (voltage === 110) ? totalTiles * 2.91 : totalTiles * 1.54;
+          watts = totalTiles * 320;
           break;
 
         case "ROEGP26Half":
-          amps = (voltage === 110) ? totalTiles * 1.14 : totalTiles * 0.60;
-          watts = totalTiles * 125;
+          amps = (voltage === 110) ? totalTiles * 1.45 : totalTiles * 0.77;
+          watts = totalTiles * 160;
           break;
 
         default:
@@ -444,13 +444,13 @@ const EquipmentCalculator = {
       const halfTileCount = halfHorizontal * halfVertical;
       const fullTileCount = fullHorizontal * fullVertical;
 
-      // Calculate power for Half tiles
-      const halfAmps110 = halfTileCount * 1.14;
-      const halfAmps208 = halfTileCount * 0.60;
+      // Calculate power for Half tiles (160W per tile)
+      const halfAmps110 = halfTileCount * 1.45;
+      const halfAmps208 = halfTileCount * 0.77;
 
-      // Calculate power for Full tiles
-      const fullAmps110 = fullTileCount * 2.27;
-      const fullAmps208 = fullTileCount * 1.20;
+      // Calculate power for Full tiles (320W per tile)
+      const fullAmps110 = fullTileCount * 2.91;
+      const fullAmps208 = fullTileCount * 1.54;
 
       // Combine totals
       amps110 = halfAmps110 + fullAmps110;
@@ -467,11 +467,11 @@ const EquipmentCalculator = {
         amps110 = totalTiles * 2.40909;
         amps208 = totalTiles * 1.27403;
       } else if (productType === "ROEGP26Full") {
-        amps110 = totalTiles * 2.27;
-        amps208 = totalTiles * 1.20;
+        amps110 = totalTiles * 2.91;
+        amps208 = totalTiles * 1.54;
       } else if (productType === "ROEGP26Half") {
-        amps110 = totalTiles * 1.14;
-        amps208 = totalTiles * 0.60;
+        amps110 = totalTiles * 1.45;
+        amps208 = totalTiles * 0.77;
       }
     }
 
