@@ -275,10 +275,18 @@ const EquipmentCalculator = {
    * @returns {number} Number of sandbags needed
    */
   calculateSandbags(productType, verticalBlocks, baseCount) {
+    // Sandbag lookup tables based on vertical tile count
+    // ROE GP2.6 values derived from engineering ballast calculations (1 kN ≈ 0.1112 per 25lb bag)
     const sandbagTables = {
       absen: [0, 0, 0, 4, 6, 8, 11, 15, 17, 19, 21, 23],
       ROE: [0, 0, 0, 3.35102, 5.29109, 7.6720, 10.5821, 14.5505, 16.5787, 20.9821, 23.9703, 26.9585],
-      theatrixx: [1, 1, 2, 4, 6, 8, 11, 15, 17, 19, 21, 23]
+      theatrixx: [1, 1, 2, 4, 6, 8, 11, 15, 17, 19, 21, 23],
+      // ROE GP2.6 Half: 500mm tiles, ballast per base for heights 0.5m-6.0m (indices 0-11 = 1-12 tiles)
+      // Based on 0.50m bay spacing: ~12 bags at 3.2m rising to ~24 bags at 4.5m
+      ROEGP26Half: [0, 0, 0, 8, 10, 12, 14, 16, 18, 20, 22, 24],
+      // ROE GP2.6 Full: 1000mm tiles, ballast per base for heights 1.0m-12.0m (indices 0-11 = 1-12 tiles)
+      // Full tiles are 2x height of Half, so higher ballast loads needed
+      ROEGP26Full: [0, 0, 8, 10, 12, 16, 20, 24, 28, 32, 36, 40]
     };
 
     let table;
@@ -286,6 +294,10 @@ const EquipmentCalculator = {
       table = sandbagTables.absen;
     } else if (productType === "theatrixx") {
       table = sandbagTables.theatrixx;
+    } else if (productType === "ROEGP26Half") {
+      table = sandbagTables.ROEGP26Half;
+    } else if (productType === "ROEGP26Full") {
+      table = sandbagTables.ROEGP26Full;
     } else {
       table = sandbagTables.ROE;
     }
@@ -944,7 +956,7 @@ function addROEGP26Equipment(config, tbody) {
   } = config;
 
   // Get product-specific weight and pixel dimensions
-  const tileWeight = productType === "ROEGP26Full" ? 18.96 : 11.24;
+  const tileWeight = productType === "ROEGP26Full" ? 19.84 : 11.44;
   const pixelWidth = 192;
   const pixelHeight = productType === "ROEGP26Full" ? 384 : 192; // Full is 1000mm tall (2x)
 
@@ -959,14 +971,14 @@ function addROEGP26Equipment(config, tbody) {
     // Calculate package needs (6 tiles per case for Full)
     const packageCount = Math.ceil(totalTilesWithSpares / 6);
     addEquipmentRow('6GP2FULL', 'ROE GP2.6 Full 6x tile package', 0, packageCount, tbody);
-    addEquipmentRow('ROEGP26FULL', 'ROE GP2.6 Full LED tile 500x1000mm', 18.96, totalTiles, tbody);
-    addEquipmentRow('ROEGP26FULL', 'ROE GP2.6 Full LED tile 500x1000mm **SPARE**', 18.96, totalSpareTiles, tbody);
+    addEquipmentRow('ROEGP26FULL', 'ROE GP2.6 Full LED tile 500x1000mm', 19.84, totalTiles, tbody);
+    addEquipmentRow('ROEGP26FULL', 'ROE GP2.6 Full LED tile 500x1000mm **SPARE**', 19.84, totalSpareTiles, tbody);
   } else if (productType === "ROEGP26Half") {
     // Calculate package needs (12 tiles per case for Half)
     const packageCount = Math.ceil(totalTilesWithSpares / 12);
     addEquipmentRow('6GP2HALF', 'ROE GP2.6 Half 12x tile package', 0, packageCount, tbody);
-    addEquipmentRow('ROEGP26HALF', 'ROE GP2.6 Half LED tile 500x500mm', 11.24, totalTiles, tbody);
-    addEquipmentRow('ROEGP26HALF', 'ROE GP2.6 Half LED tile 500x500mm **SPARE**', 11.24, totalSpareTiles, tbody);
+    addEquipmentRow('ROEGP26HALF', 'ROE GP2.6 Half LED tile 500x500mm', 11.44, totalTiles, tbody);
+    addEquipmentRow('ROEGP26HALF', 'ROE GP2.6 Half LED tile 500x500mm **SPARE**', 11.44, totalSpareTiles, tbody);
   }
 
   // Processors

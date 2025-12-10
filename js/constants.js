@@ -125,10 +125,13 @@ const CONSTANTS = {
 };
 
 // Sandbag lookup tables
+// ROE GP2.6 values derived from engineering ballast calculations (1 kN ≈ 0.1112 per 25lb bag)
 const SANDBAG_TABLES = {
   absen: [0, 0, 0, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 7, 7, 8, 8],
   ROE: [0, 0, 0, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9],
-  theatrixx: [0, 0, 0, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9]
+  theatrixx: [0, 0, 0, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9],
+  ROEGP26Half: [0, 0, 0, 8, 10, 12, 14, 16, 18, 20, 22, 24],
+  ROEGP26Full: [0, 0, 8, 10, 12, 16, 20, 24, 28, 32, 36, 40]
 };
 
 // Equipment codes and names
@@ -152,8 +155,8 @@ const EQUIPMENT = {
   BPBO_BB2: { code: 'BPBOBB2', name: 'ROE Black Pearl base bar, 2W, 1.0m', weight: 28 },
 
   // ROE GP2.6
-  ROEGP26FULL: { code: 'ROEGP26FULL', name: 'ROE GP2.6 Full LED tile 500x1000mm', weight: 18.96 },
-  ROEGP26HALF: { code: 'ROEGP26HALF', name: 'ROE GP2.6 Half LED tile 500x500mm', weight: 11.24 },
+  ROEGP26FULL: { code: 'ROEGP26FULL', name: 'ROE GP2.6 Full LED tile 500x1000mm', weight: 19.84 },
+  ROEGP26HALF: { code: 'ROEGP26HALF', name: 'ROE GP2.6 Half LED tile 500x500mm', weight: 11.44 },
 
   // Theatrixx
   TX_NOMAD26: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm', weight: 17.6 },
