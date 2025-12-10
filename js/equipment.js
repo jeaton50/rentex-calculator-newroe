@@ -912,7 +912,7 @@ function addROEEquipment(config, tbody) {
 
   // Display data ports needed
   if (typeof displayDataPortsNeeded === 'function') {
-    displayDataPortsNeeded('ROE', totalTiles);
+    displayDataPortsNeeded(productType, totalTiles);
   }
 }
 
@@ -1066,7 +1066,7 @@ function addROEGP26Equipment(config, tbody) {
 
   // Display data ports needed
   if (typeof displayDataPortsNeeded === 'function') {
-    displayDataPortsNeeded('ROE', totalTiles);
+    displayDataPortsNeeded(productType, totalTiles);
   }
 }
 
