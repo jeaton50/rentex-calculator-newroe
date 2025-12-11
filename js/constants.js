@@ -125,13 +125,13 @@ const CONSTANTS = {
 };
 
 // Sandbag lookup tables
-// ROE GP2.6 values derived from engineering ballast calculations (1 kN ≈ 0.1112 per 25lb bag)
+// GP2.6 uses same bay distance as BP2, so ballast values derived from ROE table
 const SANDBAG_TABLES = {
   absen: [0, 0, 0, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 7, 7, 8, 8],
   ROE: [0, 0, 0, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9],
   theatrixx: [0, 0, 0, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9],
-  ROEGP26Half: [0, 0, 0, 8, 10, 12, 14, 16, 18, 20, 22, 24],
-  ROEGP26Full: [0, 0, 8, 10, 12, 16, 20, 24, 28, 32, 36, 40]
+  ROEGP26Half: [0, 0, 0, 2, 2, 3, 3, 4, 4, 4, 5, 5],
+  ROEGP26Full: [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 };
 
 // Equipment codes and names

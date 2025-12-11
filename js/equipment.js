@@ -276,17 +276,16 @@ const EquipmentCalculator = {
    */
   calculateSandbags(productType, verticalBlocks, baseCount) {
     // Sandbag lookup tables based on vertical tile count
-    // ROE GP2.6 values derived from engineering ballast calculations (1 kN ≈ 0.1112 per 25lb bag)
+    // GP2.6 uses same bay distance as BP2, so ballast values derived from ROE table
     const sandbagTables = {
       absen: [0, 0, 0, 4, 6, 8, 11, 15, 17, 19, 21, 23],
       ROE: [0, 0, 0, 3.35102, 5.29109, 7.6720, 10.5821, 14.5505, 16.5787, 20.9821, 23.9703, 26.9585],
       theatrixx: [1, 1, 2, 4, 6, 8, 11, 15, 17, 19, 21, 23],
-      // ROE GP2.6 Half: 500mm tiles, ballast per base for heights 0.5m-6.0m (indices 0-11 = 1-12 tiles)
-      // Based on 0.50m bay spacing: ~12 bags at 3.2m rising to ~24 bags at 4.5m
-      ROEGP26Half: [0, 0, 0, 8, 10, 12, 14, 16, 18, 20, 22, 24],
-      // ROE GP2.6 Full: 1000mm tiles, ballast per base for heights 1.0m-12.0m (indices 0-11 = 1-12 tiles)
-      // Full tiles are 2x height of Half, so higher ballast loads needed
-      ROEGP26Full: [0, 0, 8, 10, 12, 16, 20, 24, 28, 32, 36, 40]
+      // ROE GP2.6 Half: 500mm tiles, same as BP2 dimensions, uses ROE bay spacing
+      ROEGP26Half: [0, 0, 0, 3.35102, 5.29109, 7.6720, 10.5821, 14.5505, 16.5787, 20.9821, 23.9703, 26.9585],
+      // ROE GP2.6 Full: 1000mm tiles (2x height), ballast mapped to equivalent height from ROE table
+      // Index N for Full (N+1 tiles = N+1 meters) maps to ROE index 2N+1 (2N+2 tiles = N+1 meters)
+      ROEGP26Full: [0, 3.35102, 7.6720, 14.5505, 20.9821, 26.9585, 33, 39, 45, 51, 57, 63]
     };
 
     let table;
