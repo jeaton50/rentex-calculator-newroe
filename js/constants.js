@@ -125,13 +125,13 @@ const CONSTANTS = {
 };
 
 // Sandbag lookup tables
-// GP2.6 Full based on engineering document (0.615 scaling), Half based on weight ratio (0.555 scaling)
+// GP2.6 values based on engineering safety margins (Full: 0.615, Half: 0.709 scaling)
 const SANDBAG_TABLES = {
   absen: [0, 0, 0, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 7, 7, 8, 8],
   ROE: [0, 0, 0, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9],
   theatrixx: [0, 0, 0, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9],
-  // Full: engineering doc shows 12.9 bags at 5m = 0.615 ratio, Half: 0.555 weight ratio
-  ROEGP26Half: [0, 0, 0, 1.86, 2.94, 4.26, 5.87, 8.08, 9.20, 11.65, 13.30, 14.96],
+  // Full: engineering doc 0.615 ratio, Half: 0.709 ratio (same 1.278x safety margin)
+  ROEGP26Half: [0, 0, 0, 2.38, 3.75, 5.44, 7.50, 10.32, 11.75, 14.88, 17.00, 19.11],
   ROEGP26Full: [0, 2.06, 4.72, 8.95, 12.90, 16.58, 20.25, 23.93, 27.61, 31.28, 34.96, 38.63]
 };
 
