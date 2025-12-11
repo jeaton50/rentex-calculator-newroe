@@ -276,16 +276,17 @@ const EquipmentCalculator = {
    */
   calculateSandbags(productType, verticalBlocks, baseCount) {
     // Sandbag lookup tables based on vertical tile count
-    // GP2.6 uses same bay distance as BP2, so ballast values derived from ROE table
+    // GP2.6 uses same bay distance as BP2, ballast scaled by weight ratio (lighter = less ballast)
     const sandbagTables = {
       absen: [0, 0, 0, 4, 6, 8, 11, 15, 17, 19, 21, 23],
       ROE: [0, 0, 0, 3.35102, 5.29109, 7.6720, 10.5821, 14.5505, 16.5787, 20.9821, 23.9703, 26.9585],
       theatrixx: [1, 1, 2, 4, 6, 8, 11, 15, 17, 19, 21, 23],
-      // ROE GP2.6 Half: 500mm tiles, same as BP2 dimensions, uses ROE bay spacing
-      ROEGP26Half: [0, 0, 0, 3.35102, 5.29109, 7.6720, 10.5821, 14.5505, 16.5787, 20.9821, 23.9703, 26.9585],
-      // ROE GP2.6 Full: 1000mm tiles (2x height), ballast mapped to equivalent height from ROE table
-      // Index N for Full (N+1 tiles = N+1 meters) maps to ROE index 2N+1 (2N+2 tiles = N+1 meters)
-      ROEGP26Full: [0, 3.35102, 7.6720, 14.5505, 20.9821, 26.9585, 33, 39, 45, 51, 57, 63]
+      // ROE GP2.6 Half: 11.44 lbs vs BP2 20.61 lbs = 0.555 weight ratio
+      // ROE values scaled by 0.555 (lighter tiles need less ballast)
+      ROEGP26Half: [0, 0, 0, 1.86, 2.94, 4.26, 5.87, 8.08, 9.20, 11.65, 13.30, 14.96],
+      // ROE GP2.6 Full: 19.84 lbs vs 2x BP2 41.22 lbs = 0.481 weight ratio
+      // Mapped to equivalent heights from ROE, then scaled by 0.481
+      ROEGP26Full: [0, 1.61, 3.69, 7.00, 10.09, 12.97, 15.87, 18.76, 21.65, 24.54, 27.43, 30.32]
     };
 
     let table;
