@@ -125,14 +125,14 @@ const CONSTANTS = {
 };
 
 // Sandbag lookup tables
-// GP2.6 uses same bay distance as BP2, ballast scaled by weight ratio (lighter = less ballast)
+// GP2.6 Full based on engineering document (0.615 scaling), Half based on weight ratio (0.555 scaling)
 const SANDBAG_TABLES = {
   absen: [0, 0, 0, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 7, 7, 8, 8],
   ROE: [0, 0, 0, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9],
   theatrixx: [0, 0, 0, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9],
-  // Half: 11.44 lbs vs BP2 20.61 lbs = 0.555 ratio, Full: 19.84 lbs vs 2xBP2 41.22 lbs = 0.481 ratio
+  // Full: engineering doc shows 12.9 bags at 5m = 0.615 ratio, Half: 0.555 weight ratio
   ROEGP26Half: [0, 0, 0, 1.86, 2.94, 4.26, 5.87, 8.08, 9.20, 11.65, 13.30, 14.96],
-  ROEGP26Full: [0, 1.61, 3.69, 7.00, 10.09, 12.97, 15.87, 18.76, 21.65, 24.54, 27.43, 30.32]
+  ROEGP26Full: [0, 2.06, 4.72, 8.95, 12.90, 16.58, 20.25, 23.93, 27.61, 31.28, 34.96, 38.63]
 };
 
 // Equipment codes and names
