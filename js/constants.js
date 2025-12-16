@@ -125,7 +125,7 @@ const CONSTANTS = {
 };
 
 // Sandbag lookup tables
-// GP2.6 Full based on stacking document (1286kg for 6 systems at 4m = 18.9 bags/base at 4 tiles)
+// GP2.6 Full based on calculator export (36kg for 2 systems at 2m = 1.6 bags/base at 2 tiles)
 // GP2.6 Half based on weight ratio with safety margin (0.709 scaling)
 const SANDBAG_TABLES = {
   absen: [0, 0, 0, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 7, 7, 8, 8],
@@ -133,8 +133,8 @@ const SANDBAG_TABLES = {
   theatrixx: [0, 0, 0, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9],
   // Half: 0.709 ratio (weight ratio × safety factor 1.278)
   ROEGP26Half: [0, 0, 0, 2.38, 3.75, 5.44, 7.50, 10.32, 11.75, 14.88, 17.00, 19.11],
-  // Full: 4.725 bags per tile (from engineering stacking document at 4m height)
-  ROEGP26Full: [4.73, 9.45, 14.18, 18.90, 23.63, 28.35, 33.08, 37.80, 42.53, 47.25, 51.98]
+  // Full: 0.8 bags per tile (from calculator export example at 2m height)
+  ROEGP26Full: [0.8, 1.6, 2.4, 3.2, 4.0, 4.8, 5.6, 6.4, 7.2, 8.0, 8.8]
 };
 
 // Equipment codes and names
