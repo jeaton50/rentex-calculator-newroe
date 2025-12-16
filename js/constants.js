@@ -125,18 +125,14 @@ const CONSTANTS = {
 };
 
 // Sandbag lookup tables
-// GP2.6 values calculated using ballast formula from ROE engineering specifications:
-// Ballast (kg) = Panel_kg/m² × Height_m × 7 × System_Factor(1.654)
-// GP2.6 Full: 18.00 kg/m² × 0.5m/tile × 7 × 1.654 / 11.34kg/bag = 9.19 bags/tile
-// GP2.6 Half: 20.76 kg/m² × 0.5m/tile × 7 × 1.654 / 11.34kg/bag = 10.60 bags/tile
+// GP2.6 values based on engineering safety margins (Full: 0.615, Half: 0.709 scaling)
 const SANDBAG_TABLES = {
   absen: [0, 0, 0, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 7, 7, 8, 8],
   ROE: [0, 0, 0, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9],
   theatrixx: [0, 0, 0, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9],
-  // GP2.6 Half: Formula-based (20.76 kg/m² × 0.5m/tile × 7 × 1.654 / 11.34) = 10.60 bags/tile
-  ROEGP26Half: [10.60, 21.20, 31.80, 42.39, 52.99, 63.59, 74.19, 84.79, 95.39, 105.99, 116.59, 127.19, 137.79],
-  // GP2.6 Full: Formula-based (18.00 kg/m² × 0.5m/tile × 7 × 1.654 / 11.34) = 9.19 bags/tile
-  ROEGP26Full: [9.19, 18.38, 27.56, 36.75, 45.94, 55.13, 64.32, 73.51, 82.70, 91.89, 101.08]
+  // Full: engineering doc 0.615 ratio, Half: 0.709 ratio (same 1.278x safety margin)
+  ROEGP26Half: [0, 0, 0, 2.38, 3.75, 5.44, 7.50, 10.32, 11.75, 14.88, 17.00, 19.11],
+  ROEGP26Full: [0, 2.06, 4.72, 8.95, 12.90, 16.58, 20.25, 23.93, 27.61, 31.28, 34.96, 38.63]
 };
 
 // Equipment codes and names
