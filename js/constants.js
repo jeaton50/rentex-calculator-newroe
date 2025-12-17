@@ -125,7 +125,7 @@ const CONSTANTS = {
 };
 
 // Sandbag lookup tables
-// GP2.6 Full based on manufacturer spec (10×4 wall = 2835 lbs)
+// GP2.6 Full based on manufacturer spec (10×4 wall = 2835 lbs total)
 // GP2.6 Half based on weight ratio with safety margin (0.709 scaling)
 const SANDBAG_TABLES = {
   absen: [0, 0, 0, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 7, 7, 8, 8],
@@ -133,8 +133,8 @@ const SANDBAG_TABLES = {
   theatrixx: [0, 0, 0, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9],
   // Half: 0.709 ratio (weight ratio × safety factor 1.278)
   ROEGP26Half: [0, 0, 0, 2.38, 3.75, 5.44, 7.50, 10.32, 11.75, 14.88, 17.00, 19.11],
-  // Full: Non-linear (height^3.57) - matches manufacturer: 4H=18.9 bags/base
-  ROEGP26Full: [0.13, 1.59, 6.26, 18.9, 41.8, 80.0, 138.6, 223.6, 346.7, 520.5, 756.5]
+  // Full: Adjusted for calculator base count to match 2835 lbs total
+  ROEGP26Full: [0.08, 0.95, 3.76, 11.34, 25.1, 48.0, 83.2, 134.2, 208.0, 312.3, 454.9]
 };
 
 // Equipment codes and names
