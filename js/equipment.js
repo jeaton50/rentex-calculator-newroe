@@ -285,10 +285,11 @@ const EquipmentCalculator = {
       // ROE GP2.6 Half: Applying same engineering safety margin as Full (0.709 vs 0.555 simple weight ratio)
       // Weight ratio 0.555 × safety factor 1.278 = 0.709
       ROEGP26Half: [0, 0, 0, 2.38, 3.75, 5.44, 7.50, 10.32, 11.75, 14.88, 17.00, 19.11],
-      // ROE GP2.6 Full: Based on calculator export example (1.0m × 2.0m wall, 2 systems)
-      // Example shows 36kg total ballast for 2 systems at 2m (2 Full tiles)
-      // Per base: 18kg = 1.6 bags at 2 tiles = 0.8 bags per tile
-      ROEGP26Full: [0.8, 1.6, 2.4, 3.2, 4.0, 4.8, 5.6, 6.4, 7.2, 8.0, 8.8]
+      // ROE GP2.6 Full: Based on engineering document, scaled by 0.615 factor
+      // Document: 5.0m x 5.0m wall, 10 bases, total 1460kg (3219 lbs) = 129 bags = 12.9 bags/base at 5 tiles
+      // Calculator exports show non-linear increase: 2m=1.6 bags, 4m=18.9 bags per base
+      // ROE equivalent heights scaled by 0.615 (12.9 / 20.98 from ROE[9])
+      ROEGP26Full: [0, 2.06, 4.72, 8.95, 12.90, 16.58, 20.25, 23.93, 27.61, 31.28, 34.96, 38.63]
     };
 
     let table;
