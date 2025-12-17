@@ -285,10 +285,10 @@ const EquipmentCalculator = {
       // ROE GP2.6 Half: Applying same engineering safety margin as Full (0.709 vs 0.555 simple weight ratio)
       // Weight ratio 0.555 × safety factor 1.278 = 0.709
       ROEGP26Half: [0, 0, 0, 2.38, 3.75, 5.44, 7.50, 10.32, 11.75, 14.88, 17.00, 19.11],
-      // ROE GP2.6 Full: Fine-tuned to match manufacturer specs
-      // 10W×4H = 2835 lbs (within 20 lbs), 32W×4H = 9140 lbs (within 4 lbs)
-      // Non-linear relationship: ballast ∝ height^3.57, calibrated to actual exports
-      ROEGP26Full: [0.08, 0.96, 3.79, 11.42, 25.28, 48.34, 83.79, 135.15, 209.48, 314.52, 458.13]
+      // ROE GP2.6 Full: Quadratic fit to match all manufacturer specs
+      // 12W×3H = 1682 lbs, 10W×4H = 2835 lbs, 32W×4H = 9140 lbs
+      // Formula: y = 0.575x² + 1.785x - 4.92 (where x = tile height)
+      ROEGP26Full: [0.08, 0.95, 5.61, 11.42, 18.38, 26.49, 35.75, 46.16, 57.72, 70.43, 84.29]
     };
 
     let table;
