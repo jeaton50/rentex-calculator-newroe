@@ -282,9 +282,10 @@ const EquipmentCalculator = {
       absen: [0, 0, 0, 4, 6, 8, 11, 15, 17, 19, 21, 23],
       ROE: [0, 0, 0, 3.35102, 5.29109, 7.6720, 10.5821, 14.5505, 16.5787, 20.9821, 23.9703, 26.9585],
       theatrixx: [1, 1, 2, 4, 6, 8, 11, 15, 17, 19, 21, 23],
-      // ROE GP2.6 Half: Applying same engineering safety margin as Full (0.709 vs 0.555 simple weight ratio)
-      // Weight ratio 0.555 × safety factor 1.278 = 0.709
-      ROEGP26Half: [0, 0, 0, 2.38, 3.75, 5.44, 7.50, 10.32, 11.75, 14.88, 17.00, 19.11],
+      // ROE GP2.6 Half: Same ballast rules as ROE Black Pearl 2 V1, scaled by weight ratio
+      // GP2.6 Half: 11.44 lbs, ROE BP2V1: 20.61 lbs, Ratio: 0.555
+      // ROE BP2 values × 0.555
+      ROEGP26Half: [0, 0, 0, 1.86, 2.94, 4.26, 5.87, 8.08, 9.20, 11.65, 13.30, 14.96],
       // ROE GP2.6 Full: Quadratic fit to match all manufacturer specs
       // 12W×3H = 1682 lbs, 10W×4H = 2835 lbs, 32W×4H = 9140 lbs
       // Formula: y = 0.575x² + 1.785x - 4.92 (where x = tile height)
