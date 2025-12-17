@@ -133,8 +133,8 @@ const SANDBAG_TABLES = {
   theatrixx: [0, 0, 0, 2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9],
   // Half: 0.709 ratio (weight ratio × safety factor 1.278)
   ROEGP26Half: [0, 0, 0, 2.38, 3.75, 5.44, 7.50, 10.32, 11.75, 14.88, 17.00, 19.11],
-  // Full: Adjusted for calculator base count to match 2835 lbs total
-  ROEGP26Full: [0.08, 0.95, 3.76, 11.34, 25.1, 48.0, 83.2, 134.2, 208.0, 312.3, 454.9]
+  // Full: Fine-tuned to match manufacturer specs (10×4=2835 lbs, 32×4=9140 lbs)
+  ROEGP26Full: [0.08, 0.96, 3.79, 11.42, 25.28, 48.34, 83.79, 135.15, 209.48, 314.52, 458.13]
 };
 
 // Equipment codes and names
