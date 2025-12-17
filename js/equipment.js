@@ -1080,6 +1080,41 @@ function addROEGP26Equipment(config, tbody) {
     addEquipmentRow('SOCA6XTRU1', '19 Pin Socapex to 6x True1 Power Cable', 5, powerDistro.SOCA6XTRU1, tbody);
   }
 
+  // Display wall weight and calculate shipping weight
+  if (typeof totalWeight !== 'undefined' && typeof displayEstShippingWeight === 'function') {
+    // Display the pure wall/tile weight
+    if (typeof displayWallWeight === 'function') {
+      displayWallWeight(totalWeight);
+    }
+
+    // Calculate total shipping weight including equipment
+    let caseWeight = totalWeight;
+
+    // Package weight (Full: 6 tiles/case, Half: 12 tiles/case)
+    const packageCount = productType === "ROEGP26Full"
+      ? Math.ceil(totalTilesWithSpares / 6)
+      : Math.ceil(totalTilesWithSpares / 12);
+    caseWeight += 161.12 * packageCount; // Using same case weight as BP2
+
+    // Add equipment weights
+    caseWeight += 210 * singleBases;
+    caseWeight += 113 * doubleBases;
+    caseWeight += 91 * singleHeaders;
+    caseWeight += 127 * doubleHeaders;
+    caseWeight += 17 * universalBaseTruss;
+    caseWeight += 120 * cables.ECONRJ45;
+    caseWeight += 65 * processors.SX40;
+    caseWeight += 57 * processors.S8;
+    caseWeight += 25 * sandbags;
+
+    displayEstShippingWeight(caseWeight);
+  }
+
+  // Display total pixels
+  if (typeof displayTotalPixels === 'function') {
+    displayTotalPixels(totalPixels);
+  }
+
   // Display data ports needed
   if (typeof displayDataPortsNeeded === 'function') {
     displayDataPortsNeeded(productType, totalTiles);
