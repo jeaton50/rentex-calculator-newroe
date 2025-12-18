@@ -137,7 +137,28 @@
   // Attach event listener to Product Type dropdown
   document.getElementById("productType").addEventListener("change", function () {
     updateTableRowColor(this.value);
+    updateVerticalBlocksLimit(this.value);
   });
+
+  // Function to enforce GP2 Full vertical limit of 7 tiles
+  function updateVerticalBlocksLimit(productType) {
+    const blocksVerInput = document.getElementById('blocksVer');
+    if (!blocksVerInput) return;
+
+    if (productType === 'ROEGP26Full') {
+      // GP2 Full limited to 7 tiles high
+      blocksVerInput.setAttribute('max', '7');
+      // If current value exceeds limit, cap it
+      if (parseInt(blocksVerInput.value, 10) > 7) {
+        blocksVerInput.value = '7';
+        // Trigger change event to recalculate
+        blocksVerInput.dispatchEvent(new Event('input'));
+      }
+    } else {
+      // Remove max limit for other products
+      blocksVerInput.removeAttribute('max');
+    }
+  }
 
 // Function displayIBoltWarning is now in js/ui.js
 
@@ -145,6 +166,7 @@
 window.addEventListener("DOMContentLoaded", () => {
   const initialProductType = document.getElementById("productType").value;
   updateTableRowColor(initialProductType);
+  updateVerticalBlocksLimit(initialProductType);
 
   // Check if flown support is selected and update IBolt warning
   if (document.getElementById('flownSupport').checked) {

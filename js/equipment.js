@@ -1431,7 +1431,7 @@ function displayEquipment(data) {
     const totalSpareTiles = data.totalSpares;
     const totalTilesWithSpares = data.totalBlocksWithSpares;
     const horizontalBlocks = data.blocksHor;
-    const verticalBlocks = data.blocksVer;
+    let verticalBlocks = data.blocksVer;
     const voltage = data.voltage;
     const powerDistroType = data.powerDistro;
     const supportType = data.groundSupport ? "Ground" : "Flyware";
@@ -1440,6 +1440,13 @@ function displayEquipment(data) {
     const groundSupportType = data.groundSupportType || 'Single Base';
     const flownSupportType = data.flownSupportType || 'Single Header';
     const blankRows = data.blankRows || 0;
+
+    // GP2 Full has a maximum height limit of 7 tiles
+    if (productType === "ROEGP26Full" && verticalBlocks > 7) {
+      verticalBlocks = 7;
+      // Note: The UI should prevent values > 7, but we enforce it here as well
+      console.warn('GP2 Full walls are limited to 7 tiles high maximum. Value capped at 7.');
+    }
 
     // Get UI values
     const heightWarning = document.getElementById('blockVerticalWarning')?.textContent || '';
