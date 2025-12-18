@@ -1862,8 +1862,18 @@ document.getElementById('powerDistroType')?.addEventListener('change', () => {
 
           let O32, P32;
 
-          if (roeGraphiteEnabled || productType === "ROEGP26Full" || productType === "ROEGP26Half") {
-            // ROE Graphite Mix and ROE GP2.6 products: same calculation as other ROE products
+          if (productType === "ROEGP26Full") {
+            // GP2 Full: 250W per panel at 120V = 2.083A per panel
+            // Max 6 panels per circuit (12.50A, 80% of 16A max)
+            O32 = Math.ceil(totalBlocks / 6);
+            edt110mQuantity = O32;
+          } else if (productType === "ROEGP26Half") {
+            // GP2 Half: 160W per panel at 120V = 1.33A per panel
+            // Max 9 panels per circuit (~12A at 120V)
+            O32 = Math.ceil(totalBlocks / 9);
+            edt110mQuantity = O32;
+          } else if (roeGraphiteEnabled) {
+            // ROE Graphite Mix: same calculation as other ROE products
             O32 = Math.ceil(totalBlocks / 11);
             P32 = Math.ceil(O32 + (O32 * 0.05));
             edt110mQuantity = P32;
