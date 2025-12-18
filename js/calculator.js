@@ -189,6 +189,7 @@ const Calculator = {
    */
   calculate208Circuits(productType, totalTiles) {
     let ampsRequired;
+    let maxAmpsPerCircuit = 20; // Default for most products
 
     switch (productType) {
       case 'absen':
@@ -202,12 +203,22 @@ const Calculator = {
       case 'theatrixx':
         ampsRequired = totalTiles * 1.27403;
         break;
+      case 'ROEGP26Full':
+        // GP2 Full: 250W per panel at 208V
+        // Max 12 panels per circuit (14.42A, safely under 16A max)
+        ampsRequired = (totalTiles * 250) / 208;
+        maxAmpsPerCircuit = 14.42; // 12 panels worth
+        break;
+      case 'ROEGP26Half':
+        // GP2 Half: 160W per panel at 208V
+        ampsRequired = (totalTiles * 160) / 208;
+        break;
       default:
         ampsRequired = 0;
     }
 
-    // Each circuit can handle approximately 15-20 amps
-    const circuitsNeeded = Math.ceil(ampsRequired / 20);
+    // Each circuit can handle approximately 15-20 amps (varies by product)
+    const circuitsNeeded = Math.ceil(ampsRequired / maxAmpsPerCircuit);
 
     return circuitsNeeded;
   }

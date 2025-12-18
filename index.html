@@ -1921,8 +1921,29 @@ document.getElementById('powerDistroType')?.addEventListener('change', () => {
       const totalTiles = blocksHor * blocksVer * numScreens;
       if (totalTiles <= 0) return;
 
-      // Divide by 16, round up
-      const neededCircuits = Math.ceil(totalTiles / 16);
+      // Get product type and calculate circuits based on power requirements
+      const productType = document.getElementById('productType')?.value;
+      let neededCircuits;
+
+      // Use Calculator.calculate208Circuits if available, otherwise use product-specific logic
+      if (typeof Calculator !== 'undefined' && Calculator.calculate208Circuits) {
+        neededCircuits = Calculator.calculate208Circuits(productType, totalTiles);
+      } else {
+        // Fallback: product-specific divisors
+        switch (productType) {
+          case 'ROEGP26Full':
+            // GP2 Full: max 12 panels per circuit (14.42A at 208V)
+            neededCircuits = Math.ceil(totalTiles / 12);
+            break;
+          case 'ROEGP26Half':
+            // GP2 Half: max 20 panels per circuit at 208V
+            neededCircuits = Math.ceil(totalTiles / 20);
+            break;
+          default:
+            // Default: 16 panels per circuit
+            neededCircuits = Math.ceil(totalTiles / 16);
+        }
+      }
 
       const circuitsDiv = document.createElement('div');
       circuitsDiv.id = 'circuits208Display';
