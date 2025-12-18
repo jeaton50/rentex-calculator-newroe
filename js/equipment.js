@@ -287,8 +287,9 @@ const EquipmentCalculator = {
       // Half tiles need MORE ballast per tile due to higher frame density
       // Values = GP2.6 Full × 1.153
       ROEGP26Half: [0.09, 1.10, 6.47, 13.17, 21.20, 30.54, 41.22, 53.23, 66.55, 81.21, 97.19],
-      // ROE GP2.6 Full: Quadratic fit to match all manufacturer specs
-      // 12W×3H = 1682 lbs, 10W×4H = 2835 lbs, 32W×4H = 9140 lbs
+      // ROE GP2.6 Full: Quadratic fit - NOTE: Values are doubled in displayEquipment()
+      // due to GP2 Full double height (1000mm). Actual ballast requirements:
+      // 12W×3H ≈ 3364 lbs, 10W×4H ≈ 5701 lbs, 32W×4H ≈ 18280 lbs
       // Formula: y = 0.575x² + 1.785x - 4.92 (where x = tile height)
       ROEGP26Full: [0.08, 0.95, 5.61, 11.42, 18.38, 26.49, 35.75, 46.16, 57.72, 70.43, 84.29]
     };
@@ -1470,6 +1471,10 @@ function displayEquipment(data) {
     let sandbags = 0;
     if (supportType === "Ground") {
       sandbags = EquipmentCalculator.calculateSandbags(productType, verticalBlocks, baseCount);
+      // GP2 Full tiles (1000mm tall) require double the ballast due to double height
+      if (productType === "ROEGP26Full") {
+        sandbags = sandbags * 2;
+      }
     }
 
     // Calculate power distribution
