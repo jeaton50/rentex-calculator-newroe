@@ -182,7 +182,10 @@
   // Function to enforce GP2 Full height dimension limit of 10.2m (33.46 feet)
   function updateHeightDimensionLimit(productType) {
     const heightFeetInput = document.getElementById('heightFeet');
-    if (!heightFeetInput) return;
+    if (!heightFeetInput) {
+      console.log('updateHeightDimensionLimit: heightFeet input not found');
+      return;
+    }
 
     // Remove any existing listener to prevent duplicates
     if (heightFeetInput._gp2FullListener) {
@@ -194,6 +197,7 @@
       // GP2 Full limited to 10.2 meters = 33.46 feet
       const maxHeightFeet = 33.46;
       heightFeetInput.setAttribute('max', maxHeightFeet.toString());
+      console.log('GP2 Full height limit applied: max =', maxHeightFeet, 'feet (10.2m)');
 
       // Add input listener to enforce range
       const listener = function() {
@@ -201,6 +205,7 @@
         if (isNaN(value) || value < 0) {
           this.value = '0';
         } else if (value > maxHeightFeet) {
+          console.log('Height value capped from', value, 'to', maxHeightFeet);
           this.value = maxHeightFeet.toString();
         }
       };
@@ -211,12 +216,14 @@
       // If current value exceeds limit, cap it
       const currentValue = parseFloat(heightFeetInput.value);
       if (currentValue > maxHeightFeet) {
+        console.log('Initial height value capped from', currentValue, 'to', maxHeightFeet);
         heightFeetInput.value = maxHeightFeet.toString();
         heightFeetInput.dispatchEvent(new Event('input'));
       }
     } else {
       // Remove max limit for other products
       heightFeetInput.removeAttribute('max');
+      console.log('Height limit removed for product type:', productType);
     }
   }
 
