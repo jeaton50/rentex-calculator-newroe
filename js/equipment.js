@@ -1121,6 +1121,38 @@ function addROEGP26Equipment(config, tbody) {
     addEquipmentRow('SOCA6XTRU1', '19 Pin Socapex to 6x True1 Power Cable', 5, powerDistro.SOCA6XTRU1, tbody);
   }
 
+  // GP2 Full lateral support equipment (pipes and couplers) - height dependent
+  if (productType === "ROEGP26Full") {
+    let singleTubes = 0;
+    let swivelCouplers = 0;
+
+    // Calculate based on height and manufacturer specs
+    // At 4m (4 tiles): needs support every 1.0m
+    // Above 4m (5+ tiles): needs support every 0.5m for extra lateral stability
+    const widthInMeters = horizontalBlocks * 0.5; // Each tile is 0.5m wide
+
+    if (verticalBlocks <= 3) {
+      // No lateral support needed below 4m
+      singleTubes = 0;
+      swivelCouplers = 0;
+    } else if (verticalBlocks === 4) {
+      // At 4 tiles (4m = 400cm threshold): stacking every other frame (1.0m spacing)
+      singleTubes = Math.round(widthInMeters);
+      swivelCouplers = Math.round(widthInMeters * 2);
+    } else {
+      // At 5+ tiles (>4m): stacking every frame (0.5m spacing) for extra support
+      singleTubes = horizontalBlocks - 1;
+      swivelCouplers = (horizontalBlocks - 1) * 2;
+    }
+
+    if (singleTubes > 0) {
+      addEquipmentRow('LED4FTS40', 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, singleTubes, tbody);
+    }
+    if (swivelCouplers > 0) {
+      addEquipmentRow('15PIPECPL', '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', 1.5, swivelCouplers, tbody);
+    }
+  }
+
   // Display wall weight and calculate shipping weight
   if (typeof totalWeight !== 'undefined' && typeof displayEstShippingWeight === 'function') {
     // Display the pure wall/tile weight
