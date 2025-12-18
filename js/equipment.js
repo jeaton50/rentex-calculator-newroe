@@ -410,16 +410,13 @@ const EquipmentCalculator = {
                              verticalBlocks * 0.5;
       const needsDenseSupport = heightInMeters > 4.0;
 
-      // Base configuration depends on height
-      if (needsDenseSupport) {
-        // Above 4m: single base per column for denser support
-        singleBases = horizontalBlocks;
-        doubleBases = 0;
-      } else if (groundSupportType === "Double Base" && wallType === "Flat") {
+      // Base configuration: respect user selection regardless of height
+      if (groundSupportType === "Double Base" && wallType === "Flat") {
         doubleBases = Math.floor(horizontalBlocks / 2);
         singleBases = horizontalBlocks % 2;
       } else {
         singleBases = horizontalBlocks;
+        doubleBases = 0;
       }
 
       // Outriggers, clamps, and ladders
