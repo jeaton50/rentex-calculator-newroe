@@ -166,9 +166,16 @@ const EquipmentCalculator = {
     let S8, SX40, XD10;
 
     if (totalTiles <= maxPanels) {
-      S8 = s8FinalCount;
-      SX40 = 0;
-      XD10 = 0;
+      // If we need 2 or more S8s, switch to SX40 instead (BP2 logic)
+      if (s8FinalCount >= 2) {
+        S8 = 0;
+        SX40 = primaryProcessorCount;
+        XD10 = distributionUnitCount - SX40;
+      } else {
+        S8 = s8FinalCount;
+        SX40 = 0;
+        XD10 = 0;
+      }
     } else {
       S8 = 0;
       SX40 = primaryProcessorCount;
@@ -613,7 +620,8 @@ function addAbsenEquipment(config, tbody) {
     supportBeams1000mm,
     beamConnectors,
     platforms,
-    powerDistro
+    powerDistro,
+    voltage
   } = config;
 
   // Calculate total wall weight (tiles only)
@@ -706,7 +714,8 @@ function addAbsenEquipment(config, tbody) {
   if (cables.TRUE125FT > 0) {
     addEquipmentRow('TRUE125FT', "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
   }
-  if (cables.EDT110M > 0) {
+  // Only show Edison to True1 cable for 110v (BP2 logic)
+  if (cables.EDT110M > 0 && voltage === 110) {
     addEquipmentRow('EDT110M', "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
   }
   if (cables.T11M > 0) {
@@ -786,7 +795,8 @@ function addROEEquipment(config, tbody) {
     powerDistro,
     blankRows,
     horizontalBlocks,
-    verticalBlocks
+    verticalBlocks,
+    voltage
   } = config;
 
   // Calculate total wall weight (tiles only)
@@ -907,7 +917,8 @@ function addROEEquipment(config, tbody) {
   if (cables.TRUE125FT > 0) {
     addEquipmentRow('TRUE125FT', "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
   }
-  if (cables.EDT110M > 0) {
+  // Only show Edison to True1 cable for 110v (BP2 logic)
+  if (cables.EDT110M > 0 && voltage === 110) {
     addEquipmentRow('EDT110M', "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
   }
   if (cables.T11M > 0) {
@@ -984,7 +995,8 @@ function addROEGP26Equipment(config, tbody) {
     wallType,
     horizontalBlocks,
     verticalBlocks,
-    powerDistro
+    powerDistro,
+    voltage
   } = config;
 
   // Get product-specific weight and pixel dimensions
@@ -1087,7 +1099,8 @@ function addROEGP26Equipment(config, tbody) {
   if (cables.TRUE125FT > 0) {
     addEquipmentRow('TRUE125FT', "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
   }
-  if (cables.EDT110M > 0) {
+  // Only show Edison to True1 cable for 110v (BP2 logic)
+  if (cables.EDT110M > 0 && voltage === 110) {
     addEquipmentRow('EDT110M', "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
   }
   if (cables.T11M > 0) {
