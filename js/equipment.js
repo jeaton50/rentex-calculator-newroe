@@ -391,7 +391,8 @@ const EquipmentCalculator = {
       groundSupportType,
       flownSupportType,
       heightWarning,
-      blankRows
+      blankRows,
+      productType
     } = config;
 
     let singleBases = 0, doubleBases = 0;
@@ -417,7 +418,10 @@ const EquipmentCalculator = {
 
       // ROE-specific: universal base truss
       universalBaseTruss = Math.ceil(horizontalBlocks / 1.9);
-      rearTruss = Math.floor((verticalBlocks + (blankRows || 0)) / 2) * universalBaseTruss;
+
+      // For GP2 Full tiles (1000mm tall), double the vertical count for rear support calculation
+      const effectiveVerticalBlocks = productType === "ROEGP26Full" ? verticalBlocks * 2 : verticalBlocks;
+      rearTruss = Math.floor((effectiveVerticalBlocks + (blankRows || 0)) / 2) * universalBaseTruss;
       rearBridge = rearTruss;
     }
 
@@ -1457,7 +1461,8 @@ function displayEquipment(data) {
       groundSupportType,
       flownSupportType,
       heightWarning,
-      blankRows
+      blankRows,
+      productType
     });
 
     // Calculate sandbags
