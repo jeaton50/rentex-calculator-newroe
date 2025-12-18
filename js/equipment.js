@@ -1496,14 +1496,28 @@ function displayEquipment(data) {
     const baseCount = supportStructures.singleBases + supportStructures.doubleBases;
     let sandbags = 0;
     if (supportType === "Ground") {
-      sandbags = EquipmentCalculator.calculateSandbags(productType, verticalBlocks, baseCount);
-      // GP2 Full tiles (1000mm tall) require double the ballast due to double height
-      // EXCEPT when in dense support mode (>4m), where more bases distribute the load
+      // GP2 Full tiles (1000mm tall) require adjusted ballast calculations
       const heightInMeters = productType === "ROEGP26Full" ? verticalBlocks * 1.0 : verticalBlocks * 0.5;
       const needsDenseSupport = heightInMeters > 4.0;
-      if (productType === "ROEGP26Full" && !needsDenseSupport) {
-        sandbags = sandbags * 2;
+
+      // In dense support mode, ballast calculation uses double-base equivalents
+      // even though structure uses single bases
+      let ballastBaseCount = baseCount;
+      let ballastMultiplier = 1;
+
+      if (productType === "ROEGP26Full") {
+        if (needsDenseSupport) {
+          // Above 4m: calculate ballast per double-base equivalent, multiply by 1.5
+          ballastBaseCount = Math.ceil(horizontalBlocks / 2);
+          ballastMultiplier = 1.5;
+        } else {
+          // 4m or below: use actual base count, multiply by 2
+          ballastMultiplier = 2;
+        }
       }
+
+      sandbags = EquipmentCalculator.calculateSandbags(productType, verticalBlocks, ballastBaseCount);
+      sandbags = Math.ceil(sandbags * ballastMultiplier);
     }
 
     // Calculate power distribution
