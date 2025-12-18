@@ -256,8 +256,11 @@ const EquipmentCalculator = {
           break;
 
         case "ROEGP26Full":
-          amps = (voltage === 110) ? totalTiles * 2.91 : totalTiles * 1.54;
-          watts = totalTiles * 320;
+          // GP2.6 (4-in-1) power per panel: Max 250W, Avg 125W
+          // Using max for safety calculations
+          // Amps = Watts / Voltage
+          amps = (voltage === 110) ? (totalTiles * 250) / 110 : (totalTiles * 250) / 208;
+          watts = totalTiles * 250;
           break;
 
         case "ROEGP26Half":
