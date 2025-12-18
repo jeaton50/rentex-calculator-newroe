@@ -417,12 +417,26 @@ const EquipmentCalculator = {
       clamps = heightWarning === "***EXCEEDS LIMIT, MUST FLY***" ? 0 : clampCalc;
       ladders = clamps;
 
-      // ROE-specific: universal base truss
-      universalBaseTruss = Math.ceil(horizontalBlocks / 1.9);
-
+      // ROE-specific: universal base truss and rear support
       // For GP2 Full tiles (1000mm tall), double the vertical count for rear support calculation
       const effectiveVerticalBlocks = productType === "ROEGP26Full" ? verticalBlocks * 2 : verticalBlocks;
-      rearTruss = Math.floor((effectiveVerticalBlocks + (blankRows || 0)) / 2) * universalBaseTruss;
+
+      // Above 400cm (4m) height, manufacturer requires denser support structure:
+      // - Base truss on every column instead of every ~1.9 tiles
+      // - Rear truss on every panel instead of every other panel
+      const heightInMeters = productType === "ROEGP26Full" ? verticalBlocks * 1.0 : verticalBlocks * 0.5;
+      const needsDenseSupport = heightInMeters > 4.0;
+
+      if (needsDenseSupport) {
+        // Above 4m: one base truss per column, rear truss on every panel
+        universalBaseTruss = horizontalBlocks;
+        rearTruss = (effectiveVerticalBlocks + (blankRows || 0)) * universalBaseTruss;
+      } else {
+        // 4m or below: base truss every ~1.9 tiles, rear truss every other panel
+        universalBaseTruss = Math.ceil(horizontalBlocks / 1.9);
+        rearTruss = Math.floor((effectiveVerticalBlocks + (blankRows || 0)) / 2) * universalBaseTruss;
+      }
+
       rearBridge = rearTruss;
     }
 
