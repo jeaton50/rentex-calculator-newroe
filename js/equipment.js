@@ -1500,24 +1500,30 @@ function displayEquipment(data) {
       const heightInMeters = productType === "ROEGP26Full" ? verticalBlocks * 1.0 : verticalBlocks * 0.5;
       const needsDenseSupport = heightInMeters > 4.0;
 
-      // In dense support mode, ballast calculation uses double-base equivalents
-      // even though structure uses single bases
-      let ballastBaseCount = baseCount;
-      let ballastMultiplier = 1;
-
       if (productType === "ROEGP26Full") {
+        // For GP2 Full, calculate ballast with height-specific logic
+        let ballastBaseCount = baseCount;
+        let ballastMultiplier = 1;
+
         if (needsDenseSupport) {
-          // Above 4m: calculate ballast per double-base equivalent, multiply by 1.5
+          // Above 4m: calculate ballast per double-base equivalent, multiply by 1.52
           ballastBaseCount = Math.ceil(horizontalBlocks / 2);
-          ballastMultiplier = 1.5;
+          ballastMultiplier = 1.52;
         } else {
           // 4m or below: use actual base count, multiply by 2
           ballastMultiplier = 2;
         }
-      }
 
-      sandbags = EquipmentCalculator.calculateSandbags(productType, verticalBlocks, ballastBaseCount);
-      sandbags = Math.ceil(sandbags * ballastMultiplier);
+        // Get base sandbag value from table (without ceiling)
+        const tableIndex = Math.min(verticalBlocks - 1, 10);
+        const sandbagsPerBase = [0.08, 0.95, 5.61, 11.42, 18.38, 26.49, 35.75, 46.16, 57.72, 70.43, 84.29][Math.max(0, tableIndex)];
+
+        // Apply multiplier and ceiling once to avoid rounding loss
+        sandbags = Math.ceil(sandbagsPerBase * ballastBaseCount * ballastMultiplier);
+      } else {
+        // Non-GP2 Full products use standard calculation
+        sandbags = EquipmentCalculator.calculateSandbags(productType, verticalBlocks, baseCount);
+      }
     }
 
     // Calculate power distribution
