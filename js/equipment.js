@@ -404,7 +404,18 @@ const EquipmentCalculator = {
 
     // Ground support calculations
     if (supportType === "Ground") {
-      if (groundSupportType === "Double Base" && wallType === "Flat") {
+      // ROE-specific: calculate height for dense support check
+      const heightInMeters = productType === "ROEGP26Full" ? verticalBlocks * 1.0 :
+                             productType === "ROEGP26Half" ? verticalBlocks * 0.5 :
+                             verticalBlocks * 0.5;
+      const needsDenseSupport = heightInMeters > 4.0;
+
+      // Base configuration depends on height
+      if (needsDenseSupport) {
+        // Above 4m: single base per column for denser support
+        singleBases = horizontalBlocks;
+        doubleBases = 0;
+      } else if (groundSupportType === "Double Base" && wallType === "Flat") {
         doubleBases = Math.floor(horizontalBlocks / 2);
         singleBases = horizontalBlocks % 2;
       } else {
@@ -424,8 +435,6 @@ const EquipmentCalculator = {
       // Above 400cm (4m) height, manufacturer requires denser support structure:
       // - Base truss on every column instead of every ~1.9 tiles
       // - Rear truss on every panel instead of every other panel
-      const heightInMeters = productType === "ROEGP26Full" ? verticalBlocks * 1.0 : verticalBlocks * 0.5;
-      const needsDenseSupport = heightInMeters > 4.0;
 
       if (needsDenseSupport) {
         // Above 4m: one base truss per column
@@ -1489,7 +1498,10 @@ function displayEquipment(data) {
     if (supportType === "Ground") {
       sandbags = EquipmentCalculator.calculateSandbags(productType, verticalBlocks, baseCount);
       // GP2 Full tiles (1000mm tall) require double the ballast due to double height
-      if (productType === "ROEGP26Full") {
+      // EXCEPT when in dense support mode (>4m), where more bases distribute the load
+      const heightInMeters = productType === "ROEGP26Full" ? verticalBlocks * 1.0 : verticalBlocks * 0.5;
+      const needsDenseSupport = heightInMeters > 4.0;
+      if (productType === "ROEGP26Full" && !needsDenseSupport) {
         sandbags = sandbags * 2;
       }
     }
