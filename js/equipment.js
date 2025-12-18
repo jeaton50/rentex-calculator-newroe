@@ -428,9 +428,12 @@ const EquipmentCalculator = {
       const needsDenseSupport = heightInMeters > 4.0;
 
       if (needsDenseSupport) {
-        // Above 4m: one base truss per column, rear truss on every panel
+        // Above 4m: one base truss per column
         universalBaseTruss = horizontalBlocks;
-        rearTruss = (effectiveVerticalBlocks + (blankRows || 0)) * universalBaseTruss;
+        // Rear truss spacing: ~1.0-1.2m regardless of tile type
+        // This equals: every 1 Full tile OR every 2 Half tiles
+        const rearTrussRows = Math.floor(heightInMeters);
+        rearTruss = (rearTrussRows + (blankRows || 0)) * universalBaseTruss;
       } else {
         // 4m or below: base truss every ~1.9 tiles, rear truss every other panel
         universalBaseTruss = Math.ceil(horizontalBlocks / 1.9);
