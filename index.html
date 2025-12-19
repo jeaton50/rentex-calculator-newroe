@@ -152,11 +152,14 @@
     }
 
     let maxTiles = null;
+    let productName = '';
 
     if (productType === 'ROEGP26Full') {
       maxTiles = 7; // GP2 Full limited to 7 tiles high
+      productName = 'GP2 Full';
     } else if (productType === 'absen') {
       maxTiles = 11; // Absen limited to 11 tiles high
+      productName = 'Absen';
     }
 
     if (maxTiles !== null) {
@@ -168,6 +171,8 @@
         if (isNaN(value) || value < 1) {
           this.value = '1';
         } else if (value > maxTiles) {
+          // Show warning popup when limit is reached
+          alert('Warning: ' + productName + ' walls are limited to ' + maxTiles + ' tiles high maximum.');
           this.value = maxTiles.toString();
         }
       };
@@ -175,8 +180,9 @@
       blocksVerInput._limitListener = listener;
       blocksVerInput.addEventListener('input', listener);
 
-      // If current value exceeds limit, cap it
+      // If current value exceeds limit, cap it and show warning
       if (parseInt(blocksVerInput.value, 10) > maxTiles) {
+        alert('Warning: ' + productName + ' walls are limited to ' + maxTiles + ' tiles high maximum. Height has been capped.');
         blocksVerInput.value = maxTiles.toString();
         blocksVerInput.dispatchEvent(new Event('input'));
       }
@@ -221,6 +227,8 @@
         if (isNaN(value) || value < 0) {
           this.value = '0';
         } else if (value > maxHeightFeet) {
+          // Show warning popup when limit is reached
+          alert('Warning: ' + productName + ' walls are limited to ' + maxHeightFeet + ' feet high maximum.');
           console.log('Height value capped from', value, 'to', maxHeightFeet);
           this.value = maxHeightFeet.toString();
         }
@@ -229,9 +237,10 @@
       heightFeetInput._limitListener = listener;
       heightFeetInput.addEventListener('input', listener);
 
-      // If current value exceeds limit, cap it
+      // If current value exceeds limit, cap it and show warning
       const currentValue = parseFloat(heightFeetInput.value);
       if (currentValue > maxHeightFeet) {
+        alert('Warning: ' + productName + ' walls are limited to ' + maxHeightFeet + ' feet high maximum. Height has been capped.');
         console.log('Initial height value capped from', currentValue, 'to', maxHeightFeet);
         heightFeetInput.value = maxHeightFeet.toString();
         heightFeetInput.dispatchEvent(new Event('input'));
