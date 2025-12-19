@@ -140,37 +140,44 @@
     updateHeightDimensionLimit(this.value);
   });
 
-  // Function to enforce GP2 Full vertical limit of 7 tiles
+  // Function to enforce vertical tile limits for specific products
   function updateVerticalBlocksLimit(productType) {
     const blocksVerInput = document.getElementById('blocksVer');
     if (!blocksVerInput) return;
 
     // Remove any existing listener to prevent duplicates
-    if (blocksVerInput._gp2FullListener) {
-      blocksVerInput.removeEventListener('input', blocksVerInput._gp2FullListener);
-      blocksVerInput._gp2FullListener = null;
+    if (blocksVerInput._limitListener) {
+      blocksVerInput.removeEventListener('input', blocksVerInput._limitListener);
+      blocksVerInput._limitListener = null;
     }
 
-    if (productType === 'ROEGP26Full') {
-      // GP2 Full limited to 7 tiles high
-      blocksVerInput.setAttribute('max', '7');
+    let maxTiles = null;
 
-      // Add input listener to enforce range 1-7
+    if (productType === 'ROEGP26Full') {
+      maxTiles = 7; // GP2 Full limited to 7 tiles high
+    } else if (productType === 'absen') {
+      maxTiles = 11; // Absen limited to 11 tiles high
+    }
+
+    if (maxTiles !== null) {
+      blocksVerInput.setAttribute('max', maxTiles.toString());
+
+      // Add input listener to enforce range
       const listener = function() {
         const value = parseInt(this.value, 10);
         if (isNaN(value) || value < 1) {
           this.value = '1';
-        } else if (value > 7) {
-          this.value = '7';
+        } else if (value > maxTiles) {
+          this.value = maxTiles.toString();
         }
       };
 
-      blocksVerInput._gp2FullListener = listener;
+      blocksVerInput._limitListener = listener;
       blocksVerInput.addEventListener('input', listener);
 
       // If current value exceeds limit, cap it
-      if (parseInt(blocksVerInput.value, 10) > 7) {
-        blocksVerInput.value = '7';
+      if (parseInt(blocksVerInput.value, 10) > maxTiles) {
+        blocksVerInput.value = maxTiles.toString();
         blocksVerInput.dispatchEvent(new Event('input'));
       }
     } else {
@@ -179,7 +186,7 @@
     }
   }
 
-  // Function to enforce GP2 Full height dimension limit of 10.2m (33.46 feet)
+  // Function to enforce height dimension limits for specific products
   function updateHeightDimensionLimit(productType) {
     const heightFeetInput = document.getElementById('heightFeet');
     if (!heightFeetInput) {
@@ -188,16 +195,25 @@
     }
 
     // Remove any existing listener to prevent duplicates
-    if (heightFeetInput._gp2FullListener) {
-      heightFeetInput.removeEventListener('input', heightFeetInput._gp2FullListener);
-      heightFeetInput._gp2FullListener = null;
+    if (heightFeetInput._limitListener) {
+      heightFeetInput.removeEventListener('input', heightFeetInput._limitListener);
+      heightFeetInput._limitListener = null;
     }
 
+    let maxHeightFeet = null;
+    let productName = '';
+
     if (productType === 'ROEGP26Full') {
-      // GP2 Full limited to 10.2 meters = 33.46 feet
-      const maxHeightFeet = 33.46;
+      maxHeightFeet = 33.46; // GP2 Full: 10.2 meters
+      productName = 'GP2 Full';
+    } else if (productType === 'absen') {
+      maxHeightFeet = 15.84; // Absen: 11 tiles max
+      productName = 'Absen';
+    }
+
+    if (maxHeightFeet !== null) {
       heightFeetInput.setAttribute('max', maxHeightFeet.toString());
-      console.log('GP2 Full height limit applied: max =', maxHeightFeet, 'feet (10.2m)');
+      console.log(productName + ' height limit applied: max =', maxHeightFeet, 'feet');
 
       // Add input listener to enforce range
       const listener = function() {
@@ -210,7 +226,7 @@
         }
       };
 
-      heightFeetInput._gp2FullListener = listener;
+      heightFeetInput._limitListener = listener;
       heightFeetInput.addEventListener('input', listener);
 
       // If current value exceeds limit, cap it
