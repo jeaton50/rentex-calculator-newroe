@@ -160,6 +160,9 @@
     } else if (productType === 'absen') {
       maxTiles = 10; // Absen limited to 10 tiles high
       productName = 'Absen';
+    } else if (productType === 'BP2B1' || productType === 'BP2B2' || productType === 'BP2V2') {
+      maxTiles = 12; // Black Pearl limited to 12 tiles high
+      productName = 'Black Pearl';
     }
 
     if (maxTiles !== null) {
@@ -219,6 +222,9 @@
     } else if (productType === 'absen') {
       maxHeightFeet = 16.2; // Absen: 10 tiles = 16.2 feet
       productName = 'Absen';
+    } else if (productType === 'BP2B1' || productType === 'BP2B2' || productType === 'BP2V2') {
+      maxHeightFeet = 19.84; // Black Pearl: 12 tiles = 19.84 feet
+      productName = 'Black Pearl';
     }
 
     if (maxHeightFeet !== null) {

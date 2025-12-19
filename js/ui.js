@@ -161,13 +161,6 @@ const UI = {
         return;
       }
 
-      // If GP2 Full & height > 10.2 ft & not flown => must fly
-      if (product === 'ROEGP26Full' && heightFeet > 10.2 && !flownSupportCheckbox?.checked) {
-        dimensionWarningSpan.textContent = '*** EXCEEDS LIMIT, MUST FLY***';
-        blockWarningSpan.textContent = '';
-        return;
-      }
-
       // Convert height in feet to approximate tile count
       // 500 mm tile => ~1.64042 ft tall
       const tileHeightFeet = 1.64042;
