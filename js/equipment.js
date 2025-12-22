@@ -1224,15 +1224,15 @@ function addTheatrixxEquipment(config, tbody) {
   } = config;
 
   // Calculate total wall weight (tiles only)
-  totalWeight = 17.6 * totalTiles;
+  totalWeight = 24 * totalTiles;
 
   // Calculate package needs
   const packageCount = Math.round(totalTilesWithSpares / 10);
 
   // Tiles and cases
   addEquipmentRow('10PTXNOMAD', 'Theatrixx Nomad 2.6 10x package', 0, packageCount, tbody);
-  addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm', 17.6, totalTiles, tbody);
-  addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm ** Spare Tiles **', 17.6, totalSpareTiles, tbody);
+  addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm', 24, totalTiles, tbody);
+  addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm ** Spare Tiles **', 24, totalSpareTiles, tbody);
   addEquipmentRow('CATXLED', 'Case, Theatrixx Nomad tile 10x', 187, packageCount, tbody);
 
   // Processors - Novastar MX40 PRO (not Brompton)

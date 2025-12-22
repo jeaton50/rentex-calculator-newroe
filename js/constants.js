@@ -162,7 +162,7 @@ const EQUIPMENT = {
   ROEGP26HALF: { code: 'ROEGP26HALF', name: 'ROE GP2.6 Half LED tile 500x500mm', weight: 11.44 },
 
   // Theatrixx
-  TX_NOMAD26: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm', weight: 17.6 },
+  TX_NOMAD26: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm', weight: 24 },
   CATXLED: { code: 'CATXLED', name: 'Case, Theatrixx Nomad tile 10x', weight: 187 },
   TX_BASE1W: { code: 'TXBASE1W', name: 'Theatrixx Nomad Exact stacking base, 1 wide', weight: 27 },
   TX_BASE2W: { code: 'TXBASE2W', name: 'Theatrixx Nomad Exact stacking base, 2 wide', weight: 12 },
