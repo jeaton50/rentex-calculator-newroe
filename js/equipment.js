@@ -1065,8 +1065,8 @@ function addROEGP26Equipment(config, tbody) {
     addEquipmentRow('BPBOBRIDGE', 'ROE Black Pearl rear bridge clamp', 1, rearBridge, tbody);
   }
 
-  // Curved wall brackets
-  if (wallType === "Convex" || wallType === "Concave") {
+  // Curved wall brackets (not needed for GP2 Full)
+  if ((wallType === "Convex" || wallType === "Concave") && productType !== "ROEGP26Full") {
     const fiveDegBrackets = totalTiles / 2;
     const m10Bolts = fiveDegBrackets * 4;
     addEquipmentRow('BP25DGREE', 'ROE Black Pearl 5 Degree Bracket', 0.25, fiveDegBrackets, tbody);
