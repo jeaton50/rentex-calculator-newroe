@@ -1565,25 +1565,49 @@ function displayEquipment(data) {
       const needsDenseSupport = heightInMeters > 4.0;
 
       if (productType === "ROEGP26Full") {
-        // For GP2 Full, calculate ballast with height-specific logic
-        let ballastBaseCount = baseCount;
-        let ballastMultiplier = 1;
+        // GP2 Full ballast calculation based on position-based system
+        // Reference: ROE GP2.6 Ballast calculation breakdown
 
-        if (needsDenseSupport) {
-          // Above 4m: calculate ballast per double-base equivalent, multiply by 1.52
-          ballastBaseCount = Math.ceil(horizontalBlocks / 2);
-          ballastMultiplier = 1.52;
+        // Calculate stacking systems: (Width / 1.0m) + 1
+        // Each tile is 0.5m wide, so width = horizontalBlocks * 0.5
+        const systems = Math.floor(horizontalBlocks / 2) + 1;
+
+        // Define ballast weights per position based on height (in meters)
+        let A, B, C, D;
+        let use4PositionSystem = false;
+
+        if (heightInMeters <= 3.0) {
+          // 3.0m height: 4-position system
+          A = 17; B = 42; C = 42; D = 87;
+          use4PositionSystem = true;
+        } else if (heightInMeters <= 4.0) {
+          // 4.0m height: 4-position system
+          A = 47; B = 103; C = 76; D = 157;
+          use4PositionSystem = true;
+        } else if (heightInMeters <= 5.0) {
+          // 5.0m height: 2-position system (front/back only)
+          A = 62; B = 97; C = 0; D = 0;
+          use4PositionSystem = false;
         } else {
-          // 4m or below: use actual base count, multiply by 2
-          ballastMultiplier = 2;
+          // 6.0m+ height: 2-position system (front/back only)
+          A = 84; B = 124; C = 0; D = 0;
+          use4PositionSystem = false;
         }
 
-        // Get base sandbag value from table (without ceiling)
-        const tableIndex = Math.min(verticalBlocks - 1, 10);
-        const sandbagsPerBase = [0.08, 0.95, 5.61, 11.42, 18.38, 26.49, 35.75, 46.16, 57.72, 70.43, 84.29][Math.max(0, tableIndex)];
+        // Calculate total ballast
+        let totalBallastKg;
+        if (use4PositionSystem) {
+          // For 3-4m heights: Total = 2×A + (systems-2)×B + 2×C + (systems-2)×D
+          const cornerCount = 2;
+          const middleCount = Math.max(0, systems - 2);
+          totalBallastKg = (cornerCount * A) + (middleCount * B) + (cornerCount * C) + (middleCount * D);
+        } else {
+          // For 5-6m heights: Total = systems × A + systems × B
+          totalBallastKg = (systems * A) + (systems * B);
+        }
 
-        // Apply multiplier and ceiling once to avoid rounding loss
-        sandbags = Math.ceil(sandbagsPerBase * ballastBaseCount * ballastMultiplier);
+        // Convert to sandbag count (25 lbs per sandbag = ~11.34 kg)
+        sandbags = Math.ceil(totalBallastKg / 11.34);
       } else {
         // Non-GP2 Full products use standard calculation
         sandbags = EquipmentCalculator.calculateSandbags(productType, verticalBlocks, baseCount);
