@@ -1238,11 +1238,18 @@ function addTheatrixxEquipment(config, tbody) {
   // Processors - Novastar MX40 PRO (not Brompton)
   // Calculate total pixels (Theatrixx uses 192 pixels per tile)
   const totalPixels = (horizontalBlocks * 192) * (verticalBlocks * 192);
-  let mx40Count = Math.ceil((totalPixels / 9000000) * 1);
+  const baseMx40Count = Math.ceil((totalPixels / 9000000) * 1);
+  let mx40Count = baseMx40Count;
+
   if (redundancyType === "Fully Redundant") {
-    mx40Count = mx40Count * 2;
+    // Fully redundant: double the processors
+    mx40Count = baseMx40Count * 2;
+  } else if (redundancyType === "Distribution and Cables") {
+    // Distribution and Cables: add additional processors for distribution
+    // Similar to Brompton adding XD10 distribution units
+    mx40Count = baseMx40Count + Math.ceil(baseMx40Count);
   }
-  // Distribution and Cables mode uses base processor count
+
   if (mx40Count > 0) {
     addEquipmentRow('MX40PRO', 'Novastar MX40 PRO', 17, mx40Count, tbody);
   }
@@ -1324,11 +1331,17 @@ function addTheatrixxEquipment(config, tbody) {
   }
 
   // Data cables - Theatrixx specific
-  let dataCableCount = Math.ceil(totalTiles / 13) + 1;
+  const baseDataCableCount = Math.ceil(totalTiles / 13) + 1;
+  let dataCableCount = baseDataCableCount;
+
   if (redundancyType === "Fully Redundant") {
-    dataCableCount = dataCableCount * 2;
+    // Fully redundant: double the cables
+    dataCableCount = baseDataCableCount * 2;
+  } else if (redundancyType === "Distribution and Cables") {
+    // Distribution and Cables: add additional cables for distribution
+    dataCableCount = baseDataCableCount + Math.ceil(baseDataCableCount);
   }
-  // Distribution and Cables mode uses base cable count
+
   if (dataCableCount > 0) {
     addEquipmentRow('ECON100C6', "Ethercon (CAT6) 100'", 2.4, dataCableCount, tbody);
   }
