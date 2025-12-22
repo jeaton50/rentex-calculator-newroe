@@ -1327,9 +1327,8 @@ function addTheatrixxEquipment(config, tbody) {
   let dataCableCount = Math.ceil(totalTiles / 13) + 1;
   if (redundancyType === "Fully Redundant") {
     dataCableCount = dataCableCount * 2;
-  } else if (redundancyType !== "None") {
-    dataCableCount = 0;
   }
+  // Distribution and Cables mode uses base cable count
   if (dataCableCount > 0) {
     addEquipmentRow('ECON100C6', "Ethercon (CAT6) 100'", 2.4, dataCableCount, tbody);
   }
