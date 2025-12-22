@@ -1241,9 +1241,8 @@ function addTheatrixxEquipment(config, tbody) {
   let mx40Count = Math.ceil((totalPixels / 9000000) * 1);
   if (redundancyType === "Fully Redundant") {
     mx40Count = mx40Count * 2;
-  } else if (redundancyType !== "None") {
-    mx40Count = 0; // Distribution and Cables mode doesn't use MX40
   }
+  // Distribution and Cables mode uses base processor count
   if (mx40Count > 0) {
     addEquipmentRow('MX40PRO', 'Novastar MX40 PRO', 17, mx40Count, tbody);
   }
