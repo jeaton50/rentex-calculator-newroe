@@ -138,22 +138,34 @@
     updateTableRowColor(this.value);
     updateVerticalBlocksLimit(this.value);
     updateHeightDimensionLimit(this.value);
+    updateWallTypeAlert(this.value);
   });
 
   // Attach event listeners to wall type radio buttons for GP2 Full
-  document.getElementById("concave").addEventListener("change", function () {
-    const productType = document.getElementById("productType").value;
-    if (productType === 'ROEGP26Full' && this.checked) {
-      alert('Concave 5°');
-    }
+  const wallTypeRadios = document.querySelectorAll('input[name="wallType"]');
+  wallTypeRadios.forEach(radio => {
+    radio.addEventListener("change", function () {
+      const productType = document.getElementById("productType").value;
+      updateWallTypeAlert(productType);
+    });
   });
 
-  document.getElementById("convex").addEventListener("change", function () {
-    const productType = document.getElementById("productType").value;
-    if (productType === 'ROEGP26Full' && this.checked) {
-      alert('Convex 5°');
+  // Function to update wall type alert for GP2 Full
+  function updateWallTypeAlert(productType) {
+    const curvedMessageDiv = document.getElementById('curvedMessage');
+    const wallTypeElement = document.querySelector('input[name="wallType"]:checked');
+    const wallType = wallTypeElement ? wallTypeElement.value : 'Flat';
+
+    if (productType === 'ROEGP26Full' && wallType === 'Concave') {
+      curvedMessageDiv.textContent = 'Concave 5°';
+      curvedMessageDiv.style.display = 'block';
+    } else if (productType === 'ROEGP26Full' && wallType === 'Convex') {
+      curvedMessageDiv.textContent = 'Convex 5°';
+      curvedMessageDiv.style.display = 'block';
+    } else {
+      curvedMessageDiv.style.display = 'none';
     }
-  });
+  }
 
   // Function to enforce vertical tile limits for specific products
   function updateVerticalBlocksLimit(productType) {
