@@ -167,8 +167,8 @@ const EquipmentCalculator = {
 
     if (totalTiles <= maxPanels) {
       // If we need 2 or more S8s, switch to SX40 instead (BP2 logic)
-      // Also use SX40 if fully redundant (s8FinalCount is 0 in that case)
-      if (s8FinalCount >= 2 || redundancyType === "Fully Redundant") {
+      // Also use SX40 if using redundancy options (Fully Redundant or Distribution and Cables)
+      if (s8FinalCount >= 2 || redundancyType === "Fully Redundant" || redundancyType === "Distribution and Cables") {
         S8 = 0;
         SX40 = primaryProcessorCount;
         XD10 = distributionUnitCount - SX40;
