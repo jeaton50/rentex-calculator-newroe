@@ -141,15 +141,6 @@
     updateWallTypeAlert(this.value);
   });
 
-  // Attach event listeners to wall type radio buttons for GP2 Full
-  const wallTypeRadios = document.querySelectorAll('input[name="wallType"]');
-  wallTypeRadios.forEach(radio => {
-    radio.addEventListener("change", function () {
-      const productType = document.getElementById("productType").value;
-      updateWallTypeAlert(productType);
-    });
-  });
-
   // Function to update wall type alert for GP2 Full
   function updateWallTypeAlert(productType) {
     const curvedMessageDiv = document.getElementById('curvedMessage');
@@ -307,6 +298,16 @@ window.addEventListener("DOMContentLoaded", () => {
   updateTableRowColor(initialProductType);
   updateVerticalBlocksLimit(initialProductType);
   updateHeightDimensionLimit(initialProductType);
+  updateWallTypeAlert(initialProductType);
+
+  // Attach event listeners to wall type radio buttons for GP2 Full
+  const wallTypeRadios = document.querySelectorAll('input[name="wallType"]');
+  wallTypeRadios.forEach(radio => {
+    radio.addEventListener("change", function () {
+      const productType = document.getElementById("productType").value;
+      updateWallTypeAlert(productType);
+    });
+  });
 
   // Check if flown support is selected and update IBolt warning
   if (document.getElementById('flownSupport').checked) {
