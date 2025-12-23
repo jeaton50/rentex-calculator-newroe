@@ -31,12 +31,11 @@ function addEquipmentRow(ecode, name, weight, quantity, tbody) {
 
 /**
  * --- ROE GP2.6 Full CIRCUIT LOGIC (PDF-Based) ---
- * PDF behavior summary:
- * - Treats circuits as 20A breakers with 16A continuous load max
- * - 120V: Max 7 panels/circuit, Suggested 6 panels/circuit (to keep ~12.5A vs ~14.6A)
- * - 208V: Max 12 panels/circuit; sometimes Suggested 10 to avoid tiny leftover circuits
+ * We treat "circuits" as recommended continuous-load circuits.
+ * - 120V: suggested 6 per circuit (avoid 1-panel remainder -> use 5)
+ * - 208V: suggested 10 per circuit (avoid 1-panel remainder -> use 9)
  *
- * Note: Your UI uses "110" for nominal 120V. We normalize 110->120 for the logic.
+ * If you want a separate "MAX" calculation later, keep it separate from this.
  */
 function normalizeVoltageForPdfCircuits(voltage) {
   if (voltage === 110 || voltage === 115 || voltage === 120) return 120;
@@ -50,19 +49,16 @@ function roeGp26FullSuggestedPanelsPerCircuit(totalPanels, voltage) {
   const v = normalizeVoltageForPdfCircuits(voltage);
 
   if (v === 120) {
-    // Default suggested: 6 per circuit
-    // If remainder would be 1, drop to 5 to avoid a 1-panel circuit
+    // Suggested: 6 (avoid a 1-panel circuit)
     let ppc = 6;
     if (totalPanels % 6 === 1) ppc = 5;
     return Math.min(ppc, totalPanels);
   }
 
   if (v === 208) {
-    // Default: 12 per circuit
-    // If remainder would be 1–3, drop to 10 (PDF often chooses 10 to avoid tiny remainder circuits)
-    let ppc = 12;
-    const r = totalPanels % 12;
-    if (r >= 1 && r <= 3) ppc = 10;
+    // Suggested: 10 (avoid a 1-panel circuit)
+    let ppc = 10;
+    if (totalPanels % 10 === 1) ppc = 9;
     return Math.min(ppc, totalPanels);
   }
 
@@ -74,6 +70,7 @@ function roeGp26FullCircuitCount(totalPanels, voltage) {
   const ppc = roeGp26FullSuggestedPanelsPerCircuit(totalPanels, voltage);
   return ppc ? Math.ceil(totalPanels / ppc) : 0;
 }
+
 
 const EquipmentCalculator = {
   /**
