@@ -1565,62 +1565,76 @@ function displayEquipment(data) {
       const needsDenseSupport = heightInMeters > 4.0;
 
       if (productType === "ROEGP26Full") {
-        // GP2 Full ballast calculation based on position-based system
-        // Reference: ROE GP2.6 Ballast calculation breakdown
+  // GP2 Full ballast calculation - match ROE "extra stacking system" behavior
 
-        // Calculate stacking systems based on "every other frame" spacing (1.0m apart)
-        // Systems = (Width in meters / 1.0m) + 1
-        // Since each tile is 0.5m wide: Systems = (horizontalBlocks * 0.5 / 1.0) + 1
-        const systems = Math.round(horizontalBlocks / 2) + 1;
+  const heightInMeters = verticalBlocks * 1.0; // GP2 Full: 1m tall per tile
+  const needsDenseSupport = heightInMeters > 4.0;
 
-        // Define ballast weights per position based on height (in meters)
-        let A, B, C, D;
-        let use4PositionSystem = false;
-        const widthInMeters = horizontalBlocks * 0.5;
+  // Stacking system count:
+  // - <=4m: stacking every other frame (1.0m spacing), but must support FIRST + LAST columns
+  // - >4m: stacking every frame (0.5m spacing)
+  const stackingEveryOther = !needsDenseSupport;
+  const systems = stackingEveryOther
+    ? Math.ceil((horizontalBlocks + 1) / 2)
+    : horizontalBlocks;
 
-        if (heightInMeters <= 3.0) {
-          // 3.0m height: System choice depends on wall width
-          if (widthInMeters >= 16.0) {
-            // Wide walls (≥16m): Full 4-position with corners and middles
-            A = 17; B = 42; C = 42; D = 87;
-            use4PositionSystem = true;
-          } else {
-            // Narrow walls (<16m): Simplified 2-position (all positions use middle weights)
-            A = 42; B = 87; C = 0; D = 0;
-            use4PositionSystem = false;
-          }
-        } else if (heightInMeters <= 4.0) {
-          // 4.0m height: 4-position system
-          A = 47; B = 103; C = 76; D = 157;
-          use4PositionSystem = true;
-        } else if (heightInMeters <= 5.0) {
-          // 5.0m height: 2-position system (front/back only)
-          A = 62; B = 97; C = 0; D = 0;
-          use4PositionSystem = false;
-        } else {
-          // 6.0m+ height: 2-position system (front/back only)
-          A = 84; B = 124; C = 0; D = 0;
-          use4PositionSystem = false;
-        }
+  // Extra stacking system happens ONLY when using every-other spacing AND the width is even
+  // (because 1,3,5... pattern ends at N-1, so you must add one at the last column)
+  const hasExtraSystem = stackingEveryOther && (horizontalBlocks % 2 === 0);
 
-        // Calculate total ballast
-        let totalBallastKg;
-        if (use4PositionSystem) {
-          // For 3-4m heights: Total = 2×A + (systems-2)×B + 2×C + (systems-2)×D
-          const cornerCount = 2;
-          const middleCount = Math.max(0, systems - 2);
-          totalBallastKg = (cornerCount * A) + (middleCount * B) + (cornerCount * C) + (middleCount * D);
-        } else {
-          // For 5-6m heights: Total = systems × A + systems × B
-          totalBallastKg = (systems * A) + (systems * B);
-        }
+  // Ballast weights (kg) by height band
+  // 3m and 4m have end-vs-middle values (A/C for ends, B/D for middles),
+  // but those reduced end values are only used when hasExtraSystem === true.
+  let A = 0, B = 0, C = 0, D = 0;
+  let use4PositionSystem = false;
 
-        // Convert to sandbag count (25 lbs per sandbag = ~11.34 kg)
-        sandbags = Math.ceil(totalBallastKg / 11.34);
-      } else {
-        // Non-GP2 Full products use standard calculation
-        sandbags = EquipmentCalculator.calculateSandbags(productType, verticalBlocks, baseCount);
-      }
+  if (heightInMeters <= 3.0) {
+    if (hasExtraSystem) {
+      // Reduced ends + middle weights
+      A = 17;  B = 42;  C = 42;  D = 87;
+      use4PositionSystem = true;
+    } else {
+      // No extra system -> use ONLY middle weights on all systems
+      A = 42;  B = 87;
+      use4PositionSystem = false;
+    }
+  } else if (heightInMeters <= 4.0) {
+    if (hasExtraSystem) {
+      A = 47;  B = 103;  C = 76;  D = 157;
+      use4PositionSystem = true;
+    } else {
+      // No extra system -> use ONLY middle weights on all systems
+      A = 103; B = 157;
+      use4PositionSystem = false;
+    }
+  } else if (heightInMeters <= 5.0) {
+    // >4m => dense support, 2-position
+    A = 62; B = 97;
+    use4PositionSystem = false;
+  } else {
+    // 6m+ => dense support, 2-position
+    A = 84; B = 124;
+    use4PositionSystem = false;
+  }
+
+  // Total ballast (kg)
+  let totalBallastKg;
+  if (use4PositionSystem) {
+    // Only when the extra system exists:
+    // Total = 2*(A+C) + (systems-2)*(B+D)
+    totalBallastKg = (2 * (A + C)) + ((systems - 2) * (B + D));
+  } else {
+    // 2-position:
+    // Total = systems*(front+back)
+    totalBallastKg = systems * (A + B);
+  }
+
+  // Convert to 25lb sandbags (25 lb ≈ 11.34 kg)
+  sandbags = Math.ceil(totalBallastKg / 11.34);
+} else {
+  sandbags = EquipmentCalculator.calculateSandbags(productType, verticalBlocks, baseCount);
+}
+
     }
 
     // Calculate power distribution
