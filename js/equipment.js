@@ -1576,11 +1576,19 @@ function displayEquipment(data) {
         // Define ballast weights per position based on height (in meters)
         let A, B, C, D;
         let use4PositionSystem = false;
+        const widthInMeters = horizontalBlocks * 0.5;
 
         if (heightInMeters <= 3.0) {
-          // 3.0m height: 4-position system
-          A = 17; B = 42; C = 42; D = 87;
-          use4PositionSystem = true;
+          // 3.0m height: System choice depends on wall width
+          if (widthInMeters >= 16.0) {
+            // Wide walls (≥16m): Full 4-position with corners and middles
+            A = 17; B = 42; C = 42; D = 87;
+            use4PositionSystem = true;
+          } else {
+            // Narrow walls (<16m): Simplified 2-position (all positions use middle weights)
+            A = 42; B = 87; C = 0; D = 0;
+            use4PositionSystem = false;
+          }
         } else if (heightInMeters <= 4.0) {
           // 4.0m height: 4-position system
           A = 47; B = 103; C = 76; D = 157;
