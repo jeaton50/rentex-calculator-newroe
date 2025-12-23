@@ -932,10 +932,82 @@ function addROEGP26Equipment(config, tbody) {
 }
 
 function addTheatrixxEquipment(config, tbody) {
-  // unchanged from your provided version (left as-is for brevity in behavior)
-  // You can keep your existing Theatrixx function exactly as you had it.
-  // NOTE: If you want, I can paste your full Theatrixx function here too — just say so.
-  console.warn("addTheatrixxEquipment: keep your existing function body here (unchanged).");
+  const totalTiles = config.totalTiles;
+  const totalSpareTiles = config.totalSpareTiles;
+  const horizontalBlocks = config.horizontalBlocks;
+  const verticalBlocks = config.verticalBlocks;
+  const voltage = config.voltage;
+  const supportType = config.supportType;
+  const redundancyType = config.redundancyType;
+
+  // Tiles and cases
+  addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm', 24, totalTiles, tbody);
+  addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm ** Spare Tiles **', 24, totalSpareTiles, tbody);
+  const tileCases = Math.ceil((totalTiles + totalSpareTiles) / 4);
+  addEquipmentRow('TXNOMADCASE', 'Theatrixx Nomad Panel Road Case', 68, tileCases, tbody);
+
+  // Processors - MX40PRO
+  const tilesPerProcessor = 40;
+  let processors = Math.ceil(totalTiles / tilesPerProcessor);
+
+  // Handle redundancy for processors
+  if (redundancyType === "Distribution and Cables") {
+    processors = processors; // No change for this mode
+  } else if (redundancyType === "Fully Redundant") {
+    processors = processors * 2;
+  }
+
+  if (processors > 0) {
+    addEquipmentRow('MX40PRO', 'Novastar MX40 PRO', 8.8, processors, tbody);
+  }
+
+  // Ground support (if applicable)
+  if (supportType === "Ground") {
+    // Ski frames - one per vertical column
+    const skiFrames = horizontalBlocks;
+    addEquipmentRow('TXSKIFRAME', 'Theatrixx Nomad Ski Frame', 15.4, skiFrames, tbody);
+
+    // Extensions - (verticalBlocks - 1) per column
+    const extensions = horizontalBlocks * Math.max(0, verticalBlocks - 1);
+    addEquipmentRow('TXSKIEXT', 'Theatrixx Nomad Ski Frame Extension', 8.8, extensions, tbody);
+
+    // Ladders and ladder feet
+    const ladders = Math.ceil(horizontalBlocks / 2);
+    addEquipmentRow('TXLADDER', 'Theatrixx Nomad Ladder', 11, ladders, tbody);
+    addEquipmentRow('TXLADDERFOOT', 'Theatrixx Nomad Ladder Foot', 2.2, ladders * 2, tbody);
+  }
+
+  // Data cables
+  const tilesPerCable = 10;
+  let dataCables = Math.ceil(totalTiles / tilesPerCable);
+
+  // Handle redundancy for data cables
+  if (redundancyType === "Distribution and Cables") {
+    dataCables = dataCables * 2;
+  } else if (redundancyType === "Fully Redundant") {
+    dataCables = dataCables * 2;
+  }
+
+  addEquipmentRow('TXDATACABLE', 'Theatrixx Nomad Data Cable', 0.5, dataCables, tbody);
+
+  // Power cables (voltage-specific)
+  const powerCablesPerTile = 0.5; // 1 cable per 2 tiles
+  const totalPowerCables = Math.ceil(totalTiles * powerCablesPerTile);
+
+  if (voltage === "208V") {
+    addEquipmentRow('TXPOWERCABLE208', 'Theatrixx Nomad Power Cable 208V', 1.1, totalPowerCables, tbody);
+  } else {
+    addEquipmentRow('TXPOWERCABLE120', 'Theatrixx Nomad Power Cable 120V', 1.1, totalPowerCables, tbody);
+  }
+
+  // XVT adapters
+  const xvtAdapters = horizontalBlocks;
+  addEquipmentRow('TXXVTADAPTER', 'Theatrixx XVT Adapter', 0.2, xvtAdapters, tbody);
+
+  // Power distribution
+  const tilesPerDistro = 20;
+  const distros = Math.ceil(totalTiles / tilesPerDistro);
+  addEquipmentRow('TXPOWERDIST', 'Theatrixx Power Distribution', 5.5, distros, tbody);
 }
 
 /* ----------------------------- Orchestrator ----------------------------- */
