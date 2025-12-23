@@ -1568,9 +1568,10 @@ function displayEquipment(data) {
         // GP2 Full ballast calculation based on position-based system
         // Reference: ROE GP2.6 Ballast calculation breakdown
 
-        // Calculate stacking systems: one per tile column
-        // Each GP2 Full tile is 0.5m wide, so systems = number of tiles wide
-        const systems = horizontalBlocks;
+        // Calculate stacking systems based on "every other frame" spacing (1.0m apart)
+        // Systems = (Width in meters / 1.0m) + 1
+        // Since each tile is 0.5m wide: Systems = (horizontalBlocks * 0.5 / 1.0) + 1
+        const systems = Math.round(horizontalBlocks / 2) + 1;
 
         // Define ballast weights per position based on height (in meters)
         let A, B, C, D;
