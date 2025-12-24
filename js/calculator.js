@@ -205,9 +205,9 @@ const Calculator = {
         break;
       case 'ROEGP26Full':
         // GP2 Full: 250W per panel at 208V
-        // Max 12 panels per circuit (14.42A, safely under 16A max)
+        // Max 10 panels per circuit (12.02A, matches equipment.js logic)
         ampsRequired = (totalTiles * 250) / 208;
-        maxAmpsPerCircuit = 14.42; // 12 panels worth
+        maxAmpsPerCircuit = 12.02; // 10 panels worth
         break;
       case 'ROEGP26Half':
         // GP2 Half: 160W per panel at 208V

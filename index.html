@@ -2065,8 +2065,8 @@ document.getElementById('powerDistroType')?.addEventListener('change', () => {
         // Fallback: product-specific divisors
         switch (productType) {
           case 'ROEGP26Full':
-            // GP2 Full: max 12 panels per circuit (14.42A at 208V)
-            neededCircuits = Math.ceil(totalTiles / 12);
+            // GP2 Full: max 10 panels per circuit (12.02A at 208V)
+            neededCircuits = Math.ceil(totalTiles / 10);
             break;
           case 'ROEGP26Half':
             // GP2 Half: max 20 panels per circuit at 208V
