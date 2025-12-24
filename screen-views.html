@@ -269,13 +269,22 @@
 
       const productType = (urlParams.get('product') || localStorage.getItem('screenProduct') || 'absen').toLowerCase();
 
+      // Set block dimensions based on product type
+      let blockWidth = 500;   // mm - default for most products
+      let blockHeight = 500;  // mm - default for most products
+
+      if (productType === 'roegp26full') {
+        blockWidth = 500;   // mm
+        blockHeight = 1000; // mm - GP2 Full is 500x1000
+      }
+
       return {
         productType: productType,
         blocksHor: parseInt(urlParams.get('blocksHor') || localStorage.getItem('screenBlocksHor') || '10'),
         blocksVer: parseInt(urlParams.get('blocksVer') || localStorage.getItem('screenBlocksVer') || '6'),
         powerDistroType: urlParams.get('powerDistroType') || localStorage.getItem('screenPowerDistroType') || '208',
-        blockWidth: 500,  // mm - Both Absen and Theatrixx use 500mm blocks
-        blockHeight: 500  // mm - Both Absen and Theatrixx use 500mm blocks
+        blockWidth: blockWidth,
+        blockHeight: blockHeight
       };
     }
 
@@ -317,6 +326,20 @@
         maxCurve: 5,
         step: 5,
         rangeText: '| <strong>Flat:</strong> 0° | <strong>Concave:</strong> +5°'
+      },
+      ROEGP26Full: {
+        displayName: 'ROE GP2.6 Full',
+        minCurve: -5,
+        maxCurve: 5,
+        step: 5,
+        rangeText: '<strong>Convex:</strong> -5° | <strong>Flat:</strong> 0° | <strong>Concave:</strong> +5°'
+      },
+      ROEGP26Half: {
+        displayName: 'ROE GP2.6 Half',
+        minCurve: -5,
+        maxCurve: 5,
+        step: 5,
+        rangeText: '<strong>Convex:</strong> -5° | <strong>Flat:</strong> 0° | <strong>Concave:</strong> +5°'
       }
     };
 
