@@ -173,7 +173,13 @@
     let productName = '';
 
     if (productType === 'ROEGP26Full') {
-      maxTiles = 6; // GP2 Full limited to 6 tiles high
+      // Check if flown support is selected
+      const flownSupport = document.getElementById('flownSupport')?.checked;
+      if (flownSupport) {
+        maxTiles = 12; // GP2 Full flown support: max 12 tiles high
+      } else {
+        maxTiles = 6; // GP2 Full ground support: max 6 tiles high
+      }
       productName = 'GP2 Full';
     } else if (productType === 'absen') {
       maxTiles = 10; // Absen limited to 10 tiles high

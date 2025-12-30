@@ -1045,9 +1045,15 @@ function displayEquipment(data) {
     const flownSupportType = data.flownSupportType || "Single Header";
     const blankRows = data.blankRows || 0;
 
-    if (productType === "ROEGP26Full" && verticalBlocks > 7) {
-      verticalBlocks = 7;
-      console.warn("GP2 Full walls are limited to 7 tiles high maximum. Value capped at 7.");
+    // GP2 Full height limits based on support type
+    if (productType === "ROEGP26Full") {
+      if (supportType === "Ground" && verticalBlocks > 6) {
+        verticalBlocks = 6;
+        console.warn("GP2 Full ground support walls are limited to 6 tiles high maximum. Value capped at 6.");
+      } else if (supportType !== "Ground" && verticalBlocks > 12) {
+        verticalBlocks = 12;
+        console.warn("GP2 Full flown support walls are limited to 12 tiles high maximum. Value capped at 12.");
+      }
     }
 
     const heightWarning = document.getElementById("blockVerticalWarning")?.textContent || "";
