@@ -823,6 +823,7 @@ function addROEGP26Equipment(config, tbody) {
     verticalBlocks,
     powerDistro,
     voltage,
+    supportType,
   } = config;
 
   const tileWeight = productType === "ROEGP26Full" ? 19.84 : 11.44;
@@ -866,8 +867,8 @@ function addROEGP26Equipment(config, tbody) {
 
   if (sandbags > 0) addEquipmentRow("SANDBAG25", "Sand Bag 25 lbs.", 25, sandbags, tbody);
 
-  // GP2 Full lateral support (placed after sandbags)
-  if (productType === "ROEGP26Full") {
+  // GP2 Full lateral support (only for ground support, not flown)
+  if (productType === "ROEGP26Full" && supportType === "Ground") {
     let singleTubes = 0;
     let swivelCouplers = 0;
 

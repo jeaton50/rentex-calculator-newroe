@@ -182,13 +182,28 @@
       }
       productName = 'GP2 Full';
     } else if (productType === 'absen') {
-      maxTiles = 10; // Absen limited to 10 tiles high
+      const flownSupport = document.getElementById('flownSupport')?.checked;
+      if (flownSupport) {
+        maxTiles = 20; // Absen flown support: max 20 tiles high
+      } else {
+        maxTiles = 10; // Absen ground support: max 10 tiles high
+      }
       productName = 'Absen';
     } else if (productType === 'BP2B1' || productType === 'BP2B2' || productType === 'BP2V2') {
-      maxTiles = 12; // Black Pearl limited to 12 tiles high
+      const flownSupport = document.getElementById('flownSupport')?.checked;
+      if (flownSupport) {
+        maxTiles = 20; // Black Pearl flown support: max 20 tiles high
+      } else {
+        maxTiles = 12; // Black Pearl ground support: max 12 tiles high
+      }
       productName = 'Black Pearl';
     } else if (productType === 'theatrixx') {
-      maxTiles = 12; // Theatrixx limited to 12 tiles high
+      const flownSupport = document.getElementById('flownSupport')?.checked;
+      if (flownSupport) {
+        maxTiles = 20; // Theatrixx flown support: max 20 tiles high
+      } else {
+        maxTiles = 12; // Theatrixx ground support: max 12 tiles high
+      }
       productName = 'Theatrixx';
     }
 
