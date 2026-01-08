@@ -889,10 +889,17 @@ function addROEGP26Equipment(config, tbody) {
     if (swivelCouplers > 0) addEquipmentRow("15PIPECPL", '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', 1.5, swivelCouplers, tbody);
   }
 
+  // GP2 Full specific cables (one per column)
+  if (productType === "ROEGP26Full") {
+    addEquipmentRow("T1016", "True1 Power Cable 16' (5m)", 2, horizontalBlocks, tbody);
+    addEquipmentRow("ECON025C6", "Ethercon (CAT6) 25'", 1.5, horizontalBlocks, tbody);
+  }
+
   if (cables.ECONRJ45 > 0) addEquipmentRow("ECONRJ45", "Ethercon to RJ45 (CAT6) 100'", 2.4, cables.ECONRJ45, tbody);
   if (cables.CAT5ES005 > 0) addEquipmentRow("CAT5ES005", "CAT5e ethernet cable 5'", 1, cables.CAT5ES005, tbody);
   if (cables.ECON010C6 > 0) addEquipmentRow("ECON010C6", "Ethercon (CAT6) 10'", 1, cables.ECON010C6, tbody);
-  if (cables.ECON025C6 > 0) addEquipmentRow("ECON025C6", "Ethercon (CAT6) 25'", 1.5, cables.ECON025C6, tbody);
+  // ECON025C6 is added separately for GP2 Full (one per column), so skip it here
+  if (cables.ECON025C6 > 0 && productType !== "ROEGP26Full") addEquipmentRow("ECON025C6", "Ethercon (CAT6) 25'", 1.5, cables.ECON025C6, tbody);
   if (cables.ECON050C6 > 0) addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
   if (cables.ECON100C6 > 0) addEquipmentRow("ECON100C6", "Ethercon (CAT6) 100'", 6, cables.ECON100C6, tbody);
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
