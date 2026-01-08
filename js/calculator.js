@@ -291,8 +291,18 @@ function generateWallConfiguration() {
 
   // Get GP2 Half bottom row configuration for GP2 Full
   let gp2HalfBottomRow = false;
+  let gp2HalfRows = 0;
   if (document.getElementById('gp2HalfCheckbox')?.checked) {
     gp2HalfBottomRow = true;
+    gp2HalfRows = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
+  }
+
+  // For GP2 Full with GP2 Half bottom rows, add those rows to vertical count for wall dimensions
+  let totalVerticalBlocks = verticalBlocks;
+  if (productType === 'ROEGP26Full' && gp2HalfBottomRow) {
+    // Each GP2 Half row is 0.5m, each GP2 Full row is 1.0m
+    // So 2 GP2 Half rows = 1 GP2 Full row equivalent
+    totalVerticalBlocks = verticalBlocks + Math.ceil(gp2HalfRows / 2);
   }
 
   // Calculate totals
@@ -306,7 +316,7 @@ function generateWallConfiguration() {
   return {
     productType,
     blocksHor: horizontalBlocks,
-    blocksVer: verticalBlocks,
+    blocksVer: totalVerticalBlocks, // Use total including GP2 Half rows for display
     totalBlocks: totals.totalTiles,
     totalSpares: totals.totalSpares,
     totalBlocksWithSpares: totals.totalTilesWithSpares,
@@ -320,7 +330,9 @@ function generateWallConfiguration() {
     powerDistro,
     powerDistroType: powerDistro,
     blankRows,
-    gp2HalfBottomRow
+    gp2HalfBottomRow,
+    gp2HalfRows,
+    gp2FullVerticalBlocks: verticalBlocks // Original GP2 Full vertical blocks (not including GP2 Half)
   };
 }
 

@@ -825,6 +825,7 @@ function addROEGP26Equipment(config, tbody) {
     voltage,
     supportType,
     gp2HalfBottomRow,
+    gp2HalfRows,
   } = config;
 
   const tileWeight = productType === "ROEGP26Full" ? 19.84 : 11.44;
@@ -840,17 +841,18 @@ function addROEGP26Equipment(config, tbody) {
     addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm", 19.84, totalTiles, tbody);
     addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm **SPARE**", 19.84, totalSpareTiles, tbody);
 
-    // Add GP2 Half tiles for bottom row if checkbox is checked
-    if (gp2HalfBottomRow) {
-      const gp2HalfTilesNeeded = horizontalBlocks; // One row = one tile per column
+    // Add GP2 Half tiles for bottom rows if checkbox is checked
+    if (gp2HalfBottomRow && gp2HalfRows > 0) {
+      const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows; // Number of rows × tiles per row
       const gp2HalfWithSpare = Math.ceil(gp2HalfTilesNeeded * 1.08); // 8% spare
       const gp2HalfPackageCount = Math.ceil(gp2HalfWithSpare / 12); // 12 tiles per package
       const gp2HalfSpareTiles = gp2HalfWithSpare - gp2HalfTilesNeeded;
 
-      addEquipmentRow("6GP2HALF", "ROE GP2.6 Half 12x tile package (for bottom row)", 0, gp2HalfPackageCount, tbody);
-      addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm (bottom row)", 11.44, gp2HalfTilesNeeded, tbody);
+      const rowLabel = gp2HalfRows === 1 ? "row" : "rows";
+      addEquipmentRow("6GP2HALF", `ROE GP2.6 Half 12x tile package (for bottom ${gp2HalfRows} ${rowLabel})`, 0, gp2HalfPackageCount, tbody);
+      addEquipmentRow("ROEGP26HALF", `ROE GP2.6 Half LED tile 500x500mm (bottom ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfTilesNeeded, tbody);
       if (gp2HalfSpareTiles > 0) {
-        addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm **SPARE** (bottom row)", 11.44, gp2HalfSpareTiles, tbody);
+        addEquipmentRow("ROEGP26HALF", `ROE GP2.6 Half LED tile 500x500mm **SPARE** (bottom ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfSpareTiles, tbody);
       }
     }
   } else {
@@ -1068,14 +1070,17 @@ function displayEquipment(data) {
     const flownSupportType = data.flownSupportType || "Single Header";
     const blankRows = data.blankRows || 0;
     const gp2HalfBottomRow = data.gp2HalfBottomRow || false;
+    const gp2HalfRows = data.gp2HalfRows || 0;
+    const gp2FullVerticalBlocks = data.gp2FullVerticalBlocks || verticalBlocks;
 
     // GP2 Full height limits based on support type
+    // Note: verticalBlocks here includes GP2 Half rows for display purposes
+    // Use gp2FullVerticalBlocks for actual GP2 Full tile calculations
     if (productType === "ROEGP26Full") {
-      if (supportType === "Ground" && verticalBlocks > 6) {
-        verticalBlocks = 6;
+      // Check original GP2 Full blocks, not including GP2 Half
+      if (supportType === "Ground" && gp2FullVerticalBlocks > 6) {
         console.warn("GP2 Full ground support walls are limited to 6 tiles high maximum. Value capped at 6.");
-      } else if (supportType !== "Ground" && verticalBlocks > 12) {
-        verticalBlocks = 12;
+      } else if (supportType !== "Ground" && gp2FullVerticalBlocks > 12) {
         console.warn("GP2 Full flown support walls are limited to 12 tiles high maximum. Value capped at 12.");
       }
     }
@@ -1209,6 +1214,7 @@ function displayEquipment(data) {
       casesNeeded,
       blankRows,
       gp2HalfBottomRow,
+      gp2HalfRows,
       processors,
       cables,
       sandbags,

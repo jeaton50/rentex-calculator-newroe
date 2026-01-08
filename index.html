@@ -601,7 +601,11 @@ window.addEventListener("DOMContentLoaded", () => {
         <!-- GP2 Half Bottom Row Option for GP2 Full (only visible for ROEGP26Full) -->
         <div id="gp2HalfOption" style="display: none; margin-top: 10px;">
           <input type="checkbox" id="gp2HalfCheckbox" name="gp2HalfCheckbox">
-          <label for="gp2HalfCheckbox">Use GP2 Half for bottom row</label>
+          <label for="gp2HalfCheckbox">Use GP2 Half for bottom rows</label>
+          <div id="gp2HalfCountContainer" style="display: none; margin-top: 5px;">
+            <label for="gp2HalfCount">GP2 Half Row Count (1-4):</label>
+            <input type="number" id="gp2HalfCount" name="gp2HalfCount" min="1" max="4" value="1">
+          </div>
         </div>
 
         <!-- Wall Type Selection with Radio Buttons -->
@@ -1305,7 +1309,18 @@ document.getElementById('dummyTileCount').addEventListener('input', function () 
 
 // GP2 Half checkbox event listener for GP2 Full
 document.getElementById('gp2HalfCheckbox').addEventListener('change', function () {
+  const countContainer = document.getElementById('gp2HalfCountContainer');
+  if (this.checked) {
+    countContainer.style.display = 'block';
+  } else {
+    countContainer.style.display = 'none';
+  }
   generateWall(); // refresh the wall drawing when GP2 Half checkbox changes
+});
+
+// Update the wall when the GP2 Half count changes
+document.getElementById('gp2HalfCount').addEventListener('input', function () {
+  generateWall();
 });
 
 // Function to read the dummy tile count and update the wall.
@@ -2224,7 +2239,11 @@ document.getElementById('powerDistroType')?.addEventListener('change', () => {
       if (gp2HalfCheckbox) {
         gp2HalfCheckbox.checked = false;
         const gp2HalfOption = document.getElementById('gp2HalfOption');
+        const gp2HalfCountContainer = document.getElementById('gp2HalfCountContainer');
+        const gp2HalfCountInput = document.getElementById('gp2HalfCount');
         if (gp2HalfOption) gp2HalfOption.style.display = 'none';
+        if (gp2HalfCountContainer) gp2HalfCountContainer.style.display = 'none';
+        if (gp2HalfCountInput) gp2HalfCountInput.value = '1';
       }
 
       // Reset wall type to Flat
