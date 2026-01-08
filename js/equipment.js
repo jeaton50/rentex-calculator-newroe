@@ -824,6 +824,7 @@ function addROEGP26Equipment(config, tbody) {
     powerDistro,
     voltage,
     supportType,
+    gp2HalfBottomRow,
   } = config;
 
   const tileWeight = productType === "ROEGP26Full" ? 19.84 : 11.44;
@@ -838,6 +839,20 @@ function addROEGP26Equipment(config, tbody) {
     addEquipmentRow("6GP2FULL", "ROE GP2.6 Full 6x tile package", 0, packageCount, tbody);
     addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm", 19.84, totalTiles, tbody);
     addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm **SPARE**", 19.84, totalSpareTiles, tbody);
+
+    // Add GP2 Half tiles for bottom row if checkbox is checked
+    if (gp2HalfBottomRow) {
+      const gp2HalfTilesNeeded = horizontalBlocks; // One row = one tile per column
+      const gp2HalfWithSpare = Math.ceil(gp2HalfTilesNeeded * 1.08); // 8% spare
+      const gp2HalfPackageCount = Math.ceil(gp2HalfWithSpare / 12); // 12 tiles per package
+      const gp2HalfSpareTiles = gp2HalfWithSpare - gp2HalfTilesNeeded;
+
+      addEquipmentRow("6GP2HALF", "ROE GP2.6 Half 12x tile package (for bottom row)", 0, gp2HalfPackageCount, tbody);
+      addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm (bottom row)", 11.44, gp2HalfTilesNeeded, tbody);
+      if (gp2HalfSpareTiles > 0) {
+        addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm **SPARE** (bottom row)", 11.44, gp2HalfSpareTiles, tbody);
+      }
+    }
   } else {
     const packageCount = Math.ceil(totalTilesWithSpares / 12);
     addEquipmentRow("6GP2HALF", "ROE GP2.6 Half 12x tile package", 0, packageCount, tbody);
@@ -1052,6 +1067,7 @@ function displayEquipment(data) {
     const groundSupportType = data.groundSupportType || "Single Base";
     const flownSupportType = data.flownSupportType || "Single Header";
     const blankRows = data.blankRows || 0;
+    const gp2HalfBottomRow = data.gp2HalfBottomRow || false;
 
     // GP2 Full height limits based on support type
     if (productType === "ROEGP26Full") {
@@ -1192,6 +1208,7 @@ function displayEquipment(data) {
       redundancyType,
       casesNeeded,
       blankRows,
+      gp2HalfBottomRow,
       processors,
       cables,
       sandbags,

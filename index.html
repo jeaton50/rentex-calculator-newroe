@@ -598,6 +598,12 @@ window.addEventListener("DOMContentLoaded", () => {
           </div>
         </div>
 
+        <!-- GP2 Half Bottom Row Option for GP2 Full (only visible for ROEGP26Full) -->
+        <div id="gp2HalfOption" style="display: none; margin-top: 10px;">
+          <input type="checkbox" id="gp2HalfCheckbox" name="gp2HalfCheckbox">
+          <label for="gp2HalfCheckbox">Use GP2 Half for bottom row</label>
+        </div>
+
         <!-- Wall Type Selection with Radio Buttons -->
         <div class="radio-group">
           <label>Select Wall Type:</label><br>
@@ -1217,16 +1223,24 @@ window.addEventListener("DOMContentLoaded", () => {
   
            const convexOption = document.getElementById('optionConvex');
           const dummyTileOption = document.getElementById('dummyTileOption');
+          const gp2HalfOption = document.getElementById('gp2HalfOption');
           const currentWallType = document.querySelector('input[name="wallType"]:checked');
+
           if (productType === 'BP2B1' || productType === "BP2B2" || productType === 'BP2V2') {
             convexOption.style.display = 'none';
             dummyTileOption.style.display = 'block';
+            if (gp2HalfOption) gp2HalfOption.style.display = 'none';
             if (currentWallType && currentWallType.value === 'Convex') {
               document.getElementById('flat').checked = true;
             }
+          } else if (productType === 'ROEGP26Full') {
+            convexOption.style.display = 'inline-block';
+            dummyTileOption.style.display = 'none';
+            if (gp2HalfOption) gp2HalfOption.style.display = 'block';
           } else {
             convexOption.style.display = 'inline-block';
             dummyTileOption.style.display = 'none';
+            if (gp2HalfOption) gp2HalfOption.style.display = 'none';
           }
           restrictGroundSupportTypes(currentWallType && (currentWallType.value === 'Concave' || currentWallType.value === 'Convex'));
           restrictFlownSupportTypes(currentWallType && (currentWallType.value === 'Concave' || currentWallType.value === 'Convex'));
@@ -1287,6 +1301,11 @@ document.getElementById('dummyTilesCheckbox').addEventListener('change', functio
 // Update the wall when the dummy tile count changes.
 document.getElementById('dummyTileCount').addEventListener('input', function () {
   updateDummyTileQty();
+});
+
+// GP2 Half checkbox event listener for GP2 Full
+document.getElementById('gp2HalfCheckbox').addEventListener('change', function () {
+  generateWall(); // refresh the wall drawing when GP2 Half checkbox changes
 });
 
 // Function to read the dummy tile count and update the wall.
@@ -2198,6 +2217,14 @@ document.getElementById('powerDistroType')?.addEventListener('change', () => {
         const dummyTileCountContainer = document.getElementById('dummyTileCountContainer');
         if (dummyTileOption) dummyTileOption.style.display = 'none';
         if (dummyTileCountContainer) dummyTileCountContainer.style.display = 'none';
+      }
+
+      // Uncheck and hide GP2 Half bottom row option
+      const gp2HalfCheckbox = document.getElementById('gp2HalfCheckbox');
+      if (gp2HalfCheckbox) {
+        gp2HalfCheckbox.checked = false;
+        const gp2HalfOption = document.getElementById('gp2HalfOption');
+        if (gp2HalfOption) gp2HalfOption.style.display = 'none';
       }
 
       // Reset wall type to Flat

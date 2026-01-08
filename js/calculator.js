@@ -289,6 +289,12 @@ function generateWallConfiguration() {
     blankRows = parseInt(document.getElementById('dummyTileCount')?.value || 0, 10) || 1;
   }
 
+  // Get GP2 Half bottom row configuration for GP2 Full
+  let gp2HalfBottomRow = false;
+  if (document.getElementById('gp2HalfCheckbox')?.checked) {
+    gp2HalfBottomRow = true;
+  }
+
   // Calculate totals
   const totals = Calculator.calculateWallTotals({
     horizontalBlocks,
@@ -313,7 +319,8 @@ function generateWallConfiguration() {
     screenSize,
     powerDistro,
     powerDistroType: powerDistro,
-    blankRows
+    blankRows,
+    gp2HalfBottomRow
   };
 }
 
