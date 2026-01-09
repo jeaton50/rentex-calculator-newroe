@@ -1119,10 +1119,23 @@ const CanvasRenderer = {
 
     // Get configuration values
     const horizontalBlocks = parseInt(document.getElementById('blocksHor')?.value || 1, 10);
-    const verticalBlocks = parseInt(document.getElementById('blocksVer')?.value || 1, 10);
+    let verticalBlocks = parseInt(document.getElementById('blocksVer')?.value || 1, 10);
     const numScreens = parseInt(document.getElementById('numScreens')?.value || 1, 10);
 
-    console.log('Blocks:', { horizontalBlocks, verticalBlocks, numScreens });
+    // Check for GP2 Half bottom rows (for GP2 Full only)
+    let gp2HalfBottomRow = false;
+    let gp2HalfRows = 0;
+    let gp2FullVerticalBlocks = verticalBlocks;
+
+    if (productType === 'ROEGP26Full' && document.getElementById('gp2HalfCheckbox')?.checked) {
+      gp2HalfBottomRow = true;
+      gp2HalfRows = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
+      gp2FullVerticalBlocks = verticalBlocks; // Store original GP2 Full blocks
+      // Update verticalBlocks for display purposes to include GP2 Half equivalent height
+      verticalBlocks = verticalBlocks + Math.ceil(gp2HalfRows / 2);
+    }
+
+    console.log('Blocks:', { horizontalBlocks, verticalBlocks, numScreens, gp2HalfBottomRow, gp2HalfRows, gp2FullVerticalBlocks });
 
     // Get product-specific pixel size and dimensions
     let pixelsPerTileWidth;
@@ -1175,12 +1188,25 @@ const CanvasRenderer = {
 
     // Calculate dimensions
     const totalWidthPixels = (horizontalBlocks * pixelsPerTileWidth * numScreens) + (this.config.screenSpacing * (numScreens - 1));
-    const totalHeightPixels = verticalBlocks * pixelsPerTileHeight;
+    let totalHeightPixels;
+    let totalHeightFeet;
+
+    // Calculate height differently for GP2 Full with GP2 Half bottom rows
+    if (productType === 'ROEGP26Full' && gp2HalfBottomRow && gp2HalfRows > 0) {
+      // GP2 Full section: gp2FullVerticalBlocks × 384px (1000mm)
+      // GP2 Half section: gp2HalfRows × 192px (500mm)
+      totalHeightPixels = (gp2FullVerticalBlocks * 384) + (gp2HalfRows * 192);
+
+      // GP2 Full section: gp2FullVerticalBlocks × 3.28' (1000mm)
+      // GP2 Half section: gp2HalfRows × 1.64' (500mm)
+      totalHeightFeet = ((gp2FullVerticalBlocks * 3.28) + (gp2HalfRows * 1.64)).toFixed(2);
+    } else {
+      totalHeightPixels = verticalBlocks * pixelsPerTileHeight;
+      totalHeightFeet = (verticalBlocks * tileHeightFeet).toFixed(2);
+    }
+
     const totalPixels = (totalWidthPixels * totalHeightPixels).toLocaleString();
-
     const totalWidthFeet = (horizontalBlocks * tileWidthFeet * numScreens).toFixed(2);
-    const totalHeightFeet = (verticalBlocks * tileHeightFeet).toFixed(2);
-
     const totalTiles = horizontalBlocks * verticalBlocks * numScreens;
 
     console.log('Calculated dimensions:', {
