@@ -278,6 +278,43 @@ const EquipmentCalculator = {
       return { amps, watts };
     }
 
+    // Check for GP2 Full with GP2 Half bottom rows
+    const gp2HalfEnabled =
+      productType === 'ROEGP26Full' &&
+      document.getElementById('gp2HalfCheckbox')?.checked;
+
+    if (gp2HalfEnabled) {
+      const gp2HalfRows = parseInt(
+        document.getElementById('gp2HalfCount')?.value || 0,
+        10
+      );
+      const horizontalBlocks = parseInt(
+        document.getElementById('blocksHor')?.value || 0,
+        10
+      );
+
+      const gp2HalfTileCount = horizontalBlocks * gp2HalfRows;
+
+      // GP2 Full tiles: 320W per tile
+      // GP2 Half tiles: 160W per tile
+      const fullWatts = totalTiles * 320;
+      const halfWatts = gp2HalfTileCount * 160;
+
+      watts = fullWatts + halfWatts;
+      amps = v ? watts / v : 0;
+
+      console.log('GP2 Half power calculation:', {
+        fullTiles: totalTiles,
+        fullWatts,
+        halfTiles: gp2HalfTileCount,
+        halfWatts,
+        totalWatts: watts,
+        amps
+      });
+
+      return { amps, watts };
+    }
+
     switch (productType) {
       case "absen":
         // keep your existing watt basis
