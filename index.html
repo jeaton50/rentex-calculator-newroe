@@ -1320,8 +1320,18 @@ document.getElementById('gp2HalfCheckbox').addEventListener('change', function (
 
 // Update the wall when the GP2 Half count changes
 document.getElementById('gp2HalfCount').addEventListener('input', function () {
+  console.log('🔵 GP2 Half count changed to:', this.value);
   generateWall();
 });
+
+// Debug: Check GP2 Half checkbox state on any change
+setInterval(function() {
+  const checkbox = document.getElementById('gp2HalfCheckbox');
+  const count = document.getElementById('gp2HalfCount');
+  if (checkbox && checkbox.checked) {
+    console.log('🟢 [HTML inline check] GP2 Half checkbox IS checked, count:', count?.value);
+  }
+}, 2000); // Check every 2 seconds
 
 // Function to read the dummy tile count and update the wall.
 // When performing your calculations, use a helper like this:
