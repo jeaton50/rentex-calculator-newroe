@@ -1132,7 +1132,13 @@ function displayEquipment(data) {
     const gp2HalfBottomRow = data.gp2HalfBottomRow || false;
     const gp2HalfRows = data.gp2HalfRows || 0;
     const gp2FullVerticalBlocks = data.gp2FullVerticalBlocks || verticalBlocks;
-    console.log('Equipment.js received GP2 Half data:', {gp2HalfBottomRow, gp2HalfRows, productType});
+    console.log('Equipment.js received GP2 Half data:', {
+      gp2HalfBottomRow,
+      gp2HalfRows,
+      gp2FullVerticalBlocks,
+      verticalBlocks,
+      productType
+    });
 
     // GP2 Full height limits based on support type
     // Note: verticalBlocks here includes GP2 Half rows for display purposes
