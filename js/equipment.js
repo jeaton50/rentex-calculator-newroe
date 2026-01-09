@@ -950,6 +950,18 @@ function addROEGP26Equipment(config, tbody) {
         : Math.ceil(totalTilesWithSpares / 12);
 
     caseWeight += 161.12 * packageCount;
+
+    // Add GP2 Half package weight if present
+    if (gp2HalfBottomRow && gp2HalfRows > 0) {
+      const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows;
+      const gp2HalfWithSpare = Math.ceil(gp2HalfTilesNeeded * 1.08);
+      const gp2HalfPackageCount = Math.ceil(gp2HalfWithSpare / 12);
+      const gp2HalfSpareTiles = gp2HalfWithSpare - gp2HalfTilesNeeded;
+      caseWeight += 161.12 * gp2HalfPackageCount; // GP2 Half uses 12x packages
+      caseWeight += 11.44 * gp2HalfSpareTiles; // Add spare tile weight
+      console.log('Adding GP2 Half package weight:', gp2HalfPackageCount, 'packages');
+    }
+
     caseWeight += 210 * singleBases;
     caseWeight += 113 * doubleBases;
     caseWeight += 91 * singleHeaders;
