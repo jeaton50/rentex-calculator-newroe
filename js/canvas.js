@@ -162,6 +162,15 @@ const CanvasRenderer = {
       const maxHorizontal = Math.max(halfHorizontal, fullHorizontal);
       singleScreenWidth = maxHorizontal * blockWidth;
       totalWallHeight = (halfVertical * halfBlockHeight) + (fullVertical * fullBlockHeight);
+    } else if (productType === 'ROEGP26Full' && wallData.gp2HalfBottomRow && wallData.gp2HalfRows > 0) {
+      // GP2 Full with GP2 Half bottom rows
+      const gp2FullRows = wallData.gp2FullVerticalBlocks || 0;
+      const gp2HalfRows = wallData.gp2HalfRows || 0;
+      singleScreenWidth = wallData.blocksHor * blockWidth;
+      // blockHeight is already 2x for ROEGP26Full (1000mm)
+      const fullBlockHeight = blockHeight; // 1000mm
+      const halfBlockHeight = blockHeight / 2; // 500mm
+      totalWallHeight = (gp2FullRows * fullBlockHeight) + (gp2HalfRows * halfBlockHeight);
     } else {
       // Normal mode
       singleScreenWidth = wallData.blocksHor * blockWidth;
@@ -286,41 +295,114 @@ const CanvasRenderer = {
           }
         }
       } else {
-        // Normal mode: single tile type
-        const wallWidth = wallData.blocksHor * blockWidth;
-        const wallHeight = wallData.blocksVer * blockHeight;
+        // Normal mode: check for GP2 Full with GP2 Half bottom rows
+        const hasGP2Half = productType === 'ROEGP26Full' && wallData.gp2HalfBottomRow && wallData.gp2HalfRows > 0;
 
-        if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
-          ctx.globalAlpha = 0.55;
-          ctx.drawImage(imageToUse, wallX, wallY, wallWidth, wallHeight);
-          ctx.globalAlpha = 1.0;
+        if (hasGP2Half) {
+          // Mixed GP2 Full (top) and GP2 Half (bottom) mode
+          const gp2FullRows = wallData.gp2FullVerticalBlocks || 0;
+          const gp2HalfRows = wallData.gp2HalfRows || 0;
+          const wallWidth = wallData.blocksHor * blockWidth;
+
+          // blockHeight is already 2x for ROEGP26Full (1000mm)
+          const fullBlockHeight = blockHeight; // 1000mm
+          const halfBlockHeight = blockHeight / 2; // 500mm
+
+          const fullSectionHeight = gp2FullRows * fullBlockHeight;
+          const halfSectionHeight = gp2HalfRows * halfBlockHeight;
+
+          // Draw GP2 Full section (top)
+          if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+            ctx.globalAlpha = 0.55;
+            ctx.drawImage(imageToUse, wallX, wallY, wallWidth, fullSectionHeight);
+            ctx.globalAlpha = 1.0;
+          } else {
+            ctx.globalAlpha = 0.55;
+            ctx.fillStyle = '#555'; // Slightly different color for Full tiles
+            ctx.fillRect(wallX, wallY, wallWidth, fullSectionHeight);
+            ctx.globalAlpha = 1.0;
+          }
+
+          // Draw GP2 Half section (bottom)
+          const halfSectionY = wallY + fullSectionHeight;
+          if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+            ctx.globalAlpha = 0.55;
+            ctx.drawImage(imageToUse, wallX, halfSectionY, wallWidth, halfSectionHeight);
+            ctx.globalAlpha = 1.0;
+          } else {
+            ctx.globalAlpha = 0.55;
+            ctx.fillStyle = '#444'; // Slightly different color for Half tiles
+            ctx.fillRect(wallX, halfSectionY, wallWidth, halfSectionHeight);
+            ctx.globalAlpha = 1.0;
+          }
+
+          // Draw grid lines
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 2;
+
+          // Vertical grid lines (full height)
+          for (let col = 0; col <= wallData.blocksHor; col++) {
+            const lineX = xOffset + col * blockWidth;
+            ctx.beginPath();
+            ctx.moveTo(lineX, wallY);
+            ctx.lineTo(lineX, wallY + fullSectionHeight + halfSectionHeight);
+            ctx.stroke();
+          }
+
+          // Horizontal grid lines for GP2 Full section (top)
+          for (let row = 0; row <= gp2FullRows; row++) {
+            const lineY = wallY + row * fullBlockHeight;
+            ctx.beginPath();
+            ctx.moveTo(wallX, lineY);
+            ctx.lineTo(wallX + wallWidth, lineY);
+            ctx.stroke();
+          }
+
+          // Horizontal grid lines for GP2 Half section (bottom)
+          for (let row = 0; row <= gp2HalfRows; row++) {
+            const lineY = halfSectionY + row * halfBlockHeight;
+            ctx.beginPath();
+            ctx.moveTo(wallX, lineY);
+            ctx.lineTo(wallX + wallWidth, lineY);
+            ctx.stroke();
+          }
         } else {
-          ctx.globalAlpha = 0.55;
-          ctx.fillStyle = '#444';
-          ctx.fillRect(wallX, wallY, wallWidth, wallHeight);
-          ctx.globalAlpha = 1.0;
-        }
+          // Normal mode: single tile type
+          const wallWidth = wallData.blocksHor * blockWidth;
+          const wallHeight = wallData.blocksVer * blockHeight;
 
-        // Draw grid lines
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 2;
+          if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+            ctx.globalAlpha = 0.55;
+            ctx.drawImage(imageToUse, wallX, wallY, wallWidth, wallHeight);
+            ctx.globalAlpha = 1.0;
+          } else {
+            ctx.globalAlpha = 0.55;
+            ctx.fillStyle = '#444';
+            ctx.fillRect(wallX, wallY, wallWidth, wallHeight);
+            ctx.globalAlpha = 1.0;
+          }
 
-        // Vertical grid lines
-        for (let col = 0; col <= wallData.blocksHor; col++) {
-          const lineX = xOffset + col * blockWidth;
-          ctx.beginPath();
-          ctx.moveTo(lineX, wallY);
-          ctx.lineTo(lineX, wallY + wallHeight);
-          ctx.stroke();
-        }
+          // Draw grid lines
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 2;
 
-        // Horizontal grid lines
-        for (let row = 0; row <= wallData.blocksVer; row++) {
-          const lineY = wallY + row * blockHeight;
-          ctx.beginPath();
-          ctx.moveTo(wallX, lineY);
-          ctx.lineTo(wallX + wallWidth, lineY);
-          ctx.stroke();
+          // Vertical grid lines
+          for (let col = 0; col <= wallData.blocksHor; col++) {
+            const lineX = xOffset + col * blockWidth;
+            ctx.beginPath();
+            ctx.moveTo(lineX, wallY);
+            ctx.lineTo(lineX, wallY + wallHeight);
+            ctx.stroke();
+          }
+
+          // Horizontal grid lines
+          for (let row = 0; row <= wallData.blocksVer; row++) {
+            const lineY = wallY + row * blockHeight;
+            ctx.beginPath();
+            ctx.moveTo(wallX, lineY);
+            ctx.lineTo(wallX + wallWidth, lineY);
+            ctx.stroke();
+          }
         }
       }
 
