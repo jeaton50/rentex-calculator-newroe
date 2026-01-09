@@ -3,6 +3,8 @@
  * Handles all tile calculations, dimension conversions, and aspect ratio logic
  */
 
+console.log('🔧 Calculator.js LOADED - Version: gp2half-debug-v3');
+
 /**
  * Block size constant in feet (500mm converted to feet)
  * @const {number}
