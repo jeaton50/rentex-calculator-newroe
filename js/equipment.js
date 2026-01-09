@@ -832,7 +832,15 @@ function addROEGP26Equipment(config, tbody) {
   const pixelWidth = 192;
   const pixelHeight = productType === "ROEGP26Full" ? 384 : 192;
 
+  // Calculate total weight including GP2 Half tiles if present
   totalWeight = tileWeight * totalTiles;
+  if (gp2HalfBottomRow && gp2HalfRows > 0) {
+    const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows;
+    const gp2HalfWeight = 11.44; // GP2 Half tile weight
+    totalWeight += gp2HalfWeight * gp2HalfTilesNeeded;
+    console.log('Adding GP2 Half weight:', gp2HalfTilesNeeded, 'tiles x', gp2HalfWeight, 'lbs =', gp2HalfWeight * gp2HalfTilesNeeded, 'lbs');
+  }
+
   const totalPixels = horizontalBlocks * pixelWidth * (verticalBlocks * pixelHeight);
 
   if (productType === "ROEGP26Full") {
@@ -1147,8 +1155,18 @@ function displayEquipment(data) {
     let sandbags = 0;
     if (supportType === "Ground") {
       if (productType === "ROEGP26Full") {
-        // keep your existing GP2 Full ballast logic
-        const heightInMeters = verticalBlocks * 1.0;
+        // Calculate height including GP2 Half rows if present
+        let heightInMeters;
+        if (gp2HalfBottomRow && gp2HalfRows > 0) {
+          // Use gp2FullVerticalBlocks for actual GP2 Full tiles, add GP2 Half height
+          const gp2FullHeight = gp2FullVerticalBlocks * 1.0; // GP2 Full: 1.0m per tile
+          const gp2HalfHeight = gp2HalfRows * 0.5; // GP2 Half: 0.5m per tile
+          heightInMeters = gp2FullHeight + gp2HalfHeight;
+          console.log('GP2 Full with GP2 Half ballast calculation - Full height:', gp2FullHeight, 'Half height:', gp2HalfHeight, 'Total:', heightInMeters);
+        } else {
+          heightInMeters = verticalBlocks * 1.0;
+        }
+
         const needsDenseSupport = heightInMeters > 4.0;
 
         const stackingEveryOther = !needsDenseSupport;
