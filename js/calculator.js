@@ -234,6 +234,7 @@ const Calculator = {
 function generateWallConfiguration() {
   // Get product type
   const productType = document.getElementById('productType')?.value || 'absen';
+  console.log('🎯 generateWallConfiguration - productType:', productType);
 
   // Get input mode
   const isDimensionInput = document.getElementById('dimensionInput')?.checked || false;
