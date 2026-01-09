@@ -31,53 +31,6 @@
   <script src="js/ui.js?v=c6f4088"></script>
   <script src="js/multiscreen.js?v=c6f4088"></script>
 
-  <!-- INLINE PATCH: Override generateWallConfiguration to correctly read GP2 Half checkbox -->
-  <script>
-    console.log('🔧 INLINE PATCH LOADED - Will override generateWallConfiguration');
-
-    // Wait for DOM and functions to be ready
-    document.addEventListener('DOMContentLoaded', function() {
-      // Store original function
-      const originalGenerateWallConfiguration = window.generateWallConfiguration;
-
-      if (typeof originalGenerateWallConfiguration === 'function') {
-        console.log('✅ Found generateWallConfiguration, creating patched version');
-
-        // Override with patched version
-        window.generateWallConfiguration = function() {
-          console.log('🔴 PATCHED generateWallConfiguration called');
-
-          // Call original function
-          const result = originalGenerateWallConfiguration.apply(this, arguments);
-
-          // Force read GP2 Half checkbox again and override result
-          const gp2HalfCheckboxElement = document.getElementById('gp2HalfCheckbox');
-          const gp2HalfCountElement = document.getElementById('gp2HalfCount');
-
-          if (gp2HalfCheckboxElement && gp2HalfCheckboxElement.checked) {
-            const rows = parseInt(gp2HalfCountElement?.value || 1, 10);
-            console.log('🔴 PATCH: Overriding GP2 Half data - checked:', true, 'rows:', rows);
-
-            result.gp2HalfBottomRow = true;
-            result.gp2HalfRows = rows;
-
-            // Also update totalVerticalBlocks for display
-            if (result.productType === 'ROEGP26Full') {
-              result.blocksVer = result.gp2FullVerticalBlocks + Math.ceil(rows / 2);
-              console.log('🔴 PATCH: Updated blocksVer to:', result.blocksVer);
-            }
-          } else {
-            console.log('🔴 PATCH: GP2 Half checkbox not checked');
-          }
-
-          return result;
-        };
-      } else {
-        console.log('❌ generateWallConfiguration not found');
-      }
-    });
-  </script>
-
   <!-- Export library - Defer as it's only used on demand -->
   <script defer src="js/export.js?v=c6f4088"></script>
 
@@ -1370,6 +1323,48 @@ document.getElementById('gp2HalfCount').addEventListener('input', function () {
   console.log('🔵 GP2 Half count changed to:', this.value);
   generateWall();
 });
+
+// === CRITICAL PATCH FOR GP2 HALF CHECKBOX READING ===
+console.log('🟡 Starting GP2 Half patch setup...');
+console.log('🟡 generateWallConfiguration exists?', typeof generateWallConfiguration);
+
+// Store original function
+const originalGenerateWallConfiguration = generateWallConfiguration;
+
+// Override with patched version
+window.generateWallConfiguration = function() {
+  console.log('🔴 PATCHED generateWallConfiguration called');
+
+  // Call original function
+  const result = originalGenerateWallConfiguration.apply(this, arguments);
+
+  // Force read GP2 Half checkbox again and override result
+  const gp2HalfCheckboxElement = document.getElementById('gp2HalfCheckbox');
+  const gp2HalfCountElement = document.getElementById('gp2HalfCount');
+
+  console.log('🔴 PATCH: Reading checkbox - element:', gp2HalfCheckboxElement, 'checked:', gp2HalfCheckboxElement?.checked);
+
+  if (gp2HalfCheckboxElement && gp2HalfCheckboxElement.checked) {
+    const rows = parseInt(gp2HalfCountElement?.value || 1, 10);
+    console.log('🔴 PATCH: Overriding GP2 Half data - rows:', rows);
+
+    result.gp2HalfBottomRow = true;
+    result.gp2HalfRows = rows;
+
+    // Also update totalVerticalBlocks for display
+    if (result.productType === 'ROEGP26Full' && result.gp2FullVerticalBlocks) {
+      result.blocksVer = result.gp2FullVerticalBlocks + Math.ceil(rows / 2);
+      console.log('🔴 PATCH: Updated blocksVer from', result.gp2FullVerticalBlocks, 'to:', result.blocksVer);
+    }
+  } else {
+    console.log('🔴 PATCH: GP2 Half checkbox not checked');
+  }
+
+  console.log('🔴 PATCH: Returning result with gp2HalfBottomRow:', result.gp2HalfBottomRow, 'gp2HalfRows:', result.gp2HalfRows);
+  return result;
+};
+
+console.log('✅ GP2 Half patch installed successfully');
 
 // Debug: Check GP2 Half checkbox state on any change
 setInterval(function() {
