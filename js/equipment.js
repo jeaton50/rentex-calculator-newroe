@@ -843,6 +843,7 @@ function addROEGP26Equipment(config, tbody) {
 
     // Add GP2 Half tiles for bottom rows if checkbox is checked
     if (gp2HalfBottomRow && gp2HalfRows > 0) {
+      console.log('Adding GP2 Half equipment - rows:', gp2HalfRows, 'horizontalBlocks:', horizontalBlocks);
       const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows; // Number of rows × tiles per row
       const gp2HalfWithSpare = Math.ceil(gp2HalfTilesNeeded * 1.08); // 8% spare
       const gp2HalfPackageCount = Math.ceil(gp2HalfWithSpare / 12); // 12 tiles per package
@@ -854,6 +855,8 @@ function addROEGP26Equipment(config, tbody) {
       if (gp2HalfSpareTiles > 0) {
         addEquipmentRow("ROEGP26HALF", `ROE GP2.6 Half LED tile 500x500mm **SPARE** (bottom ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfSpareTiles, tbody);
       }
+    } else {
+      console.log('NOT adding GP2 Half equipment - gp2HalfBottomRow:', gp2HalfBottomRow, 'gp2HalfRows:', gp2HalfRows);
     }
   } else {
     const packageCount = Math.ceil(totalTilesWithSpares / 12);
@@ -1072,6 +1075,7 @@ function displayEquipment(data) {
     const gp2HalfBottomRow = data.gp2HalfBottomRow || false;
     const gp2HalfRows = data.gp2HalfRows || 0;
     const gp2FullVerticalBlocks = data.gp2FullVerticalBlocks || verticalBlocks;
+    console.log('Equipment.js received GP2 Half data:', {gp2HalfBottomRow, gp2HalfRows, productType});
 
     // GP2 Full height limits based on support type
     // Note: verticalBlocks here includes GP2 Half rows for display purposes

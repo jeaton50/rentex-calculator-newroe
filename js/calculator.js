@@ -295,6 +295,9 @@ function generateWallConfiguration() {
   if (document.getElementById('gp2HalfCheckbox')?.checked) {
     gp2HalfBottomRow = true;
     gp2HalfRows = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
+    console.log('GP2 Half checkbox CHECKED - rows:', gp2HalfRows);
+  } else {
+    console.log('GP2 Half checkbox NOT checked');
   }
 
   // For GP2 Full with GP2 Half bottom rows, add those rows to vertical count for wall dimensions
@@ -303,6 +306,7 @@ function generateWallConfiguration() {
     // Each GP2 Half row is 0.5m, each GP2 Full row is 1.0m
     // So 2 GP2 Half rows = 1 GP2 Full row equivalent
     totalVerticalBlocks = verticalBlocks + Math.ceil(gp2HalfRows / 2);
+    console.log('GP2 Full with GP2 Half - original vertical:', verticalBlocks, 'total vertical:', totalVerticalBlocks);
   }
 
   // Calculate totals
