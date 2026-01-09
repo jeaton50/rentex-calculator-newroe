@@ -293,14 +293,22 @@ function generateWallConfiguration() {
   }
 
   // Get GP2 Half bottom row configuration for GP2 Full
+  console.log('📍 About to check GP2 Half checkbox...');
+  const gp2HalfCheckboxElement = document.getElementById('gp2HalfCheckbox');
+  const gp2HalfCountElement = document.getElementById('gp2HalfCount');
+  console.log('📍 gp2HalfCheckbox element:', gp2HalfCheckboxElement);
+  console.log('📍 gp2HalfCheckbox checked?:', gp2HalfCheckboxElement?.checked);
+  console.log('📍 gp2HalfCount element:', gp2HalfCountElement);
+  console.log('📍 gp2HalfCount value:', gp2HalfCountElement?.value);
+
   let gp2HalfBottomRow = false;
   let gp2HalfRows = 0;
-  if (document.getElementById('gp2HalfCheckbox')?.checked) {
+  if (gp2HalfCheckboxElement?.checked) {
     gp2HalfBottomRow = true;
-    gp2HalfRows = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
-    console.log('GP2 Half checkbox CHECKED - rows:', gp2HalfRows);
+    gp2HalfRows = parseInt(gp2HalfCountElement?.value || 1, 10);
+    console.log('✅ GP2 Half checkbox CHECKED - rows:', gp2HalfRows);
   } else {
-    console.log('GP2 Half checkbox NOT checked');
+    console.log('❌ GP2 Half checkbox NOT checked');
   }
 
   // For GP2 Full with GP2 Half bottom rows, add those rows to vertical count for wall dimensions
