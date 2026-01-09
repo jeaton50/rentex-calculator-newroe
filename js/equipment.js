@@ -895,10 +895,10 @@ function addROEGP26Equipment(config, tbody) {
       const gp2HalfSpareTiles = gp2HalfWithSpare - gp2HalfTilesNeeded;
 
       const rowLabel = gp2HalfRows === 1 ? "row" : "rows";
-      addEquipmentRow("6GP2HALF", `ROE GP2.6 Half 12x tile package (for bottom ${gp2HalfRows} ${rowLabel})`, 0, gp2HalfPackageCount, tbody);
-      addEquipmentRow("ROEGP26HALF", `ROE GP2.6 Half LED tile 500x500mm (bottom ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfTilesNeeded, tbody);
+      addEquipmentRow("6GP2HALF", `ROE GP2.6 Half 12x tile package (for top ${gp2HalfRows} ${rowLabel})`, 0, gp2HalfPackageCount, tbody);
+      addEquipmentRow("ROEGP26HALF", `ROE GP2.6 Half LED tile 500x500mm (top ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfTilesNeeded, tbody);
       if (gp2HalfSpareTiles > 0) {
-        addEquipmentRow("ROEGP26HALF", `ROE GP2.6 Half LED tile 500x500mm **SPARE** (bottom ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfSpareTiles, tbody);
+        addEquipmentRow("ROEGP26HALF", `ROE GP2.6 Half LED tile 500x500mm **SPARE** (top ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfSpareTiles, tbody);
       }
     } else {
       console.log('NOT adding GP2 Half equipment - gp2HalfBottomRow:', gp2HalfBottomRow, 'gp2HalfRows:', gp2HalfRows);
