@@ -926,7 +926,29 @@ window.addEventListener("DOMContentLoaded", () => {
           }
         }
 
-        // Calculate total blocks, spares, etc.
+        // Get dummy tiles configuration
+        let blankRows = 0;
+        if (document.getElementById('dummyTilesCheckbox')?.checked) {
+          blankRows = parseInt(document.getElementById('dummyTileCount')?.value || 0, 10) || 1;
+        }
+
+        // Get GP2 Half bottom row configuration for GP2 Full
+        let gp2HalfBottomRow = false;
+        let gp2HalfRows = 0;
+        let gp2FullVerticalBlocks = blocksVer; // Store original GP2 Full blocks
+        let displayBlocksVer = blocksVer; // Blocks for dimension display
+
+        if (document.getElementById('gp2HalfCheckbox')?.checked) {
+          gp2HalfBottomRow = true;
+          gp2HalfRows = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
+
+          // For GP2 Full with GP2 Half bottom rows, add those rows to vertical count for dimensions display only
+          if (productType === 'ROEGP26Full') {
+            displayBlocksVer = blocksVer + Math.ceil(gp2HalfRows / 2); // Each 2 GP2 Half rows = 1 Full row height
+          }
+        }
+
+        // Calculate total blocks, spares, etc. (only for GP2 Full tiles, not GP2 Half)
         var totalBlocks = blocksHor * blocksVer;
         var totalSpares = calcSpares(totalBlocks, productType === "theatrixx" ? 10 : 8, productType === "theatrixx" ? 2 : 1.5);
         var totalBlocksWithSpares = totalSpares + totalBlocks;
@@ -934,7 +956,7 @@ window.addEventListener("DOMContentLoaded", () => {
         const requestData = {
           productType,
           blocksHor,
-          blocksVer,
+          blocksVer: displayBlocksVer, // Use display blocks for dimensions
           totalBlocks,
           totalSpares,
           totalBlocksWithSpares,
@@ -946,7 +968,11 @@ window.addEventListener("DOMContentLoaded", () => {
           wallType,
           screenSize,
           powerDistro,
-          powerDistroType
+          powerDistroType,
+          blankRows,
+          gp2HalfBottomRow,
+          gp2HalfRows,
+          gp2FullVerticalBlocks: blocksVer // Original GP2 Full vertical blocks
         };
 
         // Call module functions (showLoadingSpinner/hideLoadingSpinner removed)
