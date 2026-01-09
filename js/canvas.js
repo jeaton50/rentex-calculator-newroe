@@ -299,7 +299,7 @@ const CanvasRenderer = {
         const hasGP2Half = productType === 'ROEGP26Full' && wallData.gp2HalfBottomRow && wallData.gp2HalfRows > 0;
 
         if (hasGP2Half) {
-          // Mixed GP2 Full (top) and GP2 Half (bottom) mode
+          // Mixed GP2 Half (top) and GP2 Full (bottom) mode
           const gp2FullRows = wallData.gp2FullVerticalBlocks || 0;
           const gp2HalfRows = wallData.gp2HalfRows || 0;
           const wallWidth = wallData.blocksHor * blockWidth;
@@ -308,31 +308,31 @@ const CanvasRenderer = {
           const fullBlockHeight = blockHeight; // 1000mm
           const halfBlockHeight = blockHeight / 2; // 500mm
 
-          const fullSectionHeight = gp2FullRows * fullBlockHeight;
           const halfSectionHeight = gp2HalfRows * halfBlockHeight;
+          const fullSectionHeight = gp2FullRows * fullBlockHeight;
 
-          // Draw GP2 Full section (top)
+          // Draw GP2 Half section (top)
           if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
             ctx.globalAlpha = 0.55;
-            ctx.drawImage(imageToUse, wallX, wallY, wallWidth, fullSectionHeight);
-            ctx.globalAlpha = 1.0;
-          } else {
-            ctx.globalAlpha = 0.55;
-            ctx.fillStyle = '#555'; // Slightly different color for Full tiles
-            ctx.fillRect(wallX, wallY, wallWidth, fullSectionHeight);
-            ctx.globalAlpha = 1.0;
-          }
-
-          // Draw GP2 Half section (bottom)
-          const halfSectionY = wallY + fullSectionHeight;
-          if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
-            ctx.globalAlpha = 0.55;
-            ctx.drawImage(imageToUse, wallX, halfSectionY, wallWidth, halfSectionHeight);
+            ctx.drawImage(imageToUse, wallX, wallY, wallWidth, halfSectionHeight);
             ctx.globalAlpha = 1.0;
           } else {
             ctx.globalAlpha = 0.55;
             ctx.fillStyle = '#444'; // Slightly different color for Half tiles
-            ctx.fillRect(wallX, halfSectionY, wallWidth, halfSectionHeight);
+            ctx.fillRect(wallX, wallY, wallWidth, halfSectionHeight);
+            ctx.globalAlpha = 1.0;
+          }
+
+          // Draw GP2 Full section (bottom)
+          const fullSectionY = wallY + halfSectionHeight;
+          if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+            ctx.globalAlpha = 0.55;
+            ctx.drawImage(imageToUse, wallX, fullSectionY, wallWidth, fullSectionHeight);
+            ctx.globalAlpha = 1.0;
+          } else {
+            ctx.globalAlpha = 0.55;
+            ctx.fillStyle = '#555'; // Slightly different color for Full tiles
+            ctx.fillRect(wallX, fullSectionY, wallWidth, fullSectionHeight);
             ctx.globalAlpha = 1.0;
           }
 
@@ -345,22 +345,22 @@ const CanvasRenderer = {
             const lineX = xOffset + col * blockWidth;
             ctx.beginPath();
             ctx.moveTo(lineX, wallY);
-            ctx.lineTo(lineX, wallY + fullSectionHeight + halfSectionHeight);
+            ctx.lineTo(lineX, wallY + halfSectionHeight + fullSectionHeight);
             ctx.stroke();
           }
 
-          // Horizontal grid lines for GP2 Full section (top)
-          for (let row = 0; row <= gp2FullRows; row++) {
-            const lineY = wallY + row * fullBlockHeight;
+          // Horizontal grid lines for GP2 Half section (top)
+          for (let row = 0; row <= gp2HalfRows; row++) {
+            const lineY = wallY + row * halfBlockHeight;
             ctx.beginPath();
             ctx.moveTo(wallX, lineY);
             ctx.lineTo(wallX + wallWidth, lineY);
             ctx.stroke();
           }
 
-          // Horizontal grid lines for GP2 Half section (bottom)
-          for (let row = 0; row <= gp2HalfRows; row++) {
-            const lineY = halfSectionY + row * halfBlockHeight;
+          // Horizontal grid lines for GP2 Full section (bottom)
+          for (let row = 0; row <= gp2FullRows; row++) {
+            const lineY = fullSectionY + row * fullBlockHeight;
             ctx.beginPath();
             ctx.moveTo(wallX, lineY);
             ctx.lineTo(wallX + wallWidth, lineY);
