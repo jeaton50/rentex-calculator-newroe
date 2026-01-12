@@ -793,9 +793,11 @@ function addROEEquipment(config, tbody) {
   if (doubleBases > 0) addEquipmentRow("BPBOBB2", "ROE Black Pearl base bar, 2W, 1.0m", 28, doubleBases, tbody);
   if (universalBaseTruss > 0) addEquipmentRow("BPBOBT", "ROE Black Pearl universal base truss", 17, universalBaseTruss, tbody);
   if (universalBaseTruss > 0 && gp2HalfBottomRow) addEquipmentRow("BPGPREAR05", "ROE BP2 / GP2 rear truss .5 meter", 1, universalBaseTruss, tbody);
-  if (universalBaseTruss > 0 && gp2HalfBottomRow) addEquipmentRow("BPBOBRIDGE", "ROE Black Pearl rear bridge clamp", 1, universalBaseTruss, tbody);
   if (rearTruss > 0) addEquipmentRow("BPBOREAR", "ROE Black Pearl rear truss,", 1, rearTruss, tbody);
-  if (rearBridge > 0) addEquipmentRow("BPBOBRIDGE", "ROE Black Pearl rear bridge clamp", 1, rearBridge, tbody);
+
+  // Combine BPBOBRIDGE quantities: rearBridge + GP2 Half universalBaseTruss
+  const totalBridgeClamps = (rearBridge || 0) + (gp2HalfBottomRow && universalBaseTruss > 0 ? universalBaseTruss : 0);
+  if (totalBridgeClamps > 0) addEquipmentRow("BPBOBRIDGE", "ROE Black Pearl rear bridge clamp", 1, totalBridgeClamps, tbody);
 
   if (wallType === "Convex" || wallType === "Concave") {
     const fiveDegBrackets = totalTiles / 2;
@@ -926,13 +928,15 @@ function addROEGP26Equipment(config, tbody) {
 
   console.log('GP2 Half rear support check - universalBaseTruss:', universalBaseTruss, 'gp2HalfBottomRow:', gp2HalfBottomRow);
   if (universalBaseTruss > 0 && gp2HalfBottomRow) {
-    console.log('Adding BPGPREAR05 and BPBOBRIDGE for GP2 Half - quantity:', universalBaseTruss);
+    console.log('Adding BPGPREAR05 for GP2 Half - quantity:', universalBaseTruss);
     addEquipmentRow("BPGPREAR05", "ROE BP2 / GP2 rear truss .5 meter", 1, universalBaseTruss, tbody);
-    addEquipmentRow("BPBOBRIDGE", "ROE Black Pearl rear bridge clamp", 1, universalBaseTruss, tbody);
   }
 
   if (rearTruss > 0) addEquipmentRow("BPBOREAR", "ROE Black Pearl rear truss,", 1, rearTruss, tbody);
-  if (rearBridge > 0) addEquipmentRow("BPBOBRIDGE", "ROE Black Pearl rear bridge clamp", 1, rearBridge, tbody);
+
+  // Combine BPBOBRIDGE quantities: rearBridge + GP2 Half universalBaseTruss
+  const totalBridgeClamps = (rearBridge || 0) + (gp2HalfBottomRow && universalBaseTruss > 0 ? universalBaseTruss : 0);
+  if (totalBridgeClamps > 0) addEquipmentRow("BPBOBRIDGE", "ROE Black Pearl rear bridge clamp", 1, totalBridgeClamps, tbody);
 
   if ((wallType === "Convex" || wallType === "Concave") && productType !== "ROEGP26Full") {
     const fiveDegBrackets = totalTiles / 2;
