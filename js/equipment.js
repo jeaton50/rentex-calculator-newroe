@@ -747,6 +747,7 @@ function addROEEquipment(config, tbody) {
     horizontalBlocks,
     verticalBlocks,
     voltage,
+    gp2HalfBottomRow,
   } = config;
 
   totalWeight = 20.61 * totalTiles;
@@ -922,8 +923,14 @@ function addROEGP26Equipment(config, tbody) {
   if (singleBases > 0) addEquipmentRow("BPBOBB1", "ROE Black Pearl base bar, 1W, 0.5m", 16, singleBases, tbody);
   if (doubleBases > 0) addEquipmentRow("BPBOBB2", "ROE Black Pearl base bar, 2W, 1.0m", 28, doubleBases, tbody);
   if (universalBaseTruss > 0) addEquipmentRow("BPBOBT", "ROE Black Pearl universal base truss", 17, universalBaseTruss, tbody);
-  if (universalBaseTruss > 0 && gp2HalfBottomRow) addEquipmentRow("BPGPREAR05", "ROE BP2 / GP2 rear truss .5 meter", 1, universalBaseTruss, tbody);
-  if (universalBaseTruss > 0 && gp2HalfBottomRow) addEquipmentRow("BPBOBRIDGE", "ROE Black Pearl rear bridge clamp", 1, universalBaseTruss, tbody);
+
+  console.log('GP2 Half rear support check - universalBaseTruss:', universalBaseTruss, 'gp2HalfBottomRow:', gp2HalfBottomRow);
+  if (universalBaseTruss > 0 && gp2HalfBottomRow) {
+    console.log('Adding BPGPREAR05 and BPBOBRIDGE for GP2 Half - quantity:', universalBaseTruss);
+    addEquipmentRow("BPGPREAR05", "ROE BP2 / GP2 rear truss .5 meter", 1, universalBaseTruss, tbody);
+    addEquipmentRow("BPBOBRIDGE", "ROE Black Pearl rear bridge clamp", 1, universalBaseTruss, tbody);
+  }
+
   if (rearTruss > 0) addEquipmentRow("BPBOREAR", "ROE Black Pearl rear truss,", 1, rearTruss, tbody);
   if (rearBridge > 0) addEquipmentRow("BPBOBRIDGE", "ROE Black Pearl rear bridge clamp", 1, rearBridge, tbody);
 
