@@ -899,9 +899,27 @@ function addROEGP26Equipment(config, tbody) {
     if (gp2HalfBottomRow && gp2HalfRows > 0) {
       console.log('Adding GP2 Half equipment - rows:', gp2HalfRows, 'horizontalBlocks:', horizontalBlocks);
       const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows; // Number of rows × tiles per row
-      const gp2HalfWithSpare = Math.ceil(gp2HalfTilesNeeded * 1.08); // 8% spare
+
+      // Use the same spare calculation as Black Pearl (8% with rounding logic)
+      let gp2HalfSpareTiles;
+      if (typeof Calculator !== 'undefined' && Calculator.calculateSpares) {
+        gp2HalfSpareTiles = Calculator.calculateSpares(gp2HalfTilesNeeded, 8, 1.5);
+      } else if (typeof calcSpares === 'function') {
+        gp2HalfSpareTiles = calcSpares(gp2HalfTilesNeeded, 8, 1.5);
+      } else {
+        // Fallback to simple 8% if calcSpares not available
+        gp2HalfSpareTiles = Math.ceil(gp2HalfTilesNeeded * 0.08);
+      }
+
+      const gp2HalfWithSpare = gp2HalfTilesNeeded + gp2HalfSpareTiles;
       const gp2HalfPackageCount = Math.ceil(gp2HalfWithSpare / 12); // 12 tiles per package
-      const gp2HalfSpareTiles = gp2HalfWithSpare - gp2HalfTilesNeeded;
+
+      console.log('GP2 Half spare calculation:', {
+        tilesNeeded: gp2HalfTilesNeeded,
+        spares: gp2HalfSpareTiles,
+        totalWithSpares: gp2HalfWithSpare,
+        packages: gp2HalfPackageCount
+      });
 
       const rowLabel = gp2HalfRows === 1 ? "row" : "rows";
       addEquipmentRow("6GP2HALF", `ROE GP2.6 Half 12x tile package (for top ${gp2HalfRows} ${rowLabel})`, 0, gp2HalfPackageCount, tbody);
