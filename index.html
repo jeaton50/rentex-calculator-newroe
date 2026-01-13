@@ -22,14 +22,14 @@
 
   <!-- Critical Application JavaScript - Load synchronously for proper initialization -->
   <script src="js/constants.js?v=c6f4088"></script>
-  <script src="js/utils.js?v=c6f4088"></script>
-  <script src="js/state.js?v=c6f4088"></script>
-  <script src="js/app.js?v=c6f4088"></script>
-  <script src="js/canvas.js?v=20251121c"></script>
-  <script src="js/equipment.js?v=1768312177"></script>
-  <script src="js/calculator.js?v=1768312177"></script>
-  <script src="js/ui.js?v=c6f4088"></script>
-  <script src="js/multiscreen.js?v=c6f4088"></script>
+  <script src="js/utils.js?v=1768313500"></script>
+  <script src="js/state.js?v=1768313500"></script>
+  <script src="js/app.js?v=1768313500"></script>
+  <script src="js/canvas.js?v=1768313500"></script>
+  <script src="js/equipment.js?v=1768313500"></script>
+  <script src="js/calculator.js?v=1768313500"></script>
+  <script src="js/ui.js?v=1768313500"></script>
+  <script src="js/multiscreen.js?v=1768313500"></script>
 
   <!-- Export library - Defer as it's only used on demand -->
   <script defer src="js/export.js?v=c6f4088"></script>
@@ -1136,7 +1136,7 @@ window.addEventListener("DOMContentLoaded", () => {
         }
 
 // Toggle the display of multiple screens options based on the radio selection.
-  document.getElementById('singleScreen').addEventListener('change', function() {
+  document.getElementById('singleScreen')?.addEventListener('change', function() {
     // When switching to single screen
     document.getElementById('multipleScreensOptions').style.display = 'none';
     // Reset to 1 screen
@@ -1145,7 +1145,7 @@ window.addEventListener("DOMContentLoaded", () => {
     generateWall();
   });
 
-  document.getElementById('multipleScreens').addEventListener('change', function() {
+  document.getElementById('multipleScreens')?.addEventListener('change', function() {
     // When switching to multiple screens
     document.getElementById('multipleScreensOptions').style.display = 'block';
     // Reset to 1 screen
@@ -1343,7 +1343,7 @@ window.addEventListener("DOMContentLoaded", () => {
         });
 
 // Toggle display of advanced options (tile quantity input and possible screen sizes)
-document.getElementById('advancedOptionsCheckbox').addEventListener('change', function () {
+document.getElementById('advancedOptionsCheckbox')?.addEventListener('change', function () {
   const tileQtyDiv = document.getElementById('tileQuantityInput');
   const possibleSizesDiv = document.getElementById('possibleScreenSizes');
   if (this.checked) {
@@ -1360,7 +1360,7 @@ document.getElementById('advancedOptionsCheckbox').addEventListener('change', fu
 
 
 
-       document.getElementById('dummyTilesCheckbox').addEventListener('change', function () {
+       document.getElementById('dummyTilesCheckbox')?.addEventListener('change', function () {
   const countContainer = document.getElementById('dummyTileCountContainer');
   if (this.checked) {
     countContainer.style.display = 'block';
@@ -1369,19 +1369,19 @@ document.getElementById('advancedOptionsCheckbox').addEventListener('change', fu
   }
   generateWall(); // refresh the wall drawing if needed
 });// Toggle the dummy tile count container based on checkbox status.
-document.getElementById('dummyTilesCheckbox').addEventListener('change', function () {
+document.getElementById('dummyTilesCheckbox')?.addEventListener('change', function () {
   const countContainer = document.getElementById('dummyTileCountContainer');
   countContainer.style.display = this.checked ? 'block' : 'none';
   updateDummyTileQty();
 });
 
 // Update the wall when the dummy tile count changes.
-document.getElementById('dummyTileCount').addEventListener('input', function () {
+document.getElementById('dummyTileCount')?.addEventListener('input', function () {
   updateDummyTileQty();
 });
 
 // GP2 Half checkbox event listener for GP2 Full
-document.getElementById('gp2HalfCheckbox').addEventListener('change', function () {
+document.getElementById('gp2HalfCheckbox')?.addEventListener('change', function () {
   const countContainer = document.getElementById('gp2HalfCountContainer');
   if (this.checked) {
     countContainer.style.display = 'block';
@@ -1392,7 +1392,7 @@ document.getElementById('gp2HalfCheckbox').addEventListener('change', function (
 });
 
 // Update the wall when the GP2 Half count changes
-document.getElementById('gp2HalfCount').addEventListener('input', function () {
+document.getElementById('gp2HalfCount')?.addEventListener('input', function () {
   console.log('🔵 GP2 Half count changed to:', this.value);
   generateWall();
 });
@@ -1557,7 +1557,7 @@ document.getElementById('powerDistroType')?.addEventListener('change', () => {
         });
       }
 
-      document.getElementById("toggleNumbers").addEventListener("change", function () {
+      document.getElementById("toggleNumbers")?.addEventListener("change", function () {
         showNumbers = this.checked;
         generateWall();
       });
