@@ -26,7 +26,7 @@
   <script src="js/state.js?v=1768313500"></script>
   <script src="js/app.js?v=1768313500"></script>
   <script src="js/canvas.js?v=1768313500"></script>
-  <script src="js/equipment.js?v=1768314628"></script>
+  <script src="js/equipment.js?v=1768319403"></script>
   <script src="js/calculator.js?v=1768313500"></script>
   <script src="js/ui.js?v=1768313500"></script>
   <script src="js/multiscreen.js?v=1768313500"></script>
@@ -965,11 +965,16 @@ window.addEventListener("DOMContentLoaded", () => {
           const halfTiles = halfHorizontal * halfVertical;
           const fullTiles = fullHorizontal * fullVertical;
 
-          // Calculate spares for each type (8% for ROE products)
-          const halfSpares = calcSpares(halfTiles, 8, 1.5);
-          const fullSpares = calcSpares(fullTiles, 8, 1.5);
-          const halfTilesWithSpares = halfTiles + halfSpares;
-          const fullTilesWithSpares = fullTiles + fullSpares;
+          // Calculate spares for each type (round up to package size)
+          // GP2 Half: packages of 12
+          const halfPackageSize = 12;
+          const halfTilesWithSpares = Math.ceil(halfTiles / halfPackageSize) * halfPackageSize;
+          const halfSpares = halfTilesWithSpares - halfTiles;
+
+          // GP2 Full: packages of 6
+          const fullPackageSize = 6;
+          const fullTilesWithSpares = Math.ceil(fullTiles / fullPackageSize) * fullPackageSize;
+          const fullSpares = fullTilesWithSpares - fullTiles;
 
           // Store Graphite Mix data
           graphiteMixData = {
@@ -994,8 +999,27 @@ window.addEventListener("DOMContentLoaded", () => {
         } else {
           // Normal mode: standard spare calculation
           totalBlocks = blocksHor * blocksVer;
-          totalSpares = calcSpares(totalBlocks, productType === "theatrixx" ? 10 : 8, productType === "theatrixx" ? 2 : 1.5);
-          totalBlocksWithSpares = totalSpares + totalBlocks;
+
+          // GP2 products use package-based spare calculation (round up to package size)
+          if (productType === 'ROEGP26Full') {
+            // GP2 Full: packages of 6, round total up to next multiple of 6
+            const packageSize = 6;
+            const roundedTotal = Math.ceil(totalBlocks / packageSize) * packageSize;
+            totalSpares = roundedTotal - totalBlocks;
+            totalBlocksWithSpares = roundedTotal;
+            console.log('GP2 Full spare calculation:', { totalBlocks, roundedTotal, totalSpares });
+          } else if (productType === 'ROEGP26Half') {
+            // GP2 Half: packages of 12, round total up to next multiple of 12
+            const packageSize = 12;
+            const roundedTotal = Math.ceil(totalBlocks / packageSize) * packageSize;
+            totalSpares = roundedTotal - totalBlocks;
+            totalBlocksWithSpares = roundedTotal;
+            console.log('GP2 Half spare calculation:', { totalBlocks, roundedTotal, totalSpares });
+          } else {
+            // Black Pearl, Theatrixx, etc: use original calcSpares function
+            totalSpares = calcSpares(totalBlocks, productType === "theatrixx" ? 10 : 8, productType === "theatrixx" ? 2 : 1.5);
+            totalBlocksWithSpares = totalSpares + totalBlocks;
+          }
         }
 
         const requestData = {

@@ -900,19 +900,11 @@ function addROEGP26Equipment(config, tbody) {
       console.log('Adding GP2 Half equipment - rows:', gp2HalfRows, 'horizontalBlocks:', horizontalBlocks);
       const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows; // Number of rows × tiles per row
 
-      // Use the same spare calculation as Black Pearl (8% with rounding logic)
-      let gp2HalfSpareTiles;
-      if (typeof Calculator !== 'undefined' && Calculator.calculateSpares) {
-        gp2HalfSpareTiles = Calculator.calculateSpares(gp2HalfTilesNeeded, 8, 1.5);
-      } else if (typeof calcSpares === 'function') {
-        gp2HalfSpareTiles = calcSpares(gp2HalfTilesNeeded, 8, 1.5);
-      } else {
-        // Fallback to simple 8% if calcSpares not available
-        gp2HalfSpareTiles = Math.ceil(gp2HalfTilesNeeded * 0.08);
-      }
-
-      const gp2HalfWithSpare = gp2HalfTilesNeeded + gp2HalfSpareTiles;
-      const gp2HalfPackageCount = Math.ceil(gp2HalfWithSpare / 12); // 12 tiles per package
+      // GP2 Half: Round up to next multiple of 12 (package size)
+      const packageSize = 12;
+      const gp2HalfWithSpare = Math.ceil(gp2HalfTilesNeeded / packageSize) * packageSize;
+      const gp2HalfSpareTiles = gp2HalfWithSpare - gp2HalfTilesNeeded;
+      const gp2HalfPackageCount = gp2HalfWithSpare / packageSize; // Exact division now
 
       console.log('GP2 Half spare calculation:', {
         tilesNeeded: gp2HalfTilesNeeded,
