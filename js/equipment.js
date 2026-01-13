@@ -1118,6 +1118,125 @@ function addTheatrixxEquipment(config, tbody) {
   addEquipmentRow('TXPOWERDIST', 'Theatrixx Power Distribution', 5.5, distros, tbody);
 }
 
+/* ----------------------------- ROE Graphite Mix Equipment ----------------------------- */
+
+function addROEGraphiteMixEquipment(config, tbody) {
+  const {
+    graphiteMixData,
+    processors,
+    cables,
+    sandbags,
+    singleBases,
+    doubleBases,
+    singleHeaders,
+    doubleHeaders,
+    universalBaseTruss,
+    rearTruss,
+    rearBridge,
+    wallType,
+    powerDistro,
+    voltage,
+    supportType,
+  } = config;
+
+  const {
+    halfTiles,
+    fullTiles,
+    halfSpares,
+    fullSpares,
+    halfTilesWithSpares,
+    fullTilesWithSpares,
+  } = graphiteMixData;
+
+  console.log('Adding ROE Graphite Mix equipment:', { halfTiles, fullTiles, halfSpares, fullSpares });
+
+  // Calculate total weight
+  const halfTileWeight = 11.44; // GP2 Half tile weight
+  const fullTileWeight = 19.84; // GP2 Full tile weight
+  totalWeight = (halfTiles * halfTileWeight) + (fullTiles * fullTileWeight);
+
+  // Add GP2 Half tiles and packages
+  if (halfTiles > 0) {
+    const halfPackageCount = Math.ceil(halfTilesWithSpares / 12); // 12 tiles per package
+    addEquipmentRow("6GP2HALF", "ROE GP2.6 Half 12x tile package (Graphite Mix)", 0, halfPackageCount, tbody);
+    addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm", 11.44, halfTiles, tbody);
+    if (halfSpares > 0) {
+      addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm **SPARE**", 11.44, halfSpares, tbody);
+    }
+  }
+
+  // Add GP2 Full tiles and packages
+  if (fullTiles > 0) {
+    const fullPackageCount = Math.ceil(fullTilesWithSpares / 6); // 6 tiles per package
+    addEquipmentRow("6GP2FULL", "ROE GP2.6 Full 6x tile package (Graphite Mix)", 0, fullPackageCount, tbody);
+    addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm", 19.84, fullTiles, tbody);
+    if (fullSpares > 0) {
+      addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm **SPARE**", 19.84, fullSpares, tbody);
+    }
+  }
+
+  // Add processors
+  if (processors.SX40 > 0) addEquipmentRow("SX40", "Brompton Tessera SX40 **Kit includes an XD10**", 17, processors.SX40, tbody);
+  if (processors.XD10 > 0) addEquipmentRow("XD10", "Brompton Tessera XD 10G data distribution unit", 8.16, processors.XD10, tbody);
+  if (processors.S8 > 0) addEquipmentRow("S8", "Brompton Tessera S8", 17, processors.S8, tbody);
+
+  // Add support structures
+  if (singleHeaders > 0) addEquipmentRow("BPBOHEAD1", "ROE Black Pearl header, 1W, 0.5m", 12, singleHeaders, tbody);
+  if (doubleHeaders > 0) addEquipmentRow("BPBOHEAD2", "ROE Black Pearl header, 2W, 1m", 19, doubleHeaders, tbody);
+
+  if (singleBases > 0) addEquipmentRow("BPBOBB1", "ROE Black Pearl base bar, 1W, 0.5m", 16, singleBases, tbody);
+  if (doubleBases > 0) addEquipmentRow("BPBOBB2", "ROE Black Pearl base bar, 2W, 1.0m", 28, doubleBases, tbody);
+  if (universalBaseTruss > 0) addEquipmentRow("BPBOBT", "ROE Black Pearl universal base truss", 17, universalBaseTruss, tbody);
+  if (rearTruss > 0) addEquipmentRow("BPBOREAR", "ROE Black Pearl rear truss,", 1, rearTruss, tbody);
+  if (rearBridge > 0) addEquipmentRow("BPBOBRIDGE", "ROE Black Pearl rear bridge clamp", 1, rearBridge, tbody);
+
+  if (sandbags > 0) addEquipmentRow("SANDBAG25", "Sand Bag 25 lbs.", 25, sandbags, tbody);
+
+  // Add cables
+  if (cables.ECONRJ45 > 0) addEquipmentRow("ECONRJ45", "Ethercon to RJ45 (CAT6) 100'", 2.4, cables.ECONRJ45, tbody);
+  if (cables.CAT5ES005 > 0) addEquipmentRow("CAT5ES005", "CAT5e ethernet cable 5'", 1, cables.CAT5ES005, tbody);
+  if (cables.ECON010C6 > 0) addEquipmentRow("ECON010C6", "Ethercon (CAT6) 10'", 1, cables.ECON010C6, tbody);
+  if (cables.ECON025C6 > 0) addEquipmentRow("ECON025C6", "Ethercon (CAT6) 25'", 1.5, cables.ECON025C6, tbody);
+  if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
+  if (cables.T1016 > 0) addEquipmentRow("T1016", "True1 Power Cable 16' (5m)", 2, cables.T1016, tbody);
+  if (cables.TRUE125FT > 0) addEquipmentRow("TRUE125FT", "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
+
+  // Add power distribution
+  if (powerDistro.CUBEDIST > 0) addEquipmentRow("CUBEDIST", "Indu Electric 200A Cube Distro", 177, powerDistro.CUBEDIST, tbody);
+  if (powerDistro.TP1 > 0) addEquipmentRow("TP1", "Indu Electric 400A Power Distro w/ (4) 208v Soca", 197, powerDistro.TP1, tbody);
+  if (powerDistro.SOCA6XTRU1 > 0) addEquipmentRow("SOCA6XTRU1", "19 Pin Soccapex to 6x True1 Power Cable 2 Meter", 197, powerDistro.SOCA6XTRU1, tbody);
+  if (powerDistro.L2130T1FB > 0) addEquipmentRow("L2130T1FB", "L2130 floor box to 3x True1 with pass through", 7.5, powerDistro.L2130T1FB, tbody);
+
+  // Display shipping weight
+  if (typeof totalWeight !== "undefined" && typeof displayEstShippingWeight === "function") {
+    if (typeof displayWallWeight === "function") displayWallWeight(totalWeight);
+
+    let caseWeight = totalWeight;
+    // Add spare tile weight
+    caseWeight += halfTileWeight * halfSpares;
+    caseWeight += fullTileWeight * fullSpares;
+    // Add package weight
+    const halfPackageCount = Math.ceil(halfTilesWithSpares / 12);
+    const fullPackageCount = Math.ceil(fullTilesWithSpares / 6);
+    caseWeight += 161.12 * (halfPackageCount * 0.5); // Estimate: half packages weigh less
+    caseWeight += 161.12 * fullPackageCount;
+    caseWeight += 210 * (singleBases || 0);
+    caseWeight += 113 * (doubleBases || 0);
+    caseWeight += 91 * (singleHeaders || 0);
+    caseWeight += 127 * (doubleHeaders || 0);
+    caseWeight += 120 * (cables.ECONRJ45 || 0);
+    caseWeight += 63 * (processors.SX40 || 0);
+    caseWeight += 57 * (processors.S8 || 0);
+    displayEstShippingWeight(caseWeight);
+  }
+
+  // Display total pixels
+  const halfPixels = halfTiles * 192 * 192; // 192x192 pixels per Half tile
+  const fullPixels = fullTiles * 192 * 384; // 192x384 pixels per Full tile
+  const totalPixels = halfPixels + fullPixels;
+  if (typeof displayTotalPixels === "function") displayTotalPixels(totalPixels);
+}
+
 /* ----------------------------- Orchestrator ----------------------------- */
 
 function displayEquipment(data) {
@@ -1155,6 +1274,9 @@ function displayEquipment(data) {
     const gp2HalfBottomRow = data.gp2HalfBottomRow || false;
     const gp2HalfRows = data.gp2HalfRows || 0;
     const gp2FullVerticalBlocks = data.gp2FullVerticalBlocks || verticalBlocks;
+    const roeGraphiteMixEnabled = data.roeGraphiteMixEnabled || false;
+    const graphiteMixData = data.graphiteMixData || null;
+
     console.log('Equipment.js received GP2 Half data:', {
       gp2HalfBottomRow,
       gp2HalfRows,
@@ -1162,6 +1284,10 @@ function displayEquipment(data) {
       verticalBlocks,
       productType
     });
+
+    if (roeGraphiteMixEnabled && graphiteMixData) {
+      console.log('Equipment.js received ROE Graphite Mix data:', graphiteMixData);
+    }
 
     // GP2 Full height limits based on support type
     // Note: verticalBlocks here includes GP2 Half rows for display purposes
@@ -1319,8 +1445,17 @@ function displayEquipment(data) {
       cables,
       sandbags,
       powerDistro,
+      roeGraphiteMixEnabled,
+      graphiteMixData,
       ...supportStructures,
     };
+
+    // Handle ROE Graphite Mix mode (takes precedence over product type)
+    if (roeGraphiteMixEnabled && graphiteMixData) {
+      addROEGraphiteMixEquipment(equipmentConfig, tbody);
+      console.log("Equipment display complete for ROE Graphite Mix");
+      return;
+    }
 
     switch (productType) {
       case "absen":
