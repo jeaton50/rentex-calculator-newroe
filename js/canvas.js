@@ -1119,7 +1119,11 @@ const CanvasRenderer = {
 
     // Get configuration values
     const horizontalBlocks = parseInt(document.getElementById('blocksHor')?.value || 1, 10);
-    let verticalBlocks = parseInt(document.getElementById('blocksVer')?.value || 1, 10);
+
+    // Parse verticalBlocks as float to support fractional input (e.g., 4.5)
+    const verticalBlocksRaw = parseFloat(document.getElementById('blocksVer')?.value || 1);
+    let verticalBlocks = Math.floor(verticalBlocksRaw);
+
     const numScreens = parseInt(document.getElementById('numScreens')?.value || 1, 10);
 
     // Check for GP2 Half bottom rows (for GP2 Full only)
@@ -1127,12 +1131,32 @@ const CanvasRenderer = {
     let gp2HalfRows = 0;
     let gp2FullVerticalBlocks = verticalBlocks;
 
-    if (productType === 'ROEGP26Full' && document.getElementById('gp2HalfCheckbox')?.checked) {
+    // Detect fractional input (e.g., 4.5 means 4 Full + 1 Half)
+    const hasFractionalInput = (verticalBlocksRaw % 1) !== 0;
+    let autoGp2HalfRows = 0;
+
+    if (hasFractionalInput && productType === 'ROEGP26Full') {
+      const fractionalPart = verticalBlocksRaw % 1;
+      autoGp2HalfRows = Math.round(fractionalPart * 2);
+    }
+
+    // Check if GP2 Half is enabled via checkbox OR fractional input
+    const checkboxEnabled = document.getElementById('gp2HalfCheckbox')?.checked;
+
+    if (productType === 'ROEGP26Full' && (checkboxEnabled || (hasFractionalInput && autoGp2HalfRows > 0))) {
       gp2HalfBottomRow = true;
-      gp2HalfRows = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
-      gp2FullVerticalBlocks = verticalBlocks; // Store original GP2 Full blocks
-      // Update verticalBlocks for display purposes to include GP2 Half equivalent height
-      verticalBlocks = verticalBlocks + Math.ceil(gp2HalfRows / 2);
+
+      // Use auto-calculated rows from fractional input, or fall back to checkbox value
+      if (hasFractionalInput && autoGp2HalfRows > 0) {
+        gp2HalfRows = autoGp2HalfRows;
+        // Fractional input: additive mode (4.5 = 4 Full + 1 Half)
+        gp2FullVerticalBlocks = verticalBlocks;
+      } else {
+        gp2HalfRows = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
+        // Checkbox mode: replacement mode (maintains same total height)
+        gp2FullVerticalBlocks = verticalBlocks;
+        verticalBlocks = verticalBlocks + Math.ceil(gp2HalfRows / 2);
+      }
     }
 
     console.log('Blocks:', { horizontalBlocks, verticalBlocks, numScreens, gp2HalfBottomRow, gp2HalfRows, gp2FullVerticalBlocks });
