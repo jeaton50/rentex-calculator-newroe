@@ -956,19 +956,34 @@ window.addEventListener("DOMContentLoaded", () => {
           blankRows = parseInt(document.getElementById('dummyTileCount')?.value || 0, 10) || 1;
         }
 
-        // Get GP2 Half bottom row configuration for GP2 Full
+        // Get GP2 Half top row configuration for GP2 Full
         let gp2HalfBottomRow = false;
         let gp2HalfRows = 0;
-        let gp2FullVerticalBlocks = blocksVer; // Store original GP2 Full blocks
+        let gp2FullVerticalBlocks = blocksVer; // Store original input vertical blocks
         let displayBlocksVer = blocksVer; // Blocks for dimension display
 
         if (document.getElementById('gp2HalfCheckbox')?.checked) {
           gp2HalfBottomRow = true;
           gp2HalfRows = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
 
-          // For GP2 Full with GP2 Half bottom rows, add those rows to vertical count for dimensions display only
+          // IMPORTANT: GP2 Half REPLACES the top Full row, doesn't add to total height
           if (productType === 'ROEGP26Full') {
-            displayBlocksVer = blocksVer + Math.ceil(gp2HalfRows / 2); // Each 2 GP2 Half rows = 1 Full row height
+            // Since 2 GP2 Half rows = 1 GP2 Full row height, calculate equivalent Full rows being replaced
+            const equivalentFullRows = Math.ceil(gp2HalfRows / 2);
+
+            // Reduce GP2 Full blocks by the number being replaced
+            gp2FullVerticalBlocks = Math.max(0, blocksVer - equivalentFullRows);
+
+            // Display blocks stays the same (total wall height doesn't change)
+            displayBlocksVer = blocksVer;
+
+            console.log('GP2 Half configuration:', {
+              originalBlocks: blocksVer,
+              gp2HalfRows: gp2HalfRows,
+              equivalentFullRows: equivalentFullRows,
+              gp2FullVerticalBlocks: gp2FullVerticalBlocks,
+              displayBlocksVer: displayBlocksVer
+            });
           }
         }
 
@@ -1022,7 +1037,9 @@ window.addEventListener("DOMContentLoaded", () => {
           console.log('ROE Graphite Mix spare calculation:', graphiteMixData);
         } else {
           // Normal mode: standard spare calculation
-          totalBlocks = blocksHor * blocksVer;
+          // For GP2 Full with GP2 Half enabled, use the reduced Full tile count
+          const actualVerticalBlocks = (productType === 'ROEGP26Full' && gp2HalfBottomRow) ? gp2FullVerticalBlocks : blocksVer;
+          totalBlocks = blocksHor * actualVerticalBlocks;
 
           // GP2 products use package-based spare calculation (round up to package size)
           if (productType === 'ROEGP26Full') {
@@ -1031,7 +1048,13 @@ window.addEventListener("DOMContentLoaded", () => {
             const roundedTotal = Math.ceil(totalBlocks / packageSize) * packageSize;
             totalSpares = roundedTotal - totalBlocks;
             totalBlocksWithSpares = roundedTotal;
-            console.log('GP2 Full spare calculation:', { totalBlocks, roundedTotal, totalSpares });
+            console.log('GP2 Full spare calculation:', {
+              totalBlocks,
+              roundedTotal,
+              totalSpares,
+              gp2HalfEnabled: gp2HalfBottomRow,
+              actualVerticalBlocks
+            });
           } else if (productType === 'ROEGP26Half') {
             // GP2 Half: packages of 12, round total up to next multiple of 12
             const packageSize = 12;
@@ -1065,7 +1088,7 @@ window.addEventListener("DOMContentLoaded", () => {
           blankRows,
           gp2HalfBottomRow,
           gp2HalfRows,
-          gp2FullVerticalBlocks: blocksVer, // Original GP2 Full vertical blocks
+          gp2FullVerticalBlocks, // Reduced GP2 Full blocks (after replacing top rows with Half)
           roeGraphiteMixEnabled,
           graphiteMixData
         };
