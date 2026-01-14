@@ -1188,7 +1188,7 @@ const CanvasRenderer = {
       case 'ROEGP26Full':
         pixelsPerTileWidth = 192;
         pixelsPerTileHeight = 384; // Full is 1000mm tall (2x height)
-        depth = '80mm (3.15")';
+        depth = '3.15"';
         tileWidthFeet = 1.64;
         tileHeightFeet = 3.28; // 1000mm = 3.28 feet
         console.log('ROE GP2.6 Full selected - using 384px height and 3.28\' per tile');
@@ -1196,7 +1196,7 @@ const CanvasRenderer = {
       case 'ROEGP26Half':
         pixelsPerTileWidth = 192;
         pixelsPerTileHeight = 192;
-        depth = '80mm (3.15")';
+        depth = '3.15"';
         tileWidthFeet = 1.64;
         tileHeightFeet = 1.64;
         break;
@@ -1231,14 +1231,28 @@ const CanvasRenderer = {
 
     const totalPixels = (totalWidthPixels * totalHeightPixels).toLocaleString();
     const totalWidthFeet = (horizontalBlocks * tileWidthFeet * numScreens).toFixed(2);
-    const totalTiles = horizontalBlocks * verticalBlocks * numScreens;
+
+    // Calculate total tiles - show GP2 Full and GP2 Half separately when applicable
+    let totalTilesDisplay;
+    if (productType === 'ROEGP26Full' && gp2HalfBottomRow && gp2HalfRows > 0) {
+      const gp2FullTiles = horizontalBlocks * gp2FullVerticalBlocks * numScreens;
+      const gp2HalfTiles = horizontalBlocks * gp2HalfRows * numScreens;
+      const totalTiles = gp2FullTiles + gp2HalfTiles;
+      totalTilesDisplay = `${totalTiles} (${gp2FullTiles} GP2 Full + ${gp2HalfTiles} GP2 Half)`;
+    } else {
+      const totalTiles = horizontalBlocks * verticalBlocks * numScreens;
+      totalTilesDisplay = `${totalTiles}`;
+    }
 
     console.log('Calculated dimensions:', {
       totalWidthPixels,
       totalHeightPixels,
       totalWidthFeet,
       totalHeightFeet,
-      tileHeightFeet
+      tileHeightFeet,
+      gp2HalfBottomRow,
+      gp2HalfRows,
+      gp2FullVerticalBlocks
     });
 
     // Update display
@@ -1247,7 +1261,7 @@ const CanvasRenderer = {
         <strong>Wall Dimensions:</strong><br>
         ${totalWidthPixels} px (W) x ${totalHeightPixels} px (H)<br>
         ${totalWidthFeet}' (W) x ${totalHeightFeet}' (H) x ${depth} (D)<br>
-        Total Tiles: ${totalTiles}
+        Total Tiles: ${totalTilesDisplay}
       </div>
     `;
   }
