@@ -916,16 +916,29 @@ window.addEventListener("DOMContentLoaded", () => {
             tileHeightFeet = 1.64;
           }
 
-          document.getElementById('blocksHor').value = Math.round(widthAsFeet / tileWidthFeet);
-          document.getElementById('blocksVer').value = Math.round(heightAsFeet / tileHeightFeet);
+          const calculatedHor = widthAsFeet / tileWidthFeet;
+          const calculatedVer = heightAsFeet / tileHeightFeet;
+
+          // For GP2 Full, round to nearest 0.5 to support fractional input (e.g., 4.5)
+          // For other products, round to nearest whole number
+          if (productType === 'ROEGP26Full') {
+            document.getElementById('blocksHor').value = Math.round(calculatedHor);
+            document.getElementById('blocksVer').value = Math.round(calculatedVer * 2) / 2; // Round to nearest 0.5
+          } else {
+            document.getElementById('blocksHor').value = Math.round(calculatedHor);
+            document.getElementById('blocksVer').value = Math.round(calculatedVer);
+          }
+
           console.log('Input Dimensions conversion:', {
             productType,
             widthFeet: widthAsFeet,
             heightFeet: heightAsFeet,
             tileWidthFeet,
             tileHeightFeet,
-            blocksHor: Math.round(widthAsFeet / tileWidthFeet),
-            blocksVer: Math.round(heightAsFeet / tileHeightFeet)
+            calculatedHor: calculatedHor,
+            calculatedVer: calculatedVer,
+            blocksHor: document.getElementById('blocksHor').value,
+            blocksVer: document.getElementById('blocksVer').value
           });
         }
 
