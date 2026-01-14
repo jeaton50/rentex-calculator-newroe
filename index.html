@@ -900,8 +900,32 @@ window.addEventListener("DOMContentLoaded", () => {
         var heightAsFeet = document.getElementById('heightFeet').value;
         let radioButton = document.getElementById("dimensionInput");
         if (radioButton.checked) {
-          document.getElementById('blocksHor').value = Math.round(widthAsFeet / 1.64042); // ROUND(Calculator::Table 1::D13÷1.64042,0)
-          document.getElementById('blocksVer').value = Math.round(heightAsFeet / 1.64042); //ROUND(Calculator::Table 1::G13÷1.64042,0)
+          // Convert dimensions to tiles based on product type
+          let tileWidthFeet, tileHeightFeet;
+
+          if (productType === 'ROEGP26Full') {
+            tileWidthFeet = 1.64;  // 500mm
+            tileHeightFeet = 3.28; // 1000mm (GP2 Full is rectangular!)
+          } else if (productType === 'ROEGP26Half') {
+            tileWidthFeet = 1.64;  // 500mm
+            tileHeightFeet = 1.64; // 500mm (GP2 Half is square)
+          } else {
+            // Black Pearl, Theatrixx, Absen (all square tiles)
+            tileWidthFeet = 1.64;
+            tileHeightFeet = 1.64;
+          }
+
+          document.getElementById('blocksHor').value = Math.round(widthAsFeet / tileWidthFeet);
+          document.getElementById('blocksVer').value = Math.round(heightAsFeet / tileHeightFeet);
+          console.log('Input Dimensions conversion:', {
+            productType,
+            widthFeet: widthAsFeet,
+            heightFeet: heightAsFeet,
+            tileWidthFeet,
+            tileHeightFeet,
+            blocksHor: Math.round(widthAsFeet / tileWidthFeet),
+            blocksVer: Math.round(heightAsFeet / tileHeightFeet)
+          });
         }
 
         blocksHor = parseInt(document.getElementById('blocksHor').value, 10);
