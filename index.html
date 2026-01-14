@@ -998,7 +998,9 @@ window.addEventListener("DOMContentLoaded", () => {
         let gp2HalfBottomRow = false;
         let gp2HalfRows = 0;
         let gp2FullVerticalBlocks = blocksVer; // Store original input vertical blocks
-        let displayBlocksVer = blocksVer; // Blocks for dimension display
+
+        // For dimension display: use original fractional value if fractional input detected
+        let displayBlocksVer = hasFractionalInput ? blocksVerRaw : blocksVer;
 
         // Check if GP2 Half is enabled via checkbox OR via fractional input
         const checkboxEnabled = document.getElementById('gp2HalfCheckbox')?.checked;
@@ -1013,24 +1015,28 @@ window.addEventListener("DOMContentLoaded", () => {
             gp2HalfRows = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
           }
 
-          // IMPORTANT: GP2 Half REPLACES the top Full row, doesn't add to total height
           if (productType === 'ROEGP26Full') {
-            // Since 2 GP2 Half rows = 1 GP2 Full row height, calculate equivalent Full rows being replaced
-            const equivalentFullRows = Math.ceil(gp2HalfRows / 2);
+            if (hasFractionalInput) {
+              // Fractional input: 4.5 means 4 Full + 1 Half (not replacement, additive)
+              // blocksVer is already floored to the number of Full rows we want
+              gp2FullVerticalBlocks = blocksVer;
+            } else {
+              // Checkbox mode: GP2 Half REPLACES the top Full row, doesn't add to total height
+              // Since 2 GP2 Half rows = 1 GP2 Full row height, calculate equivalent Full rows being replaced
+              const equivalentFullRows = Math.ceil(gp2HalfRows / 2);
 
-            // Reduce GP2 Full blocks by the number being replaced
-            gp2FullVerticalBlocks = Math.max(0, blocksVer - equivalentFullRows);
-
-            // Display blocks stays the same (total wall height doesn't change)
-            displayBlocksVer = blocksVer;
+              // Reduce GP2 Full blocks by the number being replaced
+              gp2FullVerticalBlocks = Math.max(0, blocksVer - equivalentFullRows);
+            }
 
             console.log('GP2 Half configuration:', {
               originalBlocks: blocksVer,
+              originalFractional: blocksVerRaw,
               gp2HalfRows: gp2HalfRows,
-              equivalentFullRows: equivalentFullRows,
               gp2FullVerticalBlocks: gp2FullVerticalBlocks,
               displayBlocksVer: displayBlocksVer,
-              fromFractionalInput: hasFractionalInput
+              fromFractionalInput: hasFractionalInput,
+              mode: hasFractionalInput ? 'additive' : 'replacement'
             });
           }
         }
