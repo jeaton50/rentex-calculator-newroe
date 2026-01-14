@@ -502,7 +502,8 @@ window.addEventListener("DOMContentLoaded", () => {
         <div id="blockInputs">
   <label for="blocksHor">Horizontal/Vertical</label><br>
   <input type="number" id="blocksHor" name="blocksHor" min="1" value="5" style="width: 80px; margin-right: 10px;">
-  <input type="number" id="blocksVer" name="blocksVer" min="1" value="5" style="width: 80px;">
+  <input type="number" id="blocksVer" name="blocksVer" min="0.5" step="0.5" value="5" style="width: 80px;" placeholder="e.g. 4.5">
+  <span style="font-size: 11px; color: #666; margin-left: 5px;">(.5 = half row)</span>
 </div>
 
         <!-- Dimension inputs -->
@@ -929,7 +930,31 @@ window.addEventListener("DOMContentLoaded", () => {
         }
 
         blocksHor = parseInt(document.getElementById('blocksHor').value, 10);
-        blocksVer = parseInt(document.getElementById('blocksVer').value, 10);
+
+        // Parse blocksVer as float to detect fractional values (e.g., 4.5)
+        const blocksVerRaw = parseFloat(document.getElementById('blocksVer').value);
+        blocksVer = Math.floor(blocksVerRaw); // Get whole number part
+
+        // Detect if fractional input is being used for GP2 Full (e.g., 4.5 means 4 Full + 1 Half row)
+        const hasFractionalInput = (blocksVerRaw % 1) !== 0;
+        let autoGp2HalfRows = 0;
+
+        if (hasFractionalInput && productType === 'ROEGP26Full') {
+          // Extract fractional part (e.g., 0.5 from 4.5)
+          const fractionalPart = blocksVerRaw % 1;
+
+          // Convert fractional part to GP2 Half rows
+          // 0.5 = 1 Half row (since 2 Half rows = 1 Full row height)
+          // 1.0 = 2 Half rows, 1.5 = 3 Half rows, etc.
+          autoGp2HalfRows = Math.round(fractionalPart * 2);
+
+          console.log('Fractional input detected:', {
+            rawInput: blocksVerRaw,
+            wholePart: blocksVer,
+            fractionalPart: fractionalPart,
+            autoGp2HalfRows: autoGp2HalfRows
+          });
+        }
 
         const groundSupport = document.getElementById('groundSupport').checked;
         const groundSupportTypeElement = document.getElementById('groundSupportType');
@@ -962,9 +987,18 @@ window.addEventListener("DOMContentLoaded", () => {
         let gp2FullVerticalBlocks = blocksVer; // Store original input vertical blocks
         let displayBlocksVer = blocksVer; // Blocks for dimension display
 
-        if (document.getElementById('gp2HalfCheckbox')?.checked) {
+        // Check if GP2 Half is enabled via checkbox OR via fractional input
+        const checkboxEnabled = document.getElementById('gp2HalfCheckbox')?.checked;
+
+        if (checkboxEnabled || (hasFractionalInput && autoGp2HalfRows > 0)) {
           gp2HalfBottomRow = true;
-          gp2HalfRows = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
+
+          // Use auto-calculated rows from fractional input, or fall back to checkbox value
+          if (hasFractionalInput && autoGp2HalfRows > 0) {
+            gp2HalfRows = autoGp2HalfRows;
+          } else {
+            gp2HalfRows = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
+          }
 
           // IMPORTANT: GP2 Half REPLACES the top Full row, doesn't add to total height
           if (productType === 'ROEGP26Full') {
@@ -982,7 +1016,8 @@ window.addEventListener("DOMContentLoaded", () => {
               gp2HalfRows: gp2HalfRows,
               equivalentFullRows: equivalentFullRows,
               gp2FullVerticalBlocks: gp2FullVerticalBlocks,
-              displayBlocksVer: displayBlocksVer
+              displayBlocksVer: displayBlocksVer,
+              fromFractionalInput: hasFractionalInput
             });
           }
         }
