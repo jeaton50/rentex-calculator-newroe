@@ -243,24 +243,17 @@ const UI = {
           return;
         }
 
-        // For GP2 Full, check for fractional input or GP2 Half checkbox
+        // For GP2 Full, check for fractional input
         let effectiveVerticalTiles = blocksVer;
 
         if (product === 'ROEGP26Full') {
           // Detect fractional input (e.g., 4.5)
           const hasFractionalInput = (blocksVerRaw % 1) !== 0;
-          const checkboxEnabled = document.getElementById('gp2HalfCheckbox')?.checked;
 
-          if (hasFractionalInput || checkboxEnabled) {
-            let gp2HalfRows = 0;
-
-            if (hasFractionalInput) {
-              // Fractional input: 0.5 → 1 Half row, 1.0 → 2 Half rows
-              const fractionalPart = blocksVerRaw % 1;
-              gp2HalfRows = Math.round(fractionalPart * 2);
-            } else if (checkboxEnabled) {
-              gp2HalfRows = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
-            }
+          if (hasFractionalInput) {
+            // Fractional input: 0.5 → 1 Half row, 1.0 → 2 Half rows
+            const fractionalPart = blocksVerRaw % 1;
+            const gp2HalfRows = Math.round(fractionalPart * 2);
 
             // Calculate total height and convert to equivalent Full tiles
             // Full tiles: blocksVer × 3.28'

@@ -599,16 +599,6 @@ window.addEventListener("DOMContentLoaded", () => {
           </div>
         </div>
 
-        <!-- GP2 Half Top Row Option for GP2 Full (only visible for ROEGP26Full) -->
-        <div id="gp2HalfOption" style="display: none; margin-top: 10px;">
-          <input type="checkbox" id="gp2HalfCheckbox" name="gp2HalfCheckbox">
-          <label for="gp2HalfCheckbox">Use GP2 Half for top rows</label>
-          <div id="gp2HalfCountContainer" style="display: none; margin-top: 5px;">
-            <label for="gp2HalfCount">GP2 Half Row Count:</label>
-            <input type="number" id="gp2HalfCount" name="gp2HalfCount" min="1" max="1" value="1">
-          </div>
-        </div>
-
         <!-- Wall Type Selection with Radio Buttons -->
         <div class="radio-group">
           <label>Select Wall Type:</label><br>
@@ -1002,43 +992,23 @@ window.addEventListener("DOMContentLoaded", () => {
         // For dimension display: use original fractional value if fractional input detected
         let displayBlocksVer = hasFractionalInput ? blocksVerRaw : blocksVer;
 
-        // Check if GP2 Half is enabled via checkbox OR via fractional input
-        const checkboxEnabled = document.getElementById('gp2HalfCheckbox')?.checked;
-
-        if (checkboxEnabled || (hasFractionalInput && autoGp2HalfRows > 0)) {
+        // Check if GP2 Half is enabled via fractional input
+        if (hasFractionalInput && autoGp2HalfRows > 0 && productType === 'ROEGP26Full') {
           gp2HalfBottomRow = true;
+          gp2HalfRows = autoGp2HalfRows;
 
-          // Use auto-calculated rows from fractional input, or fall back to checkbox value
-          if (hasFractionalInput && autoGp2HalfRows > 0) {
-            gp2HalfRows = autoGp2HalfRows;
-          } else {
-            gp2HalfRows = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
-          }
+          // Fractional input: 4.5 means 4 Full + 1 Half (not replacement, additive)
+          // blocksVer is already floored to the number of Full rows we want
+          gp2FullVerticalBlocks = blocksVer;
 
-          if (productType === 'ROEGP26Full') {
-            if (hasFractionalInput) {
-              // Fractional input: 4.5 means 4 Full + 1 Half (not replacement, additive)
-              // blocksVer is already floored to the number of Full rows we want
-              gp2FullVerticalBlocks = blocksVer;
-            } else {
-              // Checkbox mode: GP2 Half REPLACES the top Full row, doesn't add to total height
-              // Since 2 GP2 Half rows = 1 GP2 Full row height, calculate equivalent Full rows being replaced
-              const equivalentFullRows = Math.ceil(gp2HalfRows / 2);
-
-              // Reduce GP2 Full blocks by the number being replaced
-              gp2FullVerticalBlocks = Math.max(0, blocksVer - equivalentFullRows);
-            }
-
-            console.log('GP2 Half configuration:', {
-              originalBlocks: blocksVer,
-              originalFractional: blocksVerRaw,
-              gp2HalfRows: gp2HalfRows,
-              gp2FullVerticalBlocks: gp2FullVerticalBlocks,
-              displayBlocksVer: displayBlocksVer,
-              fromFractionalInput: hasFractionalInput,
-              mode: hasFractionalInput ? 'additive' : 'replacement'
-            });
-          }
+          console.log('GP2 Half configuration:', {
+            originalBlocks: blocksVer,
+            originalFractional: blocksVerRaw,
+            gp2HalfRows: gp2HalfRows,
+            gp2FullVerticalBlocks: gp2FullVerticalBlocks,
+            displayBlocksVer: displayBlocksVer,
+            fromFractionalInput: hasFractionalInput
+          });
         }
 
         // Check if ROE Graphite Mix mode is enabled
@@ -1505,73 +1475,7 @@ document.getElementById('dummyTileCount')?.addEventListener('input', function ()
   updateDummyTileQty();
 });
 
-// GP2 Half checkbox event listener for GP2 Full
-document.getElementById('gp2HalfCheckbox')?.addEventListener('change', function () {
-  const countContainer = document.getElementById('gp2HalfCountContainer');
-  if (this.checked) {
-    countContainer.style.display = 'block';
-  } else {
-    countContainer.style.display = 'none';
-  }
-  generateWall(); // refresh the wall drawing when GP2 Half checkbox changes
-});
-
-// Update the wall when the GP2 Half count changes
-document.getElementById('gp2HalfCount')?.addEventListener('input', function () {
-  console.log('🔵 GP2 Half count changed to:', this.value);
-  generateWall();
-});
-
-// === CRITICAL PATCH FOR GP2 HALF CHECKBOX READING ===
-console.log('🟡 Starting GP2 Half patch setup...');
-console.log('🟡 generateWallConfiguration exists?', typeof generateWallConfiguration);
-
-// Store original function
-const originalGenerateWallConfiguration = generateWallConfiguration;
-
-// Override with patched version
-window.generateWallConfiguration = function() {
-  console.log('🔴 PATCHED generateWallConfiguration called');
-
-  // Call original function
-  const result = originalGenerateWallConfiguration.apply(this, arguments);
-
-  // Force read GP2 Half checkbox again and override result
-  const gp2HalfCheckboxElement = document.getElementById('gp2HalfCheckbox');
-  const gp2HalfCountElement = document.getElementById('gp2HalfCount');
-
-  console.log('🔴 PATCH: Reading checkbox - element:', gp2HalfCheckboxElement, 'checked:', gp2HalfCheckboxElement?.checked);
-
-  if (gp2HalfCheckboxElement && gp2HalfCheckboxElement.checked) {
-    const rows = parseInt(gp2HalfCountElement?.value || 1, 10);
-    console.log('🔴 PATCH: Overriding GP2 Half data - rows:', rows);
-
-    result.gp2HalfBottomRow = true;
-    result.gp2HalfRows = rows;
-
-    // Also update totalVerticalBlocks for display
-    if (result.productType === 'ROEGP26Full' && result.gp2FullVerticalBlocks) {
-      result.blocksVer = result.gp2FullVerticalBlocks + Math.ceil(rows / 2);
-      console.log('🔴 PATCH: Updated blocksVer from', result.gp2FullVerticalBlocks, 'to:', result.blocksVer);
-    }
-  } else {
-    console.log('🔴 PATCH: GP2 Half checkbox not checked');
-  }
-
-  console.log('🔴 PATCH: Returning result with gp2HalfBottomRow:', result.gp2HalfBottomRow, 'gp2HalfRows:', result.gp2HalfRows);
-  return result;
-};
-
-console.log('✅ GP2 Half patch installed successfully');
-
-// Debug: Check GP2 Half checkbox state on any change
-setInterval(function() {
-  const checkbox = document.getElementById('gp2HalfCheckbox');
-  const count = document.getElementById('gp2HalfCount');
-  if (checkbox && checkbox.checked) {
-    console.log('🟢 [HTML inline check] GP2 Half checkbox IS checked, count:', count?.value);
-  }
-}, 2000); // Check every 2 seconds
+// GP2 Half is now handled via fractional input (e.g., 4.5) - no checkbox needed
 
 // Function to read the dummy tile count and update the wall.
 // When performing your calculations, use a helper like this:

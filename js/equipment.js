@@ -893,7 +893,9 @@ function addROEGP26Equipment(config, tbody) {
     const packageCount = Math.ceil(totalTilesWithSpares / 6);
     addEquipmentRow("6GP2FULL", "ROE GP2.6 Full 6x tile package", 0, packageCount, tbody);
     addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm", 19.84, totalTiles, tbody);
-    addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm **SPARE**", 19.84, totalSpareTiles, tbody);
+    if (totalSpareTiles > 0) {
+      addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm **SPARE**", 19.84, totalSpareTiles, tbody);
+    }
 
     // Add GP2 Half tiles for bottom rows if checkbox is checked
     if (gp2HalfBottomRow && gp2HalfRows > 0) {

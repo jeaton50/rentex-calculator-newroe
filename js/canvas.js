@@ -1140,23 +1140,12 @@ const CanvasRenderer = {
       autoGp2HalfRows = Math.round(fractionalPart * 2);
     }
 
-    // Check if GP2 Half is enabled via checkbox OR fractional input
-    const checkboxEnabled = document.getElementById('gp2HalfCheckbox')?.checked;
-
-    if (productType === 'ROEGP26Full' && (checkboxEnabled || (hasFractionalInput && autoGp2HalfRows > 0))) {
+    // Check if GP2 Half is enabled via fractional input
+    if (productType === 'ROEGP26Full' && hasFractionalInput && autoGp2HalfRows > 0) {
       gp2HalfBottomRow = true;
-
-      // Use auto-calculated rows from fractional input, or fall back to checkbox value
-      if (hasFractionalInput && autoGp2HalfRows > 0) {
-        gp2HalfRows = autoGp2HalfRows;
-        // Fractional input: additive mode (4.5 = 4 Full + 1 Half)
-        gp2FullVerticalBlocks = verticalBlocks;
-      } else {
-        gp2HalfRows = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
-        // Checkbox mode: replacement mode (maintains same total height)
-        gp2FullVerticalBlocks = verticalBlocks;
-        verticalBlocks = verticalBlocks + Math.ceil(gp2HalfRows / 2);
-      }
+      gp2HalfRows = autoGp2HalfRows;
+      // Fractional input: additive mode (4.5 = 4 Full + 1 Half)
+      gp2FullVerticalBlocks = verticalBlocks;
     }
 
     console.log('Blocks:', { horizontalBlocks, verticalBlocks, numScreens, gp2HalfBottomRow, gp2HalfRows, gp2FullVerticalBlocks });
