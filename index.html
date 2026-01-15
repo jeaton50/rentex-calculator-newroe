@@ -1028,16 +1028,28 @@ window.addEventListener("DOMContentLoaded", () => {
           const halfTiles = halfHorizontal * halfVertical;
           const fullTiles = fullHorizontal * fullVertical;
 
-          // Calculate spares for each type (round up to package size)
+          // Calculate spares for each type (always add at least 1 spare case if tiles exist)
           // GP2 Half: packages of 12
           const halfPackageSize = 12;
-          const halfTilesWithSpares = Math.ceil(halfTiles / halfPackageSize) * halfPackageSize;
-          const halfSpares = halfTilesWithSpares - halfTiles;
+          let halfTilesWithSpares = 0;
+          let halfSpares = 0;
+          if (halfTiles > 0) {
+            const halfActiveCases = Math.ceil(halfTiles / halfPackageSize);
+            const halfTotalCases = halfActiveCases + 1; // Guarantee at least 1 spare case
+            halfTilesWithSpares = halfTotalCases * halfPackageSize;
+            halfSpares = halfTilesWithSpares - halfTiles;
+          }
 
           // GP2 Full: packages of 6
           const fullPackageSize = 6;
-          const fullTilesWithSpares = Math.ceil(fullTiles / fullPackageSize) * fullPackageSize;
-          const fullSpares = fullTilesWithSpares - fullTiles;
+          let fullTilesWithSpares = 0;
+          let fullSpares = 0;
+          if (fullTiles > 0) {
+            const fullActiveCases = Math.ceil(fullTiles / fullPackageSize);
+            const fullTotalCases = fullActiveCases + 1; // Guarantee at least 1 spare case
+            fullTilesWithSpares = fullTotalCases * fullPackageSize;
+            fullSpares = fullTilesWithSpares - fullTiles;
+          }
 
           // Store Graphite Mix data
           graphiteMixData = {
@@ -1065,27 +1077,33 @@ window.addEventListener("DOMContentLoaded", () => {
           const actualVerticalBlocks = (productType === 'ROEGP26Full' && gp2HalfBottomRow) ? gp2FullVerticalBlocks : blocksVer;
           totalBlocks = blocksHor * actualVerticalBlocks;
 
-          // GP2 products use package-based spare calculation (round up to package size)
+          // GP2 products use package-based spare calculation (always add at least 1 spare case)
           if (productType === 'ROEGP26Full') {
-            // GP2 Full: packages of 6, round total up to next multiple of 6
+            // GP2 Full: packages of 6, always add at least 1 spare case
             const packageSize = 6;
-            const roundedTotal = Math.ceil(totalBlocks / packageSize) * packageSize;
+            const activeCases = Math.ceil(totalBlocks / packageSize);
+            const totalCases = activeCases + 1; // Guarantee at least 1 spare case
+            const roundedTotal = totalCases * packageSize;
             totalSpares = roundedTotal - totalBlocks;
             totalBlocksWithSpares = roundedTotal;
             console.log('GP2 Full spare calculation:', {
               totalBlocks,
+              activeCases,
+              totalCases,
               roundedTotal,
               totalSpares,
               gp2HalfEnabled: gp2HalfBottomRow,
               actualVerticalBlocks
             });
           } else if (productType === 'ROEGP26Half') {
-            // GP2 Half: packages of 12, round total up to next multiple of 12
+            // GP2 Half: packages of 12, always add at least 1 spare case
             const packageSize = 12;
-            const roundedTotal = Math.ceil(totalBlocks / packageSize) * packageSize;
+            const activeCases = Math.ceil(totalBlocks / packageSize);
+            const totalCases = activeCases + 1; // Guarantee at least 1 spare case
+            const roundedTotal = totalCases * packageSize;
             totalSpares = roundedTotal - totalBlocks;
             totalBlocksWithSpares = roundedTotal;
-            console.log('GP2 Half spare calculation:', { totalBlocks, roundedTotal, totalSpares });
+            console.log('GP2 Half spare calculation:', { totalBlocks, activeCases, totalCases, roundedTotal, totalSpares });
           } else {
             // Black Pearl, Theatrixx, etc: use original calcSpares function
             totalSpares = calcSpares(totalBlocks, productType === "theatrixx" ? 10 : 8, productType === "theatrixx" ? 2 : 1.5);
