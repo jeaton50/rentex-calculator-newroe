@@ -1,11 +1,172 @@
 /**
- * Rentex LED Wall Calculator - Equipment Module (UPDATED)
- * - Uses PDF-based "suggested" circuit logic for ROE GP2.6 Full @ 120V and 208V
- * - Fixes the common “one circuit short on 208V” issue by NOT using 12 panels/circuit
- * - Normalizes 110/115 -> 120V for planning math
+ * Rentex LED Wall Calculator - Equipment Module (MERGED & UPDATED)
+ * - Includes PDF-based circuit logic for ROE GP2.6
+ * - Includes NEW CORRECTED GP2.6 Sandbag Calculation (ROE Stacking Universal GT System)
  */
 
-/* ----------------------------- Small Helpers ----------------------------- */
+/* ============================================================================
+   CONSTANTS & HELPERS FOR SANDBAGS (From Snippet 2)
+   ============================================================================ */
+
+const GP26_BALLAST_CONFIG = {
+  // PDF Table: Universal Base 100cm, 0.50m bay distance (dense support for >4m height)
+  // Format: height in meters -> { BB: back ballast kg, BF: front ballast kg }
+  bayDistance050: {
+    2.0: { BB: 18, BF: 20 },
+    2.5: { BB: 28, BF: 32 },
+    3.0: { BB: 42, BF: 47 },
+    3.5: { BB: 57, BF: 66 },
+    4.0: { BB: 76, BF: 87 },
+    4.5: { BB: 86, BF: 99 },
+    5.0: { BB: 97, BF: 112 },
+    5.5: { BB: 110, BF: 127 },
+    6.0: { BB: 124, BF: 144 }
+  },
+   
+  // PDF Table: Universal Base 100cm, 1.00m bay distance (every-other support for ≤4m height)
+  bayDistance100: {
+    2.0: { BB: 38, BF: 44 },
+    2.5: { BB: 60, BF: 70 },
+    3.0: { BB: 87, BF: 102 },
+    3.5: { BB: 120, BF: 140 },
+    4.0: { BB: 157, BF: 184 }
+  },
+   
+  // LED panel weight densities (kg/m²)
+  // GP2.6 Full: 9.0 kg per 0.5m² panel = 18.0 kg/m²
+  // GP2.6 Half: 5.19 kg per 0.25m² panel = 20.76 kg/m²
+  ledWeightPerM2: {
+    ROEGP26Full: 18.0,
+    ROEGP26Half: 20.76
+  },
+   
+  // Lever arm ratio for front ballast reduction
+  // Adjusted to match official ROE calculator output (137 lbs front for 16×5)
+  leverRatio: 1.108,  
+   
+  // Height thresholds
+  maxHeightForSparseSupport: 4.0,  // Above this, need support every column
+  maxGroundSupportHeight: 6.0      // Maximum height for ground support
+};
+
+function interpolateBallast(table, heightM) {
+  const heights = Object.keys(table).map(Number).sort((a, b) => a - b);
+   
+  // Clamp to table range
+  if (heightM <= heights[0]) return table[heights[0]];
+  if (heightM >= heights[heights.length - 1]) return table[heights[heights.length - 1]];
+   
+  // Find surrounding heights for interpolation
+  let lowerH = heights[0];
+  let upperH = heights[heights.length - 1];
+   
+  for (let i = 0; i < heights.length - 1; i++) {
+    if (heightM >= heights[i] && heightM <= heights[i + 1]) {
+      lowerH = heights[i];
+      upperH = heights[i + 1];
+      break;
+    }
+  }
+   
+  // Linear interpolation
+  const ratio = (heightM - lowerH) / (upperH - lowerH);
+  const lowerVal = table[lowerH];
+  const upperVal = table[upperH];
+   
+  return {
+    BB: lowerVal.BB + ratio * (upperVal.BB - lowerVal.BB),
+    BF: lowerVal.BF + ratio * (upperVal.BF - lowerVal.BF)
+  };
+}
+
+/**
+ * Calculate sandbags for ROE GP2.6 Full or Half panels
+ * Based on PDF formula: BF = BF_table - (gLED × bay × height × leverRatio)
+ */
+function calculateGP26Sandbags(productType, horizontalBlocks, verticalBlocks, gp2HalfRows = 0) {
+  const config = GP26_BALLAST_CONFIG;
+   
+  // Calculate wall height in meters
+  let heightInMeters;
+  if (productType === 'ROEGP26Full') {
+    // Full panels are 1.0m tall each
+    const fullHeight = verticalBlocks * 1.0;
+    const halfHeight = gp2HalfRows * 0.5;
+    heightInMeters = fullHeight + halfHeight;
+  } else {
+    // Half panels are 0.5m tall each
+    heightInMeters = verticalBlocks * 0.5;
+  }
+   
+  // Check maximum ground support height
+  if (heightInMeters > config.maxGroundSupportHeight) {
+    console.warn(`GP2.6 wall height ${heightInMeters}m exceeds ground support limit of ${config.maxGroundSupportHeight}m`);
+    // Still calculate, but wall should be flown
+  }
+   
+  // Determine bay distance and support configuration
+  // NOTE: Official ROE calculator ALWAYS uses dense support (0.50m bay, every column)
+  // for GP2.6 Full, regardless of height. GP2.6 Half may use sparse support.
+  let bayDistance, ballastTable, numSystems;
+   
+  if (productType === 'ROEGP26Full') {
+    // GP2.6 Full: ALWAYS dense support (every column, 0.50m bay)
+    bayDistance = 0.50;
+    ballastTable = config.bayDistance050;
+    numSystems = horizontalBlocks;
+  } else {
+    // GP2.6 Half: Use sparse support if height ≤4m
+    const needsDenseSupport = heightInMeters > config.maxHeightForSparseSupport;
+    bayDistance = needsDenseSupport ? 0.50 : 1.00;
+    ballastTable = needsDenseSupport ? config.bayDistance050 : config.bayDistance100;
+    numSystems = needsDenseSupport ? horizontalBlocks : Math.ceil((horizontalBlocks + 1) / 2);
+  }
+   
+  // Get base ballast from PDF table (with interpolation)
+  const baseBallast = interpolateBallast(ballastTable, heightInMeters);
+   
+  // Calculate LED weight reduction for front ballast
+  // Formula: reduction = gLED × bay × height × leverRatio
+  const gLED = config.ledWeightPerM2[productType] || 18.0;
+  const reduction = gLED * bayDistance * heightInMeters * config.leverRatio;
+   
+  // Adjusted front ballast (cannot go below 0)
+  const adjustedBF = Math.max(0, baseBallast.BF - reduction);
+   
+  // Total ballast per system
+  const ballastPerSystem = baseBallast.BB + adjustedBF;
+   
+  // Total ballast for entire wall
+  const totalBallastKg = numSystems * ballastPerSystem;
+   
+  // Convert to 25lb sandbags (25 lbs = 11.34 kg)
+  const sandbags = Math.ceil(totalBallastKg / 11.34);
+   
+  // Debug logging
+  console.log('GP2.6 Sandbag Calculation:', {
+    productType,
+    horizontalBlocks,
+    verticalBlocks,
+    gp2HalfRows,
+    heightInMeters,
+    bayDistance,
+    numSystems,
+    baseBallast,
+    gLED,
+    reduction: reduction.toFixed(2),
+    adjustedBF: adjustedBF.toFixed(2),
+    ballastPerSystem: ballastPerSystem.toFixed(2),
+    totalBallastKg: totalBallastKg.toFixed(2),
+    totalBallastLbs: (totalBallastKg * 2.205).toFixed(0),
+    sandbags
+  });
+   
+  return sandbags;
+}
+
+/* ============================================================================
+   ORIGINAL HELPERS & CALCULATOR NAMESPACE
+   ============================================================================ */
 
 function addEquipmentRow(ecode, name, weight, quantity, tbody) {
   if (!tbody || !Number.isFinite(quantity) || quantity <= 0) return;
@@ -34,12 +195,12 @@ function normalizeVoltage(voltage) {
  * (This is the part that typically causes "one circuit short" on 208V if you use 12/pk.)
  *
  * 120V suggested:
- *   - 6 panels per circuit
- *   - if remainder would be 1 panel, use 5 instead
+ * - 6 panels per circuit
+ * - if remainder would be 1 panel, use 5 instead
  *
  * 208V suggested:
- *   - 10 panels per circuit
- *   - if remainder would be 1 panel, use 9 instead
+ * - 10 panels per circuit
+ * - if remainder would be 1 panel, use 9 instead
  */
 function roeGp26FullSuggestedPanelsPerCircuit(totalPanels, voltage) {
   if (!Number.isFinite(totalPanels) || totalPanels <= 0) return 0;
@@ -354,7 +515,7 @@ const EquipmentCalculator = {
   },
 
   /**
-   * Calculate sandbag requirements (existing)
+   * Calculate sandbags requirements (existing)
    */
   calculateSandbags(productType, verticalBlocks, baseCount) {
     const sandbagTables = {
@@ -1387,57 +1548,20 @@ function displayEquipment(data) {
 
     let sandbags = 0;
     if (supportType === "Ground") {
-      if (productType === "ROEGP26Full") {
-        // Calculate height including GP2 Half rows if present
-        let heightInMeters;
-        if (gp2HalfBottomRow && gp2HalfRows > 0) {
-          // Use gp2FullVerticalBlocks for actual GP2 Full tiles, add GP2 Half height
-          const gp2FullHeight = gp2FullVerticalBlocks * 1.0; // GP2 Full: 1.0m per tile
-          const gp2HalfHeight = gp2HalfRows * 0.5; // GP2 Half: 0.5m per tile
-          heightInMeters = gp2FullHeight + gp2HalfHeight;
-          console.log('GP2 Full with GP2 Half ballast calculation - Full height:', gp2FullHeight, 'Half height:', gp2HalfHeight, 'Total:', heightInMeters);
-        } else {
-          heightInMeters = verticalBlocks * 1.0;
-        }
-
-        const needsDenseSupport = heightInMeters > 4.0;
-
-        const stackingEveryOther = !needsDenseSupport;
-        const systems = stackingEveryOther ? Math.ceil((horizontalBlocks + 1) / 2) : horizontalBlocks;
-        const hasExtraSystem = stackingEveryOther && horizontalBlocks % 2 === 0;
-
-        let A = 0, B = 0, C = 0, D = 0;
-        let use4PositionSystem = false;
-
-        if (heightInMeters <= 3.0) {
-          if (hasExtraSystem) {
-            A = 17; B = 42; C = 42; D = 87;
-            use4PositionSystem = true;
-          } else {
-            A = 42; B = 87;
-          }
-        } else if (heightInMeters <= 4.0) {
-          if (hasExtraSystem) {
-            A = 47; B = 103; C = 76; D = 157;
-            use4PositionSystem = true;
-          } else {
-            A = 103; B = 157;
-          }
-        } else if (heightInMeters <= 5.0) {
-          A = 62; B = 97;
-        } else {
-          A = 84; B = 124;
-        }
-
-        let totalBallastKg = 0;
-        if (use4PositionSystem) {
-          totalBallastKg = 2 * (A + C) + (systems - 2) * (B + D);
-        } else {
-          totalBallastKg = systems * (A + B);
-        }
-
-        sandbags = Math.ceil(totalBallastKg / 11.34);
+      /* =========================================================
+         UPDATED GP2.6 SANDBAG LOGIC
+         ========================================================= */
+      if (productType === "ROEGP26Full" || productType === "ROEGP26Half") {
+         sandbags = calculateGP26Sandbags(
+           productType,
+           horizontalBlocks,
+           // IMPORTANT: GP2.6 Full calculation uses `gp2FullVerticalBlocks` if available
+           // to separate the "Full" part from the "Half" rows.
+           productType === "ROEGP26Full" ? gp2FullVerticalBlocks : verticalBlocks,
+           gp2HalfRows
+         );
       } else {
+        // Fallback for other products (Absen, Theatrixx, old ROE, etc.)
         sandbags = EquipmentCalculator.calculateSandbags(productType, verticalBlocks, baseCount);
       }
     }
@@ -1545,6 +1669,8 @@ if (typeof module !== "undefined" && module.exports) {
     addROEEquipment,
     addROEGP26Equipment,
     addTheatrixxEquipment,
+    calculateGP26Sandbags, // Exported for testing/verification
+    GP26_BALLAST_CONFIG
   };
 }
 
