@@ -1493,10 +1493,12 @@ document.getElementById('dummyTileCount')?.addEventListener('input', function ()
   updateDummyTileQty();
 });
 
-// GP2 Half is now handled via fractional input (e.g., 4.5) - no checkbox needed
+// Function to update the wall when dummy tile count changes
+function updateDummyTileQty() {
+  generateWall();
+}
 
-// Function to read the dummy tile count and update the wall.
-// When performing your calculations, use a helper like this:
+// GP2 Half is now handled via fractional input (e.g., 4.5) - no checkbox needed
         const screenSize = document.getElementById('screenSize');
         if (screenSize) {
           screenSize.addEventListener('change', updateBlocksBasedOnSelection);
