@@ -1467,6 +1467,73 @@ document.getElementById('advancedOptionsCheckbox')?.addEventListener('change', f
   }
 });
 
+// Generate screen size configurations from tile quantity
+function generateScreenSizesFromTileQuantity() {
+  const tileQuantity = parseInt(document.getElementById('tileQuantity').value);
+  const productType = document.getElementById('productType').value;
+  const resultsDiv = document.getElementById('possibleScreenSizes');
+
+  if (!tileQuantity || tileQuantity < 1) {
+    resultsDiv.innerHTML = '<p style="color: red;">Please enter a valid tile quantity.</p>';
+    return;
+  }
+
+  // Get tile dimensions and limits based on product type
+  let tileWidthFeet, tileHeightFeet, maxVertical;
+
+  if (productType === 'ROEGP26Full') {
+    tileWidthFeet = 1.64; // 500mm
+    tileHeightFeet = 3.28; // 1000mm
+    maxVertical = CONSTANTS.MAX_VERTICAL_TILES.ROEGP26Full || 7;
+  } else if (productType === 'ROEGP26Half') {
+    tileWidthFeet = 1.64; // 500mm
+    tileHeightFeet = 1.64; // 500mm
+    maxVertical = CONSTANTS.MAX_VERTICAL_TILES.ROEGP26Half || 13;
+  } else {
+    // Default for Absen, BP2, Theatrixx (all 500x500mm)
+    tileWidthFeet = 1.64;
+    tileHeightFeet = 1.64;
+    maxVertical = CONSTANTS.MAX_VERTICAL_TILES[productType] || 13;
+  }
+
+  // Find all factor pairs (width × height = quantity)
+  const configurations = [];
+  for (let height = 1; height <= tileQuantity; height++) {
+    if (tileQuantity % height === 0) {
+      const width = tileQuantity / height;
+
+      // Check if height exceeds vertical limit
+      if (height <= maxVertical) {
+        const widthFeet = (width * tileWidthFeet).toFixed(2);
+        const heightFeet = (height * tileHeightFeet).toFixed(2);
+        configurations.push({
+          tiles: `${width} × ${height}`,
+          dimensions: `${widthFeet}' × ${heightFeet}'`
+        });
+      }
+    }
+  }
+
+  // Display results
+  if (configurations.length === 0) {
+    resultsDiv.innerHTML = `<p style="color: orange;">No valid configurations found for ${tileQuantity} tiles (max height: ${maxVertical} tiles).</p>`;
+  } else {
+    let html = `<h3>Possible Screen Configurations for ${tileQuantity} Tiles:</h3>`;
+    html += '<table style="border-collapse: collapse; width: 100%;">';
+    html += '<thead><tr style="background: #f0f0f0;"><th style="padding: 8px; border: 1px solid #ddd;">Tiles (W × H)</th><th style="padding: 8px; border: 1px solid #ddd;">Dimensions (W × H)</th></tr></thead>';
+    html += '<tbody>';
+
+    configurations.forEach((config, index) => {
+      const bgColor = index % 2 === 0 ? '#ffffff' : '#f9f9f9';
+      html += `<tr style="background: ${bgColor};"><td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${config.tiles}</td><td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${config.dimensions}</td></tr>`;
+    });
+
+    html += '</tbody></table>';
+    html += `<p style="font-size: 12px; color: #666; margin-top: 10px;">Note: Configurations limited to max ${maxVertical} tiles vertical for ${productType}</p>`;
+    resultsDiv.innerHTML = html;
+  }
+}
+
 
 
 
