@@ -1459,11 +1459,11 @@ document.getElementById('advancedOptionsCheckbox')?.addEventListener('change', f
   const tileQtyDiv = document.getElementById('tileQuantityInput');
   const possibleSizesDiv = document.getElementById('possibleScreenSizes');
   if (this.checked) {
-    tileQtyDiv.style.display = 'block';
-    possibleSizesDiv.style.display = 'block';
+    if (tileQtyDiv) tileQtyDiv.style.display = 'block';
+    if (possibleSizesDiv) possibleSizesDiv.style.display = 'block';
   } else {
-    tileQtyDiv.style.display = 'none';
-    possibleSizesDiv.style.display = 'none';
+    if (tileQtyDiv) tileQtyDiv.style.display = 'none';
+    if (possibleSizesDiv) possibleSizesDiv.style.display = 'none';
   }
 });
 
@@ -2376,10 +2376,7 @@ document.getElementById('powerDistroType')?.addEventListener('change', () => {
       const advancedCheckbox = document.getElementById('advancedOptionsCheckbox');
       if (advancedCheckbox) {
         advancedCheckbox.checked = false;
-        const tileQuantityInput = document.getElementById('tileQuantityInput');
-        const possibleScreenSizes = document.getElementById('possibleScreenSizes');
-        if (tileQuantityInput) tileQuantityInput.style.display = 'none';
-        if (possibleScreenSizes) possibleScreenSizes.style.display = 'none';
+        advancedCheckbox.dispatchEvent(new Event('change'));
       }
 
       // Reset power distro type to Auto
