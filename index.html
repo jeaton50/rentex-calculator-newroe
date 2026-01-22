@@ -1464,17 +1464,12 @@ window.addEventListener("DOMContentLoaded", () => {
           updateWall();
         });
 
-        // Initialize vertical input step/min based on initial product type
-        const initialProductType = document.getElementById('productType').value;
-        const blocksVerInput = document.getElementById('blocksVer');
-        const halfRowHint = document.getElementById('halfRowHint');
-        if (initialProductType === 'ROEGP26Full') {
-          if (blocksVerInput) {
-            blocksVerInput.setAttribute('step', '0.5');
-            blocksVerInput.setAttribute('min', '0.5');
-            blocksVerInput.setAttribute('placeholder', 'e.g. 4.5');
-          }
-          if (halfRowHint) halfRowHint.style.display = 'inline';
+        // Initialize vertical input step/min by triggering product type change
+        // This ensures the correct step/min/hint are set on page load
+        const productTypeSelect = document.getElementById('productType');
+        if (productTypeSelect) {
+          // Trigger change event to run the initialization logic above
+          productTypeSelect.dispatchEvent(new Event('change'));
         }
 
         // Wall type radios listener: also hide alert when wall type is changed to Concave/Convex
