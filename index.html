@@ -501,8 +501,8 @@ window.addEventListener("DOMContentLoaded", () => {
         <div id="blockInputs">
   <label for="blocksHor">Horizontal/Vertical</label><br>
   <input type="number" id="blocksHor" name="blocksHor" min="1" value="5" style="width: 80px; margin-right: 10px;">
-  <input type="number" id="blocksVer" name="blocksVer" min="0.5" step="0.5" value="5" style="width: 80px;" placeholder="e.g. 4.5">
-  <span style="font-size: 11px; color: #666; margin-left: 5px;">(.5 = half row)</span>
+  <input type="number" id="blocksVer" name="blocksVer" min="1" step="1" value="5" style="width: 80px;">
+  <span id="halfRowHint" style="font-size: 11px; color: #666; margin-left: 5px; display: none;">(.5 = half row)</span>
 </div>
 
         <!-- Dimension inputs -->
@@ -1431,10 +1431,51 @@ window.addEventListener("DOMContentLoaded", () => {
             dummyTileOption.style.display = 'none';
             if (gp2HalfOption) gp2HalfOption.style.display = 'none';
           }
+
+          // Update input step/min for vertical tiles - only allow 0.5 increments for GP2.6 Full
+          const blocksVerInput = document.getElementById('blocksVer');
+          const halfRowHint = document.getElementById('halfRowHint');
+
+          if (productType === 'ROEGP26Full') {
+            // Allow fractional input (0.5 increments) for GP2.6 Full
+            if (blocksVerInput) {
+              blocksVerInput.setAttribute('step', '0.5');
+              blocksVerInput.setAttribute('min', '0.5');
+              blocksVerInput.setAttribute('placeholder', 'e.g. 4.5');
+            }
+            if (halfRowHint) halfRowHint.style.display = 'inline';
+          } else {
+            // Integer-only input for other products
+            if (blocksVerInput) {
+              blocksVerInput.setAttribute('step', '1');
+              blocksVerInput.setAttribute('min', '1');
+              blocksVerInput.removeAttribute('placeholder');
+              // Round any fractional value to integer
+              const currentValue = parseFloat(blocksVerInput.value);
+              if (currentValue % 1 !== 0) {
+                blocksVerInput.value = Math.round(currentValue).toString();
+              }
+            }
+            if (halfRowHint) halfRowHint.style.display = 'none';
+          }
+
           restrictGroundSupportTypes(currentWallType && (currentWallType.value === 'Concave' || currentWallType.value === 'Convex'));
           restrictFlownSupportTypes(currentWallType && (currentWallType.value === 'Concave' || currentWallType.value === 'Convex'));
           updateWall();
         });
+
+        // Initialize vertical input step/min based on initial product type
+        const initialProductType = document.getElementById('productType').value;
+        const blocksVerInput = document.getElementById('blocksVer');
+        const halfRowHint = document.getElementById('halfRowHint');
+        if (initialProductType === 'ROEGP26Full') {
+          if (blocksVerInput) {
+            blocksVerInput.setAttribute('step', '0.5');
+            blocksVerInput.setAttribute('min', '0.5');
+            blocksVerInput.setAttribute('placeholder', 'e.g. 4.5');
+          }
+          if (halfRowHint) halfRowHint.style.display = 'inline';
+        }
 
         // Wall type radios listener: also hide alert when wall type is changed to Concave/Convex
         const wallTypeRadios = document.getElementsByName('wallType');
