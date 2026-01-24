@@ -519,7 +519,8 @@ const EquipmentCalculator = {
    */
   calculateSandbags(productType, verticalBlocks, baseCount) {
     const sandbagTables = {
-      absen: [0, 0, 0, 4, 6, 8, 11, 15, 17, 19, 21, 23],
+      // Absen: corrected values for per-base sandbag calculation (5x5 wall = 18 sandbags)
+      absen: [0, 0, 0, 2.3, 3.5, 4.7, 6.4, 8.8, 9.9, 11.1, 12.3, 13.4],
       ROE: [0, 0, 0, 3.35102, 5.29109, 7.672, 10.5821, 14.5505, 16.5787, 20.9821, 23.9703, 26.9585],
       theatrixx: [1, 1, 2, 4, 6, 8, 11, 15, 17, 19, 21, 23],
       ROEGP26Half: [0.09, 1.10, 6.47, 13.17, 21.20, 30.54, 41.22, 53.23, 66.55, 81.21, 97.19],
@@ -536,7 +537,7 @@ const EquipmentCalculator = {
     const tableIndex = Math.min(verticalBlocks - 1, table.length - 1);
     const sandbagsPerBase = table[Math.max(0, tableIndex)];
 
-    if (productType === "absen") return Math.ceil((sandbagsPerBase * baseCount) / 1.0525);
+    // All products now use the same formula (removed /1.0525 division for Absen)
     return Math.ceil(sandbagsPerBase * baseCount);
   },
 
@@ -670,6 +671,11 @@ const EquipmentCalculator = {
       const clampCalc = Math.floor(verticalBlocks / 2) * outriggers;
       clamps = heightWarning === "***EXCEEDS LIMIT, MUST FLY***" ? 0 : clampCalc;
       ladders = clamps;
+
+      // Platforms - for Absen, 1 platform per wall with ground support
+      if (productType === "absen" && supportType === "Ground") {
+        platforms = 1;
+      }
 
       const effectiveVerticalBlocks =
         productType === "ROEGP26Full" ? verticalBlocks * 2 : verticalBlocks;
