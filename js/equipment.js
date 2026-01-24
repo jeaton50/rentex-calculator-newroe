@@ -672,9 +672,9 @@ const EquipmentCalculator = {
       clamps = heightWarning === "***EXCEEDS LIMIT, MUST FLY***" ? 0 : clampCalc;
       ladders = clamps;
 
-      // Platforms - for Absen, 1 platform per wall with ground support
-      if (productType === "absen" && supportType === "Ground") {
-        platforms = 1;
+      // Platforms - for Absen ground support, based on clamps (1 platform per ~4 clamps)
+      if (productType === "absen") {
+        platforms = Math.floor(clamps / 4);
       }
 
       const effectiveVerticalBlocks =
