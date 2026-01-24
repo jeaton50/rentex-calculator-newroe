@@ -519,8 +519,8 @@ const EquipmentCalculator = {
    */
   calculateSandbags(productType, verticalBlocks, baseCount) {
     const sandbagTables = {
-      // Absen: corrected values for per-base sandbag calculation (5x5 wall = 18 sandbags)
-      absen: [0, 0, 0, 2.3, 3.5, 4.7, 6.4, 8.8, 9.9, 11.1, 12.3, 13.4],
+      // Absen: values adjusted for /1.0525 division formula (5x5 wall = 18 sandbags)
+      absen: [0, 0, 0, 2.42, 3.78, 4.95, 6.74, 9.26, 10.42, 11.68, 12.95, 14.1],
       ROE: [0, 0, 0, 3.35102, 5.29109, 7.672, 10.5821, 14.5505, 16.5787, 20.9821, 23.9703, 26.9585],
       theatrixx: [1, 1, 2, 4, 6, 8, 11, 15, 17, 19, 21, 23],
       ROEGP26Half: [0.09, 1.10, 6.47, 13.17, 21.20, 30.54, 41.22, 53.23, 66.55, 81.21, 97.19],
@@ -537,7 +537,7 @@ const EquipmentCalculator = {
     const tableIndex = Math.min(verticalBlocks - 1, table.length - 1);
     const sandbagsPerBase = table[Math.max(0, tableIndex)];
 
-    // All products now use the same formula (removed /1.0525 division for Absen)
+    if (productType === "absen") return Math.ceil((sandbagsPerBase * baseCount) / 1.0525);
     return Math.ceil(sandbagsPerBase * baseCount);
   },
 
