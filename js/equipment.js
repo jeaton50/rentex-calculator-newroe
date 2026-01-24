@@ -679,8 +679,10 @@ const EquipmentCalculator = {
         supportBeams50mm = singleBases * verticalBlocks;
         beamConnectors = supportBeams1000mm + supportBeams50mm;
 
-        // Platforms - based on clamps
-        platforms = Math.floor(clamps / 4);
+        // Platforms - only needed for walls 5 tiles high or taller
+        if (verticalBlocks >= 5) {
+          platforms = Math.floor(clamps / 4);
+        }
       }
 
       const effectiveVerticalBlocks =
