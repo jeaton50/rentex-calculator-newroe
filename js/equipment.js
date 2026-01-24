@@ -1241,22 +1241,28 @@ function addTheatrixxEquipment(config, tbody) {
     powerDistro,
     voltage,
     supportType,
+    groundSupportType,
     redundancyType,
   } = config;
 
   totalWeight = 24 * totalTiles;
   const totalPixels = horizontalBlocks * 192 * (verticalBlocks * 192);
 
-  // Tiles and cases (10 tiles per case for Theatrixx)
+  // Tile packages (10 tiles per package)
+  const tilePackages = Math.ceil(totalTiles / 10);
+  addEquipmentRow('10PTXNOMAD', 'Theatrixx Nomad 2.6 10x package', 0, tilePackages, tbody);
+
+  // Tiles and spares
   addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm', 24, totalTiles, tbody);
   if (totalSpareTiles > 0) {
-    addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm **SPARE**', 24, totalSpareTiles, tbody);
+    addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm **Spare Tiles**', 24, totalSpareTiles, tbody);
   }
+
+  // Cases (10 tiles per case)
   const tileCases = Math.ceil(totalTilesWithSpares / 10);
   addEquipmentRow('CATXLED', 'Case, Theatrixx Nomad tile 10x', 187, tileCases, tbody);
 
-  // Processors - Theatrixx uses Novastar MX40PRO (calculate independently)
-  // Theatrixx: 40 tiles per processor
+  // Processors - Theatrixx uses Novastar MX40PRO (40 tiles per processor)
   const tilesPerProcessor = 40;
   let mx40Count = Math.ceil(totalTiles / tilesPerProcessor);
 
@@ -1269,10 +1275,53 @@ function addTheatrixxEquipment(config, tbody) {
     addEquipmentRow('MX40PRO', 'Novastar MX40 PRO', 17, mx40Count, tbody);
   }
 
-  // Ground support structures
+  // Ground support structures - Theatrixx-specific
   if (supportType === "Ground") {
+    // Bases
     if (singleBases > 0) addEquipmentRow("TXBASE1W", "Theatrixx Nomad Exact stacking base, 1 wide", 27, singleBases, tbody);
     if (doubleBases > 0) addEquipmentRow("TXBASE2W", "Theatrixx Nomad Exact stacking base, 2 wide", 12, doubleBases, tbody);
+
+    // Ski frames - approximately (horizontalBlocks - 2) for double base, all for single base
+    let skiFrames = 0;
+    if (groundSupportType === "Double Base") {
+      skiFrames = Math.max(0, horizontalBlocks - 2);
+    } else {
+      skiFrames = horizontalBlocks;
+    }
+
+    if (skiFrames > 0) {
+      addEquipmentRow("TXSKIFRAME", "Theatrixx Nomad Exact Ski Frame (T base)", 36, skiFrames, tbody);
+
+      // Ski frame extensions: (verticalBlocks - 1) per ski frame
+      const skiExtensions = skiFrames * Math.max(0, verticalBlocks - 1);
+      if (skiExtensions > 0) {
+        addEquipmentRow("TXSTAXEXT", "Theatrixx Nomad Exact ski stacking extension", 30, skiExtensions, tbody);
+      }
+
+      // Vertical supports: same as ski frames
+      addEquipmentRow("TXVERTSPRT", "Theatrixx Nomad Exact vertical support", 36, skiFrames, tbody);
+
+      // Single fittings: approximately 2 per every 2-3 ski frames
+      const singleFittings = Math.ceil(skiFrames * 0.67);
+      if (singleFittings > 0) {
+        addEquipmentRow("TXSKIFTSNG", "Theatrixx Nomad Exact single fitting", 2, singleFittings, tbody);
+      }
+    }
+
+    // Ladders (optional, typically 0 for smaller walls)
+    const ladders = Math.max(0, Math.floor((horizontalBlocks - 4) / 2));
+    if (ladders > 0) {
+      addEquipmentRow("TXLADDER", "Theatrixx Nomad Exact Ski Frame Ladder", 117, ladders, tbody);
+    }
+
+    // Brackets (optional, typically 0 for flat walls)
+    // Only add for curved walls or special configurations
+
+    // M10 screws: approximately 18 per 25 tiles (0.72 per tile)
+    const m10Screws = Math.ceil(totalTiles * 0.72);
+    if (m10Screws > 0) {
+      addEquipmentRow("TXM10B", "Theatrixx Nomad Exact M10 Screw", 0, m10Screws, tbody);
+    }
   }
 
   // Headers for flown support
@@ -1282,13 +1331,32 @@ function addTheatrixxEquipment(config, tbody) {
   // Sandbags
   if (sandbags > 0) addEquipmentRow("SANDBAG25", "Sand Bag 25 lbs.", 25, sandbags, tbody);
 
-  // Data cables (standard ethercon cables)
+  // Theatrixx-specific data cables (XVT system)
+  // XVT0 to XVT0 data cables: approximately 1.2 per tile
+  const xvt0DataCables = Math.ceil(totalTiles * 1.2);
+  addEquipmentRow("TXT2TXTXT0", "Theatrixx Nomad XVT0 to XVT0 data 2'", 15, xvt0DataCables, tbody);
+
+  // XVT0 to True1 cables: approximately 1 per 6-7 tiles
+  const xvt0ToTrue1 = Math.ceil(totalTiles / 6.25);
+  addEquipmentRow("TXT3CT125", "Theatrixx Nomad XVT0 to True1 25'", 24, xvt0ToTrue1, tbody);
+
+  // XVT3 power cables: approximately 1.2 per tile
+  const xvt3PowerCables = Math.ceil(totalTiles * 1.2);
+  addEquipmentRow("TXT3POWER", "Theatrixx Nomad XVT3 to XVT3 power", 18, xvt3PowerCables, tbody);
+
+  // XVT0 to EtherCon: approximately 1 per processor
+  const xvt0ToEtherCon = mx40Count;
+  if (xvt0ToEtherCon > 0) {
+    addEquipmentRow("TXT02ETRON", "Theatrixx Nomad XVT0 to EtherCon", 0.75, xvt0ToEtherCon, tbody);
+  }
+
+  // Standard ethercon cables (for processors)
+  if (cables.ECON100C6 > 0) addEquipmentRow("ECON100C6", "Ethercon (CAT6) 100'", 6, cables.ECON100C6, tbody);
   if (cables.ECONRJ45 > 0) addEquipmentRow("ECONRJ45", "Ethercon to RJ45 (CAT6) 100'", 2.4, cables.ECONRJ45, tbody);
   if (cables.CAT5ES005 > 0) addEquipmentRow("CAT5ES005", "CAT5e ethernet cable 5'", 1, cables.CAT5ES005, tbody);
   if (cables.ECON010C6 > 0) addEquipmentRow("ECON010C6", "Ethercon (CAT6) 10'", 1, cables.ECON010C6, tbody);
   if (cables.ECON025C6 > 0) addEquipmentRow("ECON025C6", "Ethercon (CAT6) 25'", 1.5, cables.ECON025C6, tbody);
   if (cables.ECON050C6 > 0) addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
-  if (cables.ECON100C6 > 0) addEquipmentRow("ECON100C6", "Ethercon (CAT6) 100'", 6, cables.ECON100C6, tbody);
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
   if (cables.TRUE125FT > 0) addEquipmentRow("TRUE125FT", "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
   if (cables.EDT110M > 0 && normalizeVoltage(voltage) === 120) addEquipmentRow("EDT110M", "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
@@ -1311,7 +1379,7 @@ function addTheatrixxEquipment(config, tbody) {
     caseWeight += 12 * doubleBases;
     caseWeight += 8 * singleHeaders;
     caseWeight += 12 * doubleHeaders;
-    caseWeight += 120 * cables.ECONRJ45;
+    caseWeight += 120 * cables.ECON100C6;
     caseWeight += 17 * mx40Count;
     displayEstShippingWeight(caseWeight);
   }
