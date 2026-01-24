@@ -672,8 +672,14 @@ const EquipmentCalculator = {
       clamps = heightWarning === "***EXCEEDS LIMIT, MUST FLY***" ? 0 : clampCalc;
       ladders = clamps;
 
-      // Platforms - for Absen ground support, based on clamps (1 platform per ~4 clamps)
+      // Support beams and connectors - for Absen ground support
       if (productType === "absen") {
+        // Support beams follow base pattern, multiplied by vertical blocks
+        supportBeams1000mm = doubleBases * verticalBlocks;
+        supportBeams50mm = singleBases * verticalBlocks;
+        beamConnectors = supportBeams1000mm + supportBeams50mm;
+
+        // Platforms - based on clamps
         platforms = Math.floor(clamps / 4);
       }
 
