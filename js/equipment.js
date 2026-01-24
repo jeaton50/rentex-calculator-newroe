@@ -1224,82 +1224,100 @@ function addROEGP26Equipment(config, tbody) {
 }
 
 function addTheatrixxEquipment(config, tbody) {
-  const totalTiles = config.totalTiles;
-  const totalSpareTiles = config.totalSpareTiles;
-  const horizontalBlocks = config.horizontalBlocks;
-  const verticalBlocks = config.verticalBlocks;
-  const voltage = config.voltage;
-  const supportType = config.supportType;
-  const redundancyType = config.redundancyType;
+  const {
+    totalTiles,
+    totalSpareTiles,
+    totalTilesWithSpares,
+    casesNeeded,
+    horizontalBlocks,
+    verticalBlocks,
+    processors,
+    cables,
+    sandbags,
+    singleBases,
+    doubleBases,
+    singleHeaders,
+    doubleHeaders,
+    powerDistro,
+    voltage,
+    supportType,
+    redundancyType,
+  } = config;
 
-  // Tiles and cases
+  totalWeight = 24 * totalTiles;
+  const totalPixels = horizontalBlocks * 192 * (verticalBlocks * 192);
+
+  // Tiles and cases (10 tiles per case for Theatrixx)
   addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm', 24, totalTiles, tbody);
-  addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm ** Spare Tiles **', 24, totalSpareTiles, tbody);
-  const tileCases = Math.ceil((totalTiles + totalSpareTiles) / 4);
-  addEquipmentRow('TXNOMADCASE', 'Theatrixx Nomad Panel Road Case', 68, tileCases, tbody);
+  if (totalSpareTiles > 0) {
+    addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm **SPARE**', 24, totalSpareTiles, tbody);
+  }
+  const tileCases = Math.ceil(totalTilesWithSpares / 10);
+  addEquipmentRow('CATXLED', 'Case, Theatrixx Nomad tile 10x', 187, tileCases, tbody);
 
-  // Processors - MX40PRO
+  // Processors - Theatrixx uses Novastar MX40PRO (calculate independently)
+  // Theatrixx: 40 tiles per processor
   const tilesPerProcessor = 40;
-  let processors = Math.ceil(totalTiles / tilesPerProcessor);
+  let mx40Count = Math.ceil(totalTiles / tilesPerProcessor);
 
   // Handle redundancy for processors
-  if (redundancyType === "Distribution and Cables") {
-    processors = processors; // No change for this mode
-  } else if (redundancyType === "Fully Redundant") {
-    processors = processors * 2;
+  if (redundancyType === "Fully Redundant") {
+    mx40Count = mx40Count * 2;
   }
 
-  if (processors > 0) {
-    addEquipmentRow('MX40PRO', 'Novastar MX40 PRO', 8.8, processors, tbody);
+  if (mx40Count > 0) {
+    addEquipmentRow('MX40PRO', 'Novastar MX40 PRO', 17, mx40Count, tbody);
   }
 
-  // Ground support (if applicable)
+  // Ground support structures
   if (supportType === "Ground") {
-    // Ski frames - one per vertical column
-    const skiFrames = horizontalBlocks;
-    addEquipmentRow('TXSKIFRAME', 'Theatrixx Nomad Ski Frame', 15.4, skiFrames, tbody);
-
-    // Extensions - (verticalBlocks - 1) per column
-    const extensions = horizontalBlocks * Math.max(0, verticalBlocks - 1);
-    addEquipmentRow('TXSKIEXT', 'Theatrixx Nomad Ski Frame Extension', 8.8, extensions, tbody);
-
-    // Ladders and ladder feet
-    const ladders = Math.ceil(horizontalBlocks / 2);
-    addEquipmentRow('TXLADDER', 'Theatrixx Nomad Ladder', 11, ladders, tbody);
-    addEquipmentRow('TXLADDERFOOT', 'Theatrixx Nomad Ladder Foot', 2.2, ladders * 2, tbody);
+    if (singleBases > 0) addEquipmentRow("TXBASE1W", "Theatrixx Nomad Exact stacking base, 1 wide", 27, singleBases, tbody);
+    if (doubleBases > 0) addEquipmentRow("TXBASE2W", "Theatrixx Nomad Exact stacking base, 2 wide", 12, doubleBases, tbody);
   }
 
-  // Data cables
-  const tilesPerCable = 10;
-  let dataCables = Math.ceil(totalTiles / tilesPerCable);
+  // Headers for flown support
+  if (singleHeaders > 0) addEquipmentRow("TXSNGLHEAD", "Theatrixx Nomad single header", 8, singleHeaders, tbody);
+  if (doubleHeaders > 0) addEquipmentRow("TXDBLHEAD", "Theatrixx Nomad double header", 12, doubleHeaders, tbody);
 
-  // Handle redundancy for data cables
-  if (redundancyType === "Distribution and Cables") {
-    dataCables = dataCables * 2;
-  } else if (redundancyType === "Fully Redundant") {
-    dataCables = dataCables * 2;
-  }
+  // Sandbags
+  if (sandbags > 0) addEquipmentRow("SANDBAG25", "Sand Bag 25 lbs.", 25, sandbags, tbody);
 
-  addEquipmentRow('TXDATACABLE', 'Theatrixx Nomad Data Cable', 0.5, dataCables, tbody);
-
-  // Power cables (voltage-specific)
-  const powerCablesPerTile = 0.5; // 1 cable per 2 tiles
-  const totalPowerCables = Math.ceil(totalTiles * powerCablesPerTile);
-
-  if (voltage === "208V") {
-    addEquipmentRow('TXPOWERCABLE208', 'Theatrixx Nomad Power Cable 208V', 1.1, totalPowerCables, tbody);
-  } else {
-    addEquipmentRow('TXPOWERCABLE120', 'Theatrixx Nomad Power Cable 120V', 1.1, totalPowerCables, tbody);
-  }
-
-  // XVT adapters
-  const xvtAdapters = horizontalBlocks;
-  addEquipmentRow('TXXVTADAPTER', 'Theatrixx XVT Adapter', 0.2, xvtAdapters, tbody);
+  // Data cables (standard ethercon cables)
+  if (cables.ECONRJ45 > 0) addEquipmentRow("ECONRJ45", "Ethercon to RJ45 (CAT6) 100'", 2.4, cables.ECONRJ45, tbody);
+  if (cables.CAT5ES005 > 0) addEquipmentRow("CAT5ES005", "CAT5e ethernet cable 5'", 1, cables.CAT5ES005, tbody);
+  if (cables.ECON010C6 > 0) addEquipmentRow("ECON010C6", "Ethercon (CAT6) 10'", 1, cables.ECON010C6, tbody);
+  if (cables.ECON025C6 > 0) addEquipmentRow("ECON025C6", "Ethercon (CAT6) 25'", 1.5, cables.ECON025C6, tbody);
+  if (cables.ECON050C6 > 0) addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
+  if (cables.ECON100C6 > 0) addEquipmentRow("ECON100C6", "Ethercon (CAT6) 100'", 6, cables.ECON100C6, tbody);
+  if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
+  if (cables.TRUE125FT > 0) addEquipmentRow("TRUE125FT", "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
+  if (cables.EDT110M > 0 && normalizeVoltage(voltage) === 120) addEquipmentRow("EDT110M", "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
+  if (cables.T11M > 0) addEquipmentRow("T11M", "True1 power cable 1M (3')", 0.44, cables.T11M, tbody);
 
   // Power distribution
-  const tilesPerDistro = 20;
-  const distros = Math.ceil(totalTiles / tilesPerDistro);
-  addEquipmentRow('TXPOWERDIST', 'Theatrixx Power Distribution', 5.5, distros, tbody);
+  if (powerDistro.CUBEDIST > 0) addEquipmentRow("CUBEDIST", "Indu Electric 200A Cube Distro", 177, powerDistro.CUBEDIST, tbody);
+  if (powerDistro.TP1 > 0) addEquipmentRow("TP1", "Indu Electric 400A Power Distro w/ (4) 208v Soca", 197, powerDistro.TP1, tbody);
+  if (powerDistro.L2130T1FB > 0) addEquipmentRow("L2130T1FB", "L2130 floor box to 3x True1 with pass through", 7.5, powerDistro.L2130T1FB, tbody);
+  if (powerDistro.SOCA6XTRU1 > 0) addEquipmentRow("SOCA6XTRU1", "19 Pin Socapex to 6x True1 Power Cable", 5, powerDistro.SOCA6XTRU1, tbody);
+
+  // Display weight and pixel calculations
+  if (typeof totalWeight !== "undefined" && typeof displayEstShippingWeight === "function") {
+    if (typeof displayWallWeight === "function") displayWallWeight(totalWeight);
+
+    let caseWeight = totalWeight;
+    caseWeight += 24 * totalSpareTiles;
+    caseWeight += 187 * tileCases;
+    caseWeight += 27 * singleBases;
+    caseWeight += 12 * doubleBases;
+    caseWeight += 8 * singleHeaders;
+    caseWeight += 12 * doubleHeaders;
+    caseWeight += 120 * cables.ECONRJ45;
+    caseWeight += 17 * mx40Count;
+    displayEstShippingWeight(caseWeight);
+  }
+
+  if (typeof displayTotalPixels === "function") displayTotalPixels(totalPixels);
+  if (typeof displayDataPortsNeeded === "function") displayDataPortsNeeded("theatrixx", totalTiles);
 }
 
 /* ----------------------------- ROE Graphite Mix Equipment ----------------------------- */
