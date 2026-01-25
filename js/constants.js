@@ -164,6 +164,9 @@ const EQUIPMENT = {
   GP2BASE2: { code: 'GP2BASE2', name: 'ROE Graphite GP base bar, 2W, V1.5', weight: 28 },
   GP2HEAD1: { code: 'GP2HEAD1', name: 'ROE Graphite GP hanging bar, 1W, clamp and shackle', weight: 12 },
   GP2HEAD2: { code: 'GP2HEAD2', name: 'ROE Graphite GP hanging bar, 2W, clamp and shackle', weight: 19 },
+  BPGPUBT: { code: 'BPGPUBT', name: 'ROE BP2 /GP2 universal base truss', weight: 17 },
+  BPGPREAR1: { code: 'BPGPREAR1', name: 'ROE BP2 / GP2 rear truss 1 meter', weight: 1 },
+  BPGPBRIDGE: { code: 'BPGPBRIDGE', name: 'ROE BP2 / GP2 rear bridge clamp', weight: 1 },
 
   // Theatrixx
   TX_NOMAD26: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm', weight: 24 },

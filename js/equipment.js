@@ -1138,7 +1138,7 @@ function addROEGP26Equipment(config, tbody) {
 
   if (singleBases > 0) addEquipmentRow("GP2BASE1", "ROE Graphite GP base bar, 1W", 16, singleBases, tbody);
   if (doubleBases > 0) addEquipmentRow("GP2BASE2", "ROE Graphite GP base bar, 2W, V1.5", 28, doubleBases, tbody);
-  if (universalBaseTruss > 0) addEquipmentRow("BPBOBT", "ROE Black Pearl universal base truss", 17, universalBaseTruss, tbody);
+  if (universalBaseTruss > 0) addEquipmentRow("BPGPUBT", "ROE BP2 /GP2 universal base truss", 17, universalBaseTruss, tbody);
 
   console.log('GP2 Half rear support check - universalBaseTruss:', universalBaseTruss, 'gp2HalfBottomRow:', gp2HalfBottomRow);
   if (universalBaseTruss > 0 && gp2HalfBottomRow) {
@@ -1146,14 +1146,14 @@ function addROEGP26Equipment(config, tbody) {
     addEquipmentRow("BPGPREAR05", "ROE BP2 / GP2 rear truss .5 meter", 1, universalBaseTruss, tbody);
   }
 
-  if (rearTruss > 0) addEquipmentRow("BPBOREAR", "ROE Black Pearl rear truss,", 1, rearTruss, tbody);
+  if (rearTruss > 0) addEquipmentRow("BPGPREAR1", "ROE BP2 / GP2 rear truss 1 meter", 1, rearTruss, tbody);
 
-  // Combine BPBOBRIDGE quantities: rearBridge + GP2 Half universalBaseTruss
+  // Combine BPGPBRIDGE quantities: rearBridge + GP2 Half universalBaseTruss
   const totalBridgeClamps = (rearBridge || 0) + (gp2HalfBottomRow && universalBaseTruss > 0 ? universalBaseTruss : 0);
-  console.log('🔴 COMBINING BPBOBRIDGE - rearBridge:', rearBridge, '+ GP2Half universalBaseTruss:', (gp2HalfBottomRow && universalBaseTruss > 0 ? universalBaseTruss : 0), '= totalBridgeClamps:', totalBridgeClamps);
+  console.log('🔴 COMBINING BPGPBRIDGE - rearBridge:', rearBridge, '+ GP2Half universalBaseTruss:', (gp2HalfBottomRow && universalBaseTruss > 0 ? universalBaseTruss : 0), '= totalBridgeClamps:', totalBridgeClamps);
   if (totalBridgeClamps > 0) {
-    console.log('🔴 Adding SINGLE BPBOBRIDGE line with quantity:', totalBridgeClamps);
-    addEquipmentRow("BPBOBRIDGE", "ROE Black Pearl rear bridge clamp", 1, totalBridgeClamps, tbody);
+    console.log('🔴 Adding SINGLE BPGPBRIDGE line with quantity:', totalBridgeClamps);
+    addEquipmentRow("BPGPBRIDGE", "ROE BP2 / GP2 rear bridge clamp", 1, totalBridgeClamps, tbody);
   }
 
   if ((wallType === "Convex" || wallType === "Concave") && productType !== "ROEGP26Full") {
@@ -1488,9 +1488,9 @@ function addROEGraphiteMixEquipment(config, tbody) {
 
   if (singleBases > 0) addEquipmentRow("GP2BASE1", "ROE Graphite GP base bar, 1W", 16, singleBases, tbody);
   if (doubleBases > 0) addEquipmentRow("GP2BASE2", "ROE Graphite GP base bar, 2W, V1.5", 28, doubleBases, tbody);
-  if (universalBaseTruss > 0) addEquipmentRow("BPBOBT", "ROE Black Pearl universal base truss", 17, universalBaseTruss, tbody);
-  if (rearTruss > 0) addEquipmentRow("BPBOREAR", "ROE Black Pearl rear truss,", 1, rearTruss, tbody);
-  if (rearBridge > 0) addEquipmentRow("BPBOBRIDGE", "ROE Black Pearl rear bridge clamp", 1, rearBridge, tbody);
+  if (universalBaseTruss > 0) addEquipmentRow("BPGPUBT", "ROE BP2 /GP2 universal base truss", 17, universalBaseTruss, tbody);
+  if (rearTruss > 0) addEquipmentRow("BPGPREAR1", "ROE BP2 / GP2 rear truss 1 meter", 1, rearTruss, tbody);
+  if (rearBridge > 0) addEquipmentRow("BPGPBRIDGE", "ROE BP2 / GP2 rear bridge clamp", 1, rearBridge, tbody);
 
   if (sandbags > 0) addEquipmentRow("SANDBAG25", "Sand Bag 25 lbs.", 25, sandbags, tbody);
 
