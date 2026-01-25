@@ -160,6 +160,10 @@ const EQUIPMENT = {
   // ROE GP2.6
   ROEGP26FULL: { code: 'ROEGP26FULL', name: 'ROE GP2.6 Full LED tile 500x1000mm', weight: 19.84 },
   ROEGP26HALF: { code: 'ROEGP26HALF', name: 'ROE GP2.6 Half LED tile 500x500mm', weight: 11.44 },
+  GP2BASE1: { code: 'GP2BASE1', name: 'ROE Graphite GP base bar, 1W', weight: 16 },
+  GP2BASE2: { code: 'GP2BASE2', name: 'ROE Graphite GP base bar, 2W, V1.5', weight: 28 },
+  GP2HEAD1: { code: 'GP2HEAD1', name: 'ROE Graphite GP hanging bar, 1W, clamp and shackle', weight: 12 },
+  GP2HEAD2: { code: 'GP2HEAD2', name: 'ROE Graphite GP hanging bar, 2W, clamp and shackle', weight: 19 },
 
   // Theatrixx
   TX_NOMAD26: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm', weight: 24 },

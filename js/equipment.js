@@ -1133,11 +1133,11 @@ function addROEGP26Equipment(config, tbody) {
   if (processors.XD10 > 0) addEquipmentRow("XD10", "Brompton Tessera XD 10G data distribution unit", 8.16, processors.XD10, tbody);
   if (processors.S8 > 0) addEquipmentRow("S8", "Brompton Tessera S8", 17, processors.S8, tbody);
 
-  if (singleHeaders > 0) addEquipmentRow("BPBOHEAD1", "ROE Black Pearl header, 1W, 0.5m", 12, singleHeaders, tbody);
-  if (doubleHeaders > 0) addEquipmentRow("BPBOHEAD2", "ROE Black Pearl header, 2W, 1m", 19, doubleHeaders, tbody);
+  if (singleHeaders > 0) addEquipmentRow("GP2HEAD1", "ROE Graphite GP hanging bar, 1W, clamp and shackle", 12, singleHeaders, tbody);
+  if (doubleHeaders > 0) addEquipmentRow("GP2HEAD2", "ROE Graphite GP hanging bar, 2W, clamp and shackle", 19, doubleHeaders, tbody);
 
-  if (singleBases > 0) addEquipmentRow("BPBOBB1", "ROE Black Pearl base bar, 1W, 0.5m", 16, singleBases, tbody);
-  if (doubleBases > 0) addEquipmentRow("BPBOBB2", "ROE Black Pearl base bar, 2W, 1.0m", 28, doubleBases, tbody);
+  if (singleBases > 0) addEquipmentRow("GP2BASE1", "ROE Graphite GP base bar, 1W", 16, singleBases, tbody);
+  if (doubleBases > 0) addEquipmentRow("GP2BASE2", "ROE Graphite GP base bar, 2W, V1.5", 28, doubleBases, tbody);
   if (universalBaseTruss > 0) addEquipmentRow("BPBOBT", "ROE Black Pearl universal base truss", 17, universalBaseTruss, tbody);
 
   console.log('GP2 Half rear support check - universalBaseTruss:', universalBaseTruss, 'gp2HalfBottomRow:', gp2HalfBottomRow);
@@ -1483,11 +1483,11 @@ function addROEGraphiteMixEquipment(config, tbody) {
   if (processors.S8 > 0) addEquipmentRow("S8", "Brompton Tessera S8", 17, processors.S8, tbody);
 
   // Add support structures
-  if (singleHeaders > 0) addEquipmentRow("BPBOHEAD1", "ROE Black Pearl header, 1W, 0.5m", 12, singleHeaders, tbody);
-  if (doubleHeaders > 0) addEquipmentRow("BPBOHEAD2", "ROE Black Pearl header, 2W, 1m", 19, doubleHeaders, tbody);
+  if (singleHeaders > 0) addEquipmentRow("GP2HEAD1", "ROE Graphite GP hanging bar, 1W, clamp and shackle", 12, singleHeaders, tbody);
+  if (doubleHeaders > 0) addEquipmentRow("GP2HEAD2", "ROE Graphite GP hanging bar, 2W, clamp and shackle", 19, doubleHeaders, tbody);
 
-  if (singleBases > 0) addEquipmentRow("BPBOBB1", "ROE Black Pearl base bar, 1W, 0.5m", 16, singleBases, tbody);
-  if (doubleBases > 0) addEquipmentRow("BPBOBB2", "ROE Black Pearl base bar, 2W, 1.0m", 28, doubleBases, tbody);
+  if (singleBases > 0) addEquipmentRow("GP2BASE1", "ROE Graphite GP base bar, 1W", 16, singleBases, tbody);
+  if (doubleBases > 0) addEquipmentRow("GP2BASE2", "ROE Graphite GP base bar, 2W, V1.5", 28, doubleBases, tbody);
   if (universalBaseTruss > 0) addEquipmentRow("BPBOBT", "ROE Black Pearl universal base truss", 17, universalBaseTruss, tbody);
   if (rearTruss > 0) addEquipmentRow("BPBOREAR", "ROE Black Pearl rear truss,", 1, rearTruss, tbody);
   if (rearBridge > 0) addEquipmentRow("BPBOBRIDGE", "ROE Black Pearl rear bridge clamp", 1, rearBridge, tbody);
