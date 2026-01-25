@@ -1459,40 +1459,6 @@ function addTheatrixxEquipment(config, tbody) {
   if (typeof displayTotalPixels === "function") displayTotalPixels(totalPixels);
   if (typeof displayDataPortsNeeded === "function") displayDataPortsNeeded("theatrixx", totalTiles);
 }
-  if (cables.CAT5ES005 > 0) addEquipmentRow("CAT5ES005", "CAT5e ethernet cable 5'", 1, cables.CAT5ES005, tbody);
-  if (cables.ECON010C6 > 0) addEquipmentRow("ECON010C6", "Ethercon (CAT6) 10'", 1, cables.ECON010C6, tbody);
-  if (cables.ECON025C6 > 0) addEquipmentRow("ECON025C6", "Ethercon (CAT6) 25'", 1.5, cables.ECON025C6, tbody);
-  if (cables.ECON050C6 > 0) addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
-  if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
-  if (cables.TRUE125FT > 0) addEquipmentRow("TRUE125FT", "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
-  if (cables.EDT110M > 0 && normalizeVoltage(voltage) === 120) addEquipmentRow("EDT110M", "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
-  if (cables.T11M > 0) addEquipmentRow("T11M", "True1 power cable 1M (3')", 0.44, cables.T11M, tbody);
-
-  // Power distribution
-  if (powerDistro.CUBEDIST > 0) addEquipmentRow("CUBEDIST", "Indu Electric 200A Cube Distro", 177, powerDistro.CUBEDIST, tbody);
-  if (powerDistro.TP1 > 0) addEquipmentRow("TP1", "Indu Electric 400A Power Distro w/ (4) 208v Soca", 197, powerDistro.TP1, tbody);
-  if (powerDistro.L2130T1FB > 0) addEquipmentRow("L2130T1FB", "L2130 floor box to 3x True1 with pass through", 7.5, powerDistro.L2130T1FB, tbody);
-  if (powerDistro.SOCA6XTRU1 > 0) addEquipmentRow("SOCA6XTRU1", "19 Pin Socapex to 6x True1 Power Cable", 5, powerDistro.SOCA6XTRU1, tbody);
-
-  // Display weight and pixel calculations
-  if (typeof totalWeight !== "undefined" && typeof displayEstShippingWeight === "function") {
-    if (typeof displayWallWeight === "function") displayWallWeight(totalWeight);
-
-    let caseWeight = totalWeight;
-    caseWeight += 24 * totalSpareTiles;
-    caseWeight += 187 * tileCases;
-    caseWeight += 27 * singleBases;
-    caseWeight += 12 * doubleBases;
-    caseWeight += 8 * singleHeaders;
-    caseWeight += 12 * doubleHeaders;
-    caseWeight += 120 * cables.ECON100C6;
-    caseWeight += 17 * mx40Count;
-    displayEstShippingWeight(caseWeight);
-  }
-
-  if (typeof displayTotalPixels === "function") displayTotalPixels(totalPixels);
-  if (typeof displayDataPortsNeeded === "function") displayDataPortsNeeded("theatrixx", totalTiles);
-}
 
 /* ----------------------------- ROE Graphite Mix Equipment ----------------------------- */
 
