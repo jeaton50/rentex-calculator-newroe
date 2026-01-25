@@ -550,6 +550,7 @@ const EquipmentCalculator = {
       totalTiles, // <-- actual wall tiles
       totalTilesWithSpares,
       distributionUnitCount,
+      sx40Count,
       horizontalBlocks,
       verticalBlocks,
       redundancyType,
@@ -595,6 +596,14 @@ const EquipmentCalculator = {
     }
     const adjustedCircuits = Math.ceil(circuits * 1.05);
 
+    // Calculate ECONRJ45 per reference code: B35 = B10 + adjustment, then ECONRJ45 = max(B35 - SX40, 0)
+    const B35 = distributionUnitCount + (distributionUnitCount > 0 && distributionUnitCount < 5
+      ? 1
+      : distributionUnitCount > 9
+      ? 3
+      : 0);
+    const ECONRJ45 = Math.max(B35 - (sx40Count || 0), 0);
+
     return {
       // Data cables
       CAT5ES005,
@@ -603,13 +612,7 @@ const EquipmentCalculator = {
       ECON050C6,
       ECON100C6,
       ECON1M: totalTilesWithSpares,
-      ECONRJ45:
-        distributionUnitCount +
-        (distributionUnitCount > 0 && distributionUnitCount < 5
-          ? 1
-          : distributionUnitCount > 9
-          ? 3
-          : 0),
+      ECONRJ45,
 
       // Power cables / circuits
       EDT110M: adjustedPowerCables, // shown only on 120V in display logic
@@ -1638,6 +1641,7 @@ function displayEquipment(data) {
       totalTiles,
       totalTilesWithSpares,
       distributionUnitCount: processors.XD10,
+      sx40Count: processors.SX40,
       horizontalBlocks,
       verticalBlocks,
       redundancyType,
