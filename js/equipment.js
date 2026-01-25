@@ -672,17 +672,29 @@ const EquipmentCalculator = {
       clamps = heightWarning === "***EXCEEDS LIMIT, MUST FLY***" ? 0 : clampCalc;
       ladders = clamps;
 
-      // Support beams and connectors - for Absen ground support
-      if (productType === "absen") {
-        // Support beams follow base pattern, multiplied by vertical blocks
-        supportBeams1000mm = doubleBases * verticalBlocks;
-        supportBeams50mm = singleBases * verticalBlocks;
-        beamConnectors = supportBeams1000mm + supportBeams50mm;
+      // Support beams and connectors - for Absen ground support (from reference code)
+      if (productType === "absen" && wallType === "Flat") {
+        // Reference code formulas
+        const O13 = Math.ceil((horizontalBlocks / 2) - 1);
+        const O14 = Math.ceil((horizontalBlocks / 2) - O13);
+        const P13 = Math.ceil(O13 - (O13 * 0.25));
+        const P15 = Math.ceil(P13 * 0.25);
+        const N12 = (verticalBlocks > 5.1) ? 2 : 0;
+        const Q15 = P15 * N12;
+        const Q14 = O14 * N12;
+        const Q13 = (O13 * N12) - Q15;
 
-        // Platforms - only needed for walls 5 tiles high or taller
-        if (verticalBlocks >= 5) {
-          platforms = Math.floor(clamps / 4);
-        }
+        supportBeams1000mm = Q13;  // PL25BEAM1K
+        supportBeams50mm = Q14;    // PL25BEAM50
+        beamConnectors = Q15;      // PL25BEAMAD
+
+        // Platforms - based on O13 and sandbag value
+        const O54 = Math.ceil(O13 / 2);
+        const sandbagTable = [0, 0, 0, 2.42, 3.78, 4.95, 6.74, 9.26, 10.42, 11.68, 12.95, 14.1];
+        const tableIndex = Math.min(verticalBlocks - 1, sandbagTable.length - 1);
+        const B6 = sandbagTable[Math.max(0, tableIndex)];
+        const N54 = (B6 > 0.01) ? O54 : 0;
+        platforms = N54;
       }
 
       const effectiveVerticalBlocks =
