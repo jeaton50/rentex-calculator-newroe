@@ -978,16 +978,16 @@ function addROEEquipment(config, tbody) {
 
   if (singleBases > 0) addEquipmentRow("BPBOBB1", "ROE Black Pearl base bar, 1W, 0.5m", 16, singleBases, tbody);
   if (doubleBases > 0) addEquipmentRow("BPBOBB2", "ROE Black Pearl base bar, 2W, 1.0m", 28, doubleBases, tbody);
-  if (universalBaseTruss > 0) addEquipmentRow("BPBOBT", "ROE Black Pearl universal base truss", 17, universalBaseTruss, tbody);
+  if (universalBaseTruss > 0) addEquipmentRow("BPGPUBT", "ROE BP2 /GP2 universal base truss", 17, universalBaseTruss, tbody);
   if (universalBaseTruss > 0 && gp2HalfBottomRow) addEquipmentRow("BPGPREAR05", "ROE BP2 / GP2 rear truss .5 meter", 1, universalBaseTruss, tbody);
-  if (rearTruss > 0) addEquipmentRow("BPBOREAR", "ROE Black Pearl rear truss,", 1, rearTruss, tbody);
+  if (rearTruss > 0) addEquipmentRow("BPGPREAR1", "ROE BP2 / GP2 rear truss 1 meter", 1, rearTruss, tbody);
 
-  // Combine BPBOBRIDGE quantities: rearBridge + GP2 Half universalBaseTruss
+  // Combine BPGPBRIDGE quantities: rearBridge + GP2 Half universalBaseTruss
   const totalBridgeClamps = (rearBridge || 0) + (gp2HalfBottomRow && universalBaseTruss > 0 ? universalBaseTruss : 0);
-  console.log('🔴 COMBINING BPBOBRIDGE - rearBridge:', rearBridge, '+ GP2Half universalBaseTruss:', (gp2HalfBottomRow && universalBaseTruss > 0 ? universalBaseTruss : 0), '= totalBridgeClamps:', totalBridgeClamps);
+  console.log('🔴 COMBINING BPGPBRIDGE - rearBridge:', rearBridge, '+ GP2Half universalBaseTruss:', (gp2HalfBottomRow && universalBaseTruss > 0 ? universalBaseTruss : 0), '= totalBridgeClamps:', totalBridgeClamps);
   if (totalBridgeClamps > 0) {
-    console.log('🔴 Adding SINGLE BPBOBRIDGE line with quantity:', totalBridgeClamps);
-    addEquipmentRow("BPBOBRIDGE", "ROE Black Pearl rear bridge clamp", 1, totalBridgeClamps, tbody);
+    console.log('🔴 Adding SINGLE BPGPBRIDGE line with quantity:', totalBridgeClamps);
+    addEquipmentRow("BPGPBRIDGE", "ROE BP2 / GP2 rear bridge clamp", 1, totalBridgeClamps, tbody);
   }
 
   if (wallType === "Convex" || wallType === "Concave") {
