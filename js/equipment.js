@@ -395,6 +395,7 @@ const EquipmentCalculator = {
       S8: S8 || 0,
       MX40PRO: 0,
       distributionUnitCount: distributionUnitCount || 0,
+      processorCountWithCascade: processorCountWithCascade || 0,
     };
   },
 
@@ -552,20 +553,20 @@ const EquipmentCalculator = {
       totalTilesWithSpares,
       distributionUnitCount,
       sx40Count,
+      xd10Count,
+      processorCountWithCascade,
       horizontalBlocks,
       verticalBlocks,
       redundancyType,
       voltage,
     } = config;
 
-    // Data cables distance estimate (existing)
-    const cableDistance =
-      Math.round(
-        Math.sqrt(
-          Math.pow((horizontalBlocks * 1.64) / (distributionUnitCount * 2 || 1), 2) +
-            Math.pow(verticalBlocks * 1.64, 2)
-        ) * 10
-      ) / 10;
+    // Data cables distance estimate
+    // B41 = B16 (processorCountWithCascade), not B10 (distributionUnitCount)
+    const B41 = processorCountWithCascade || distributionUnitCount;
+    const B42 = (B41 !== 0) ? (horizontalBlocks * 1.64) / (B41 * 2) : 0;
+    const B39 = verticalBlocks * 1.64;
+    const cableDistance = Math.round(Math.sqrt(B42 * B42 + B39 * B39) * 10) / 10;
 
     let CAT5ES005 = 0,
       ECON010C6 = 0,
@@ -573,9 +574,10 @@ const EquipmentCalculator = {
       ECON050C6 = 0,
       ECON100C6 = 0;
 
+    // numberOfCables uses XD10, not distributionUnitCount
     const numberOfCables =
-      redundancyType === "Distribution and Cables" || distributionUnitCount >= 1
-        ? distributionUnitCount * 10
+      redundancyType === "Distribution and Cables" || (xd10Count || 0) >= 1
+        ? (xd10Count || 0) * 10
         : 0;
 
     if (cableDistance < 7) CAT5ES005 = numberOfCables;
@@ -584,7 +586,7 @@ const EquipmentCalculator = {
     else if (cableDistance < 51) ECON050C6 = numberOfCables;
     else ECON100C6 = numberOfCables;
 
-    // Power cables (kept as your existing “drops” logic)
+    // Power cables (kept as your existing "drops" logic)
     const powerCableCount = Math.ceil(totalTilesWithSpares / 8);
     const adjustedPowerCables = Math.ceil(powerCableCount * 1.05);
 
@@ -1685,6 +1687,8 @@ function displayEquipment(data) {
       totalTilesWithSpares,
       distributionUnitCount: processors.distributionUnitCount,
       sx40Count: processors.SX40,
+      xd10Count: processors.XD10,
+      processorCountWithCascade: processors.processorCountWithCascade,
       horizontalBlocks,
       verticalBlocks,
       redundancyType,
