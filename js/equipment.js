@@ -599,13 +599,22 @@ const EquipmentCalculator = {
     }
     const adjustedCircuits = Math.ceil(circuits * 1.05);
 
-    // Calculate ECONRJ45 per reference code: B35 = B10 + adjustment, then ECONRJ45 = max(B35 - SX40, 0)
+    // Calculate ECONRJ45 per reference code
+    // B35 is the base calculation used by all products
     const B35 = distributionUnitCount + (distributionUnitCount > 0 && distributionUnitCount < 5
       ? 1
       : distributionUnitCount > 9
       ? 3
       : 0);
-    const ECONRJ45 = Math.max(B35 - (sx40Count || 0), 0);
+
+    // For Absen/Theatrixx/GP2.6: ECONRJ45 = B35 (no SX40 subtraction)
+    // For ROE (BP2): ECONRJ45 = Math.max(B35 - SX40, 0)
+    let ECONRJ45;
+    if (productType === "BP2B1" || productType === "BP2B2" || productType === "BP2V2") {
+      ECONRJ45 = Math.max(B35 - (sx40Count || 0), 0);
+    } else {
+      ECONRJ45 = B35;
+    }
 
     return {
       // Data cables
