@@ -210,7 +210,7 @@ function updateHeightDimensionLimit(productType) {
 // --- Part 2: Main Logic (from end of body) ---
 
 // Define initial zoom level and global variables
-let zoomLevel = 1;
+window.currentZoomLevel = 1;
 
 window.showNumbers = false;
 window.showWiring = false;
@@ -528,7 +528,7 @@ function generateWall() {
     CanvasRenderer.displayWallDimensions(productType);
   }
   if (typeof CanvasRenderer !== 'undefined' && CanvasRenderer.drawWall) {
-    const zoom = window.currentZoomLevel || 4;
+    const zoom = window.currentZoomLevel || 1;
     const showNumbers = window.showNumbers || false;
     CanvasRenderer.drawWall(requestData, zoom, showNumbers);
   }
