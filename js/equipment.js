@@ -521,8 +521,8 @@ const EquipmentCalculator = {
    */
   calculateSandbags(productType, verticalBlocks, baseCount) {
     const sandbagTables = {
-      // Absen: values adjusted for /1.0525 division formula (5x5 wall = 18 sandbags)
-      absen: [0, 0, 0, 2.42, 3.78, 4.95, 6.74, 9.26, 10.42, 11.68, 12.95, 14.1],
+      // Absen: original reference code values with /1.0525 division
+      absen: [0, 0, 0, 4, 6, 8, 11, 15, 17, 19, 21, 23],
       ROE: [0, 0, 0, 3.35102, 5.29109, 7.672, 10.5821, 14.5505, 16.5787, 20.9821, 23.9703, 26.9585],
       theatrixx: [1, 1, 2, 4, 6, 8, 11, 15, 17, 19, 21, 23],
       ROEGP26Half: [0.09, 1.10, 6.47, 13.17, 21.20, 30.54, 41.22, 53.23, 66.55, 81.21, 97.19],
@@ -1436,12 +1436,8 @@ function addTheatrixxEquipment(config, tbody) {
     addEquipmentRow("TXT92ETRCN", "Theatrixx Nomad XVT9 to EtherCon adapter", 0.25, H59, tbody);
   }
 
-  // Standard cables
-  if (cables.ECONRJ45 > 0) addEquipmentRow("ECONRJ45", "Ethercon to RJ45 (CAT6) 100'", 2.4, cables.ECONRJ45, tbody);
-  if (cables.CAT5ES005 > 0) addEquipmentRow("CAT5ES005", "CAT5e ethernet cable 5'", 1, cables.CAT5ES005, tbody);
-  if (cables.ECON010C6 > 0) addEquipmentRow("ECON010C6", "Ethercon (CAT6) 10'", 1, cables.ECON010C6, tbody);
-  if (cables.ECON025C6 > 0) addEquipmentRow("ECON025C6", "Ethercon (CAT6) 25'", 1.5, cables.ECON025C6, tbody);
-  if (cables.ECON050C6 > 0) addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
+  // Theatrixx does NOT use standard cables (ECONRJ45, CAT5ES005, ECON010C6, etc.)
+  // Those are only for Absen/ROE products
 
   // Power distribution
   if (powerDistro.CUBEDIST > 0) addEquipmentRow("CUBEDIST", "Indu Electric 200A Cube Distro", 177, powerDistro.CUBEDIST, tbody);
