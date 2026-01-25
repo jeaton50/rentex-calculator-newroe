@@ -394,6 +394,7 @@ const EquipmentCalculator = {
       XD10: XD10 || 0,
       S8: S8 || 0,
       MX40PRO: 0,
+      distributionUnitCount: distributionUnitCount || 0,
     };
   },
 
@@ -1640,7 +1641,7 @@ function displayEquipment(data) {
       productType,
       totalTiles,
       totalTilesWithSpares,
-      distributionUnitCount: processors.XD10,
+      distributionUnitCount: processors.distributionUnitCount,
       sx40Count: processors.SX40,
       horizontalBlocks,
       verticalBlocks,
