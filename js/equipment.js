@@ -1038,7 +1038,12 @@ function addROEEquipment(config, tbody) {
   if (singleBases > 0) addEquipmentRow("BPBOBB1", "ROE Black Pearl base bar, 1W, 0.5m", 16, singleBases, tbody);
   if (doubleBases > 0) addEquipmentRow("BPBOBB2", "ROE Black Pearl base bar, 2W, 1.0m", 28, doubleBases, tbody);
   if (universalBaseTruss > 0) addEquipmentRow("BPGPUBT", "ROE BP2 /GP2 universal base truss", 17, universalBaseTruss, tbody);
-  if (universalBaseTruss > 0 && gp2HalfBottomRow) addEquipmentRow("BPGPREAR05", "ROE BP2 / GP2 rear truss .5 meter", 1, universalBaseTruss, tbody);
+
+  // Add BPGPREAR05 for odd heights (3, 5, 7, 9, 11) or GP2 Half bottom row
+  if (universalBaseTruss > 0 && (gp2HalfBottomRow || (verticalBlocks % 2 === 1 && verticalBlocks >= 3))) {
+    addEquipmentRow("BPGPREAR05", "ROE BP2 / GP2 rear truss .5 meter", 1, universalBaseTruss, tbody);
+  }
+
   if (rearTruss > 0) addEquipmentRow("BPGPREAR1", "ROE BP2 / GP2 rear truss 1 meter", 1, rearTruss, tbody);
 
   // Combine BPGPBRIDGE quantities: rearBridge + GP2 Half universalBaseTruss
