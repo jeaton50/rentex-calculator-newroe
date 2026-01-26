@@ -494,7 +494,7 @@ const EquipmentCalculator = {
 
       case "theatrixx":
         watts = totalTiles * 190;
-        amps = v ? watts / v : 0;
+        amps = (v == 110) ? totalTiles * 1.63636 : (totalTiles * 865.38461) / 1000;
         break;
 
       case "ROEGP26Full":
