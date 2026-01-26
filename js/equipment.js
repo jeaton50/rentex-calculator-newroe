@@ -810,10 +810,54 @@ const EquipmentCalculator = {
     }
 
     // Floor boxes / adapters (use circuits instead of totalTiles/16 math for GP2.6 Full)
-    if (productType === "theatrixx" && TP1 > 0) {
-      // keep your existing Theatrixx logic
-      const z47 = Math.ceil(totalTiles / 1.27403 / 11.5 / 6);
-      TXT32SOCA = z47;
+    if (productType === "theatrixx") {
+      // Theatrixx-specific distribution calculation from reference code
+      const I13 = totalTiles;
+      const U44 = I13 * 2.40909; // 110V
+      const U45 = I13 * 1.27403; // 208V
+      const V45 = Math.ceil(U45 / 200);
+      const V46 = Math.ceil(U45 / 400);
+
+      const X45 = (U45 <= 200) ? 1 : 0;
+      const X46 = (U45 > 200) ? V46 : 0;
+
+      const Y44 = Math.ceil(I13 / 42);
+      const Y45 = Math.ceil(I13 / 1.27403 / 11.5 / 3);
+      const Y46 = Math.ceil(I13 / 1.27403 / 11.5 / 6);
+
+      const S47 = v; // voltage
+      const W45 = (S47 == 208) ? 1 : 0;
+
+      const Z44 = (S47 === 208) ? 0 : Y44;
+      const Z45 = (U45 > 200) ? 0 : ((W45 > 2) ? 0 : Y45);
+      const Z46 = (U45 > 200.1) ? Y46 : 0;
+      const Z47 = Z44 + Z45 + Z46;
+
+      const X44 = (S47 === 208) ? 0 : Math.ceil(U44 / 200);
+      const X47 = X44 + X45 + X46;
+
+      // Determine CUBEDIST or TP1 based on X46
+      if (companyLabel === "Rentex" && selectedDistroType === "Auto") {
+        if (X46 > 0.1) {
+          TP1 = X47;
+          CUBEDIST = 0;
+          TXT32SOCA = Z47;
+          L2130T1FB = 0;
+        } else {
+          CUBEDIST = X47;
+          TP1 = 0;
+          L2130T1FB = Z47;
+          TXT32SOCA = 0;
+        }
+      } else if (selectedDistroType === "CUBEDIST") {
+        CUBEDIST = X47;
+        L2130T1FB = Z47;
+        TXT32SOCA = 0;
+      } else if (selectedDistroType === "TP1") {
+        TP1 = X47;
+        TXT32SOCA = Z47;
+        L2130T1FB = 0;
+      }
     } else if (CUBEDIST > 0) {
       // 3 circuits per floor box (existing intent)
       L2130T1FB = Math.ceil(circuits / 3);
