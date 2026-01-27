@@ -1066,8 +1066,11 @@ function addROEEquipment(config, tbody) {
 
   // Black Pearl lateral support (only for ground support, walls 9-12 blocks tall)
   if (supportType === "Ground" && verticalBlocks >= 9 && verticalBlocks <= 12) {
-    const singleTubes = horizontalBlocks - 1;
-    const swivelCouplers = (horizontalBlocks - 1) * 2;
+    const widthInMeters = horizontalBlocks * 0.5;
+    const widthInFeet = widthInMeters * 3.28084;
+
+    const singleTubes = Math.ceil(widthInFeet / 4);
+    const swivelCouplers = Math.max(singleTubes - 1, 0) + singleTubes; // (n-1) to connect pipes + n for end attachments
 
     if (singleTubes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, singleTubes, tbody);
     if (swivelCouplers > 0) addEquipmentRow("15PIPECPL", '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', 1.5, swivelCouplers, tbody);
@@ -1245,16 +1248,19 @@ function addROEGP26Equipment(config, tbody) {
     let swivelCouplers = 0;
 
     const widthInMeters = horizontalBlocks * 0.5;
+    const widthInFeet = widthInMeters * 3.28084;
 
     if (verticalBlocks <= 3) {
       singleTubes = 0;
       swivelCouplers = 0;
     } else if (verticalBlocks === 4) {
-      singleTubes = Math.round(widthInMeters);
-      swivelCouplers = Math.round(widthInMeters * 2);
+      // For 4 blocks tall, calculate based on width in feet
+      singleTubes = Math.ceil(widthInFeet / 4);
+      swivelCouplers = Math.max(singleTubes - 1, 0) + singleTubes; // (n-1) to connect pipes + n for end attachments
     } else {
-      singleTubes = horizontalBlocks - 1;
-      swivelCouplers = (horizontalBlocks - 1) * 2;
+      // For 5+ blocks tall, calculate based on width in feet
+      singleTubes = Math.ceil(widthInFeet / 4);
+      swivelCouplers = Math.max(singleTubes - 1, 0) + singleTubes; // (n-1) to connect pipes + n for end attachments
     }
 
     if (singleTubes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, singleTubes, tbody);
