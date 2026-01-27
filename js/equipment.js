@@ -373,7 +373,8 @@ const EquipmentCalculator = {
       if (
         s8FinalCount >= 2 ||
         redundancyType === "Fully Redundant" ||
-        redundancyType === "Distribution and Cables"
+        redundancyType === "Distribution and Cables" ||
+        supportType === "Flyware"
       ) {
         S8 = 0;
         SX40 = primaryProcessorCount;
