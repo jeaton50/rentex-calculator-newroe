@@ -988,6 +988,7 @@ function addROEEquipment(config, tbody) {
     rearTruss,
     rearBridge,
     wallType,
+    supportType,
     powerDistro,
     blankRows,
     horizontalBlocks,
@@ -1062,6 +1063,15 @@ function addROEEquipment(config, tbody) {
   }
 
   if (sandbags > 0) addEquipmentRow("SANDBAG25", "Sand Bag 25 lbs.", 25, sandbags, tbody);
+
+  // Black Pearl lateral support (only for ground support, walls 9-12 blocks tall)
+  if (supportType === "Ground" && verticalBlocks >= 9 && verticalBlocks <= 12) {
+    const singleTubes = horizontalBlocks - 1;
+    const swivelCouplers = (horizontalBlocks - 1) * 2;
+
+    if (singleTubes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, singleTubes, tbody);
+    if (swivelCouplers > 0) addEquipmentRow("15PIPECPL", '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', 1.5, swivelCouplers, tbody);
+  }
 
   if (cables.ECONRJ45 > 0) addEquipmentRow("ECONRJ45", "Ethercon to RJ45 (CAT6) 100'", 2.4, cables.ECONRJ45, tbody);
   if (cables.CAT5ES005 > 0) addEquipmentRow("CAT5ES005", "CAT5e ethernet cable 5'", 1, cables.CAT5ES005, tbody);
