@@ -1242,26 +1242,12 @@ function addROEGP26Equipment(config, tbody) {
 
   if (sandbags > 0) addEquipmentRow("SANDBAG25", "Sand Bag 25 lbs.", 25, sandbags, tbody);
 
-  // GP2 Full lateral support (only for ground support, not flown)
-  if (productType === "ROEGP26Full" && supportType === "Ground") {
-    let singleTubes = 0;
-    let swivelCouplers = 0;
-
-    const widthInMeters = horizontalBlocks * 0.5;
-    const widthInFeet = widthInMeters * 3.28084;
-
-    if (verticalBlocks <= 3) {
-      singleTubes = 0;
-      swivelCouplers = 0;
-    } else if (verticalBlocks === 4) {
-      // For 4 blocks tall, calculate based on width in feet
-      singleTubes = Math.ceil(widthInFeet / 4);
-      swivelCouplers = Math.max(singleTubes - 1, 0) + singleTubes; // (n-1) to connect pipes + n for end attachments
-    } else {
-      // For 5+ blocks tall, calculate based on width in feet
-      singleTubes = Math.ceil(widthInFeet / 4);
-      swivelCouplers = Math.max(singleTubes - 1, 0) + singleTubes; // (n-1) to connect pipes + n for end attachments
-    }
+  // GP2 Full lateral support (only for ground support, not flown, 4+ blocks tall)
+  if (productType === "ROEGP26Full" && supportType === "Ground" && verticalBlocks >= 4) {
+    const pipeLength = 4; // 4 feet per pipe
+    const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each block is 0.5m wide
+    const singleTubes = Math.ceil(screenWidthFeet / pipeLength);
+    const swivelCouplers = Math.max(singleTubes - 1, 0) + singleTubes; // (n-1) to connect pipes + n for end attachments
 
     if (singleTubes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, singleTubes, tbody);
     if (swivelCouplers > 0) addEquipmentRow("15PIPECPL", '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', 1.5, swivelCouplers, tbody);
