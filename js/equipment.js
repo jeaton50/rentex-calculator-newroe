@@ -1066,10 +1066,9 @@ function addROEEquipment(config, tbody) {
 
   // Black Pearl lateral support (only for ground support, walls 9-12 blocks tall)
   if (supportType === "Ground" && verticalBlocks >= 9 && verticalBlocks <= 12) {
-    const widthInMeters = horizontalBlocks * 0.5;
-    const widthInFeet = widthInMeters * 3.28084;
-
-    const singleTubes = Math.ceil(widthInFeet / 4);
+    const pipeLength = 4; // 4 feet per pipe
+    const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each block is 0.5m wide
+    const singleTubes = Math.floor(screenWidthFeet / pipeLength); // Only pipes that fit within screen width
     const swivelCouplers = Math.max(singleTubes - 1, 0) + singleTubes; // (n-1) to connect pipes + n for end attachments
 
     if (singleTubes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, singleTubes, tbody);
