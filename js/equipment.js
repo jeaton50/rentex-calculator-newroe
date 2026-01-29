@@ -243,6 +243,9 @@ const EquipmentCalculator = {
       redundancyType,
       sourceSignalCount,
       supportType,
+      gp2HalfBottomRow,
+      gp2HalfRows,
+      gp2FullVerticalBlocks,
     } = config;
 
     let pixelsPerTileWidth, pixelsPerTileHeight;
@@ -294,25 +297,59 @@ const EquipmentCalculator = {
       Math.floor(4096 / pixelsPerTileWidth) *
       Math.floor(2160 / pixelsPerTileHeight);
 
-    const pixelsHeight = verticalBlocks * pixelsPerTileHeight;
-    const pixelsWidth = horizontalBlocks * pixelsPerTileWidth;
+    // Calculate pixel dimensions - account for mixed GP2 Full + GP2 Half configurations
+    let pixelsHeight, pixelsWidth;
+    if (productType === "ROEGP26Full" && gp2HalfBottomRow && gp2HalfRows > 0) {
+      // Mixed configuration: GP2 Full (384px tall) + GP2 Half (192px tall)
+      // Use gp2FullVerticalBlocks for actual GP2 Full tiles count
+      const actualFullBlocks = gp2FullVerticalBlocks || verticalBlocks;
+      const fullPixelsHeight = actualFullBlocks * 384;
+      const halfPixelsHeight = gp2HalfRows * 192;
+      pixelsHeight = fullPixelsHeight + halfPixelsHeight;
+      pixelsWidth = horizontalBlocks * pixelsPerTileWidth;
+      console.log('Mixed GP2 processor pixel calculation:', {
+        gp2FullVerticalBlocks: actualFullBlocks,
+        gp2HalfRows,
+        fullPixelsHeight,
+        halfPixelsHeight,
+        pixelsHeight,
+        pixelsWidth
+      });
+    } else {
+      // Standard calculation for single product type
+      pixelsHeight = verticalBlocks * pixelsPerTileHeight;
+      pixelsWidth = horizontalBlocks * pixelsPerTileWidth;
+    }
 
     const minProcessorsForPixels =
       Math.ceil(pixelsWidth / 4096) * Math.ceil(pixelsHeight / 2160);
 
-    const tilesPerCascade = isFinite(totalTiles / maxDataCascade)
-      ? Math.ceil(totalTiles / maxDataCascade)
+    // Calculate effective total tiles for cascade calculations
+    // For mixed GP2 Full + GP2 Half, include both tile types
+    let effectiveTotalTiles = totalTiles;
+    if (productType === "ROEGP26Full" && gp2HalfBottomRow && gp2HalfRows > 0) {
+      const gp2HalfTileCount = horizontalBlocks * gp2HalfRows;
+      effectiveTotalTiles = totalTiles + gp2HalfTileCount;
+      console.log('Mixed GP2 total tiles for cascade:', {
+        gp2FullTiles: totalTiles,
+        gp2HalfTiles: gp2HalfTileCount,
+        effectiveTotalTiles
+      });
+    }
+
+    const tilesPerCascade = isFinite(effectiveTotalTiles / maxDataCascade)
+      ? Math.ceil(effectiveTotalTiles / maxDataCascade)
       : 0;
 
     const baseProcessorCount = Math.max(
-      Math.ceil(totalTiles / maxPanelsPerSX40),
+      Math.ceil(effectiveTotalTiles / maxPanelsPerSX40),
       Math.ceil(tilesPerCascade / 40),
       minProcessorsForPixels
     );
 
     const processorCountWithCascade =
       maxDataCascade !== 0
-        ? Math.max(baseProcessorCount, Math.ceil(totalTiles / (10 * maxDataCascade)))
+        ? Math.max(baseProcessorCount, Math.ceil(effectiveTotalTiles / (10 * maxDataCascade)))
         : 0;
 
     const distributionProcessorCount = Math.max(
@@ -329,7 +366,7 @@ const EquipmentCalculator = {
     const maxRedundantCount = Math.max(2 * processorCountWithCascade);
 
     const s8ProcessorCount = Math.max(
-      Math.ceil(totalTiles / maxPanelsPerS8),
+      Math.ceil(effectiveTotalTiles / maxPanelsPerS8),
       Math.ceil(tilesPerCascade / 8),
       minProcessorsForPixels
     );
@@ -362,14 +399,14 @@ const EquipmentCalculator = {
         ? 0
         : redundancyType === "Fully Redundant"
         ? 0
-        : supportType === "Ground" || totalTiles <= 100
+        : supportType === "Ground" || effectiveTotalTiles <= 100
         ? s8ProcessorCount
         : 0;
 
     const maxPanels = productType === "absen" ? 80 : 100;
     let S8, SX40, XD10;
 
-    if (totalTiles <= maxPanels) {
+    if (effectiveTotalTiles <= maxPanels) {
       if (
         s8FinalCount >= 2 ||
         redundancyType === "Fully Redundant" ||
@@ -1151,7 +1188,18 @@ function addROEGP26Equipment(config, tbody) {
     console.log('Adding GP2 Half weight:', gp2HalfTilesNeeded, 'tiles x', gp2HalfWeight, 'lbs =', gp2HalfWeight * gp2HalfTilesNeeded, 'lbs');
   }
 
-  const totalPixels = horizontalBlocks * pixelWidth * (verticalBlocks * pixelHeight);
+  // Calculate total pixels - account for mixed GP2 Full + GP2 Half configurations
+  let totalPixels;
+  if (productType === "ROEGP26Full" && gp2HalfBottomRow && gp2HalfRows > 0) {
+    // Mixed configuration: GP2 Full tiles (192x384) + GP2 Half tiles (192x192)
+    const fullPixels = totalTiles * 192 * 384; // GP2 Full tiles
+    const halfPixels = (horizontalBlocks * gp2HalfRows) * 192 * 192; // GP2 Half tiles
+    totalPixels = fullPixels + halfPixels;
+    console.log('Mixed GP2 pixel calculation:', { fullPixels, halfPixels, totalPixels });
+  } else {
+    // Standard calculation for single product type
+    totalPixels = horizontalBlocks * pixelWidth * (verticalBlocks * pixelHeight);
+  }
 
   if (productType === "ROEGP26Full") {
     const packageCount = Math.ceil(totalTilesWithSpares / 6);
@@ -1726,6 +1774,9 @@ function displayEquipment(data) {
       redundancyType,
       sourceSignalCount,
       supportType,
+      gp2HalfBottomRow,
+      gp2HalfRows,
+      gp2FullVerticalBlocks,
     });
 
     const power = EquipmentCalculator.calculatePower(productType, totalTiles, voltage);
