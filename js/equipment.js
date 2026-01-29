@@ -1370,7 +1370,13 @@ function addROEGP26Equipment(config, tbody) {
   }
 
   if (typeof displayTotalPixels === "function") displayTotalPixels(totalPixels);
-  if (typeof displayDataPortsNeeded === "function") displayDataPortsNeeded(productType, totalTiles);
+  if (typeof displayDataPortsNeeded === "function") {
+    displayDataPortsNeeded(productType, totalTiles, {
+      gp2HalfBottomRow,
+      gp2HalfRows,
+      horizontalBlocks
+    });
+  }
 }
 
 function addTheatrixxEquipment(config, tbody) {
