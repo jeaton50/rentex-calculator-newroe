@@ -1801,7 +1801,11 @@ function displayEquipment(data) {
     }
 
     if (typeof displayDataPortsNeeded === "function") {
-      displayDataPortsNeeded(productType, totalTiles);
+      displayDataPortsNeeded(productType, totalTiles, {
+        gp2HalfBottomRow,
+        gp2HalfRows,
+        horizontalBlocks
+      });
     }
 
     const cables = EquipmentCalculator.calculateCables({

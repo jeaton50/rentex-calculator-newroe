@@ -1028,9 +1028,15 @@ window.displayTotalPower = function(voltage, amps, watts) {
   }
 };
 
-window.displayDataPortsNeeded = function(productType, totalTiles) {
+window.displayDataPortsNeeded = function(productType, totalTiles, config = {}) {
   const dataPortsDiv = document.getElementById('dataPortsNeeded');
   if (!dataPortsDiv) return;
+
+  const {
+    gp2HalfBottomRow = false,
+    gp2HalfRows = 0,
+    horizontalBlocks = 0
+  } = config;
 
   // Define daisy chain limits for each product type
   const daisyChainLimits = {
@@ -1054,7 +1060,28 @@ window.displayDataPortsNeeded = function(productType, totalTiles) {
     return;
   }
 
-  // Calculate number of data ports needed (round up)
+  // Check for mixed GP2 Full + GP2 Half configuration
+  if (productType === 'ROEGP26Full' && gp2HalfBottomRow && gp2HalfRows > 0 && horizontalBlocks > 0) {
+    const gp2HalfTileCount = horizontalBlocks * gp2HalfRows;
+    const gp2FullLimit = 5;
+    const gp2HalfLimit = 11;
+
+    const fullPorts = Math.ceil(totalTiles / gp2FullLimit);
+    const halfPorts = Math.ceil(gp2HalfTileCount / gp2HalfLimit);
+    const totalPorts = fullPorts + halfPorts;
+
+    dataPortsDiv.innerHTML = `
+      <strong>Data Ports Needed:</strong><br>
+      ${totalPorts} port${totalPorts !== 1 ? 's' : ''} total<br>
+      <span style="font-size: 0.9em; color: #666;">
+        (${fullPorts} for GP2 Full: ${totalTiles} tiles ÷ ${gp2FullLimit} per chain)<br>
+        (${halfPorts} for GP2 Half: ${gp2HalfTileCount} tiles ÷ ${gp2HalfLimit} per chain)
+      </span>
+    `;
+    return;
+  }
+
+  // Standard calculation for single product type
   const portsNeeded = Math.ceil(totalTiles / limit);
 
   dataPortsDiv.innerHTML = `
