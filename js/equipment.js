@@ -223,9 +223,13 @@ function roeGp26FullSuggestedPanelsPerCircuit(totalPanels, voltage) {
   return Math.min(6, totalPanels);
 }
 
-function roeGp26FullCircuitCount(totalPanels, voltage) {
-  const ppc = roeGp26FullSuggestedPanelsPerCircuit(totalPanels, voltage);
-  return ppc ? Math.ceil(totalPanels / ppc) : 0;
+function roeGp26FullCircuitCount(totalPanels, voltage, gp2HalfTileCount = 0) {
+  // GP2 Half uses 160W per tile, GP2 Full uses 320W per tile
+  // So 2 GP2 Half tiles = 1 GP2 Full tile for power/circuit purposes
+  const effectivePanels = totalPanels + (gp2HalfTileCount / 2);
+
+  const ppc = roeGp26FullSuggestedPanelsPerCircuit(effectivePanels, voltage);
+  return ppc ? Math.ceil(effectivePanels / ppc) : 0;
 }
 
 /* --------------------------- Calculator Namespace --------------------------- */
@@ -441,34 +445,23 @@ const EquipmentCalculator = {
    * Calculate total wall power (amps/watts)
    * NOTE: Normalizes 110/115 to 120V.
    */
-  calculatePower(productType, totalTiles, voltage) {
+  calculatePower(productType, totalTiles, voltage, config = {}) {
     const v = normalizeVoltage(voltage);
     let amps = 0,
       watts = 0;
 
-    const roeGraphiteEnabled =
-      document.getElementById("roeGraphicMix")?.checked || false;
+    const {
+      gp2HalfBottomRow = false,
+      gp2HalfRows = 0,
+      horizontalBlocks = 0,
+      roeGraphiteMixEnabled = false,
+      graphiteMixData = null
+    } = config;
 
-    if (roeGraphiteEnabled) {
-      const halfHorizontal = parseInt(
-        document.getElementById("halfHorizontal")?.value || 0,
-        10
-      );
-      const halfVertical = parseInt(
-        document.getElementById("halfVertical")?.value || 0,
-        10
-      );
-      const fullHorizontal = parseInt(
-        document.getElementById("fullHorizontal")?.value || 0,
-        10
-      );
-      const fullVertical = parseInt(
-        document.getElementById("fullVertical")?.value || 0,
-        10
-      );
-
-      const halfTileCount = halfHorizontal * halfVertical;
-      const fullTileCount = fullHorizontal * fullVertical;
+    // ROE Graphite Mix (separate GP2 Full + GP2 Half grids)
+    if (roeGraphiteMixEnabled && graphiteMixData) {
+      const halfTileCount = graphiteMixData.halfTiles || 0;
+      const fullTileCount = graphiteMixData.fullTiles || 0;
 
       const halfWatts = halfTileCount * 160;
       const fullWatts = fullTileCount * 320;
@@ -476,24 +469,20 @@ const EquipmentCalculator = {
       watts = halfWatts + fullWatts;
       amps = v ? watts / v : 0;
 
+      console.log('ROE Graphite Mix power calculation:', {
+        halfTiles: halfTileCount,
+        halfWatts,
+        fullTiles: fullTileCount,
+        fullWatts,
+        totalWatts: watts,
+        amps
+      });
+
       return { amps, watts };
     }
 
     // Check for GP2 Full with GP2 Half bottom rows
-    const gp2HalfEnabled =
-      productType === 'ROEGP26Full' &&
-      document.getElementById('gp2HalfCheckbox')?.checked;
-
-    if (gp2HalfEnabled) {
-      const gp2HalfRows = parseInt(
-        document.getElementById('gp2HalfCount')?.value || 0,
-        10
-      );
-      const horizontalBlocks = parseInt(
-        document.getElementById('blocksHor')?.value || 0,
-        10
-      );
-
+    if (productType === 'ROEGP26Full' && gp2HalfBottomRow && gp2HalfRows > 0) {
       const gp2HalfTileCount = horizontalBlocks * gp2HalfRows;
 
       // GP2 Full tiles: 320W per tile
@@ -597,6 +586,8 @@ const EquipmentCalculator = {
       verticalBlocks,
       redundancyType,
       voltage,
+      gp2HalfBottomRow,
+      gp2HalfRows,
     } = config;
 
     // Data cables distance estimate
@@ -631,7 +622,13 @@ const EquipmentCalculator = {
     // CIRCUITS (THIS IS THE KEY FIX)
     let circuits = 0;
     if (productType === "ROEGP26Full") {
-      circuits = roeGp26FullCircuitCount(totalTiles, voltage);
+      const gp2HalfTileCount = (gp2HalfBottomRow && gp2HalfRows > 0) ? horizontalBlocks * gp2HalfRows : 0;
+      circuits = roeGp26FullCircuitCount(totalTiles, voltage, gp2HalfTileCount);
+      console.log('GP2 circuit calculation:', {
+        gp2FullTiles: totalTiles,
+        gp2HalfTiles: gp2HalfTileCount,
+        circuits
+      });
     } else {
       circuits = Math.ceil(totalTiles / 16);
     }
@@ -802,6 +799,11 @@ const EquipmentCalculator = {
       voltage,
       selectedDistroType,
       companyLabel,
+      gp2HalfBottomRow,
+      gp2HalfRows,
+      horizontalBlocks,
+      roeGraphiteMixEnabled,
+      graphiteMixData
     } = config;
 
     let CUBEDIST = 0,
@@ -811,8 +813,15 @@ const EquipmentCalculator = {
       TXT32SOCA = 0;
 
     // Compute amps for both planning voltages
-    const amps120 = this.calculatePower(productType, totalTiles, 120).amps;
-    const amps208 = this.calculatePower(productType, totalTiles, 208).amps;
+    const powerConfig = {
+      gp2HalfBottomRow,
+      gp2HalfRows,
+      horizontalBlocks,
+      roeGraphiteMixEnabled,
+      graphiteMixData
+    };
+    const amps120 = this.calculatePower(productType, totalTiles, 120, powerConfig).amps;
+    const amps208 = this.calculatePower(productType, totalTiles, 208, powerConfig).amps;
 
     const cubeUnits120 = Math.ceil(amps120 / 200);
     const cubeUnits208 = Math.ceil(amps208 / 200);
@@ -842,7 +851,8 @@ const EquipmentCalculator = {
     // Circuits for sizing floorboxes/adapters
     let circuits = 0;
     if (productType === "ROEGP26Full") {
-      circuits = roeGp26FullCircuitCount(totalTiles, v);
+      const gp2HalfTileCount = (gp2HalfBottomRow && gp2HalfRows > 0) ? horizontalBlocks * gp2HalfRows : 0;
+      circuits = roeGp26FullCircuitCount(totalTiles, v, gp2HalfTileCount);
     } else {
       circuits = Math.ceil(totalTiles / 16);
     }
@@ -1779,7 +1789,13 @@ function displayEquipment(data) {
       gp2FullVerticalBlocks,
     });
 
-    const power = EquipmentCalculator.calculatePower(productType, totalTiles, voltage);
+    const power = EquipmentCalculator.calculatePower(productType, totalTiles, voltage, {
+      gp2HalfBottomRow,
+      gp2HalfRows,
+      horizontalBlocks,
+      roeGraphiteMixEnabled,
+      graphiteMixData
+    });
     if (typeof displayTotalPower === "function") {
       displayTotalPower(normalizeVoltage(voltage), power.amps, power.watts);
     }
@@ -1800,6 +1816,8 @@ function displayEquipment(data) {
       verticalBlocks,
       redundancyType,
       voltage,
+      gp2HalfBottomRow,
+      gp2HalfRows,
     });
 
     const supportStructures = EquipmentCalculator.calculateSupportStructures({
@@ -1842,6 +1860,11 @@ function displayEquipment(data) {
       voltage,
       selectedDistroType,
       companyLabel,
+      gp2HalfBottomRow,
+      gp2HalfRows,
+      horizontalBlocks,
+      roeGraphiteMixEnabled,
+      graphiteMixData
     });
 
     const casesNeeded = Math.ceil(totalTilesWithSpares / 8);
