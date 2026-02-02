@@ -654,13 +654,22 @@ const EquipmentCalculator = {
     // Calculate total tiles with spares including GP2 Half tiles
     let totalTilesWithSparesIncludingHalf = totalTilesWithSpares;
     if (productType === "ROEGP26Full" && gp2HalfBottomRow && gp2HalfRows > 0) {
-      const gp2HalfTileCount = horizontalBlocks * gp2HalfRows;
-      // Add 8% spares for GP2 Half tiles (matching the spare calculation logic)
-      const gp2HalfWithSpares = Math.ceil(gp2HalfTileCount * 1.08);
+      const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows;
+
+      // GP2 Half: Use package-based spare calculation (same as equipment display)
+      // Always add at least 1 spare case (12 tiles per case)
+      const packageSize = 12;
+      const halfActiveCases = Math.ceil(gp2HalfTilesNeeded / packageSize);
+      const halfTotalCases = halfActiveCases + 1; // Guarantee at least 1 spare case
+      const gp2HalfWithSpares = halfTotalCases * packageSize;
+
       totalTilesWithSparesIncludingHalf = totalTilesWithSpares + gp2HalfWithSpares;
+
       console.log('GP2 cable calculation - tiles with spares:', {
         gp2FullWithSpares: totalTilesWithSpares,
-        gp2HalfTiles: gp2HalfTileCount,
+        gp2HalfTiles: gp2HalfTilesNeeded,
+        gp2HalfActiveCases: halfActiveCases,
+        gp2HalfTotalCases: halfTotalCases,
         gp2HalfWithSpares,
         totalWithSpares: totalTilesWithSparesIncludingHalf
       });
