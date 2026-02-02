@@ -651,6 +651,21 @@ const EquipmentCalculator = {
       ECONRJ45 = B35;
     }
 
+    // Calculate total tiles with spares including GP2 Half tiles
+    let totalTilesWithSparesIncludingHalf = totalTilesWithSpares;
+    if (productType === "ROEGP26Full" && gp2HalfBottomRow && gp2HalfRows > 0) {
+      const gp2HalfTileCount = horizontalBlocks * gp2HalfRows;
+      // Add 8% spares for GP2 Half tiles (matching the spare calculation logic)
+      const gp2HalfWithSpares = Math.ceil(gp2HalfTileCount * 1.08);
+      totalTilesWithSparesIncludingHalf = totalTilesWithSpares + gp2HalfWithSpares;
+      console.log('GP2 cable calculation - tiles with spares:', {
+        gp2FullWithSpares: totalTilesWithSpares,
+        gp2HalfTiles: gp2HalfTileCount,
+        gp2HalfWithSpares,
+        totalWithSpares: totalTilesWithSparesIncludingHalf
+      });
+    }
+
     return {
       // Data cables
       CAT5ES005,
@@ -658,13 +673,13 @@ const EquipmentCalculator = {
       ECON025C6,
       ECON050C6,
       ECON100C6,
-      ECON1M: totalTilesWithSpares,
+      ECON1M: totalTilesWithSparesIncludingHalf,
       ECONRJ45,
 
       // Power cables / circuits
       EDT110M: adjustedPowerCables, // shown only on 120V in display logic
       TRUE125FT: adjustedCircuits,  // this is your "number of circuits" output
-      T11M: totalTilesWithSpares,
+      T11M: totalTilesWithSparesIncludingHalf,
     };
   },
 
