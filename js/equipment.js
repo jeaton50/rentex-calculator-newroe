@@ -1067,6 +1067,7 @@ function addROEEquipment(config, tbody) {
     verticalBlocks,
     voltage,
     gp2HalfBottomRow,
+    gp2HalfPosition,
   } = config;
 
   totalWeight = 20.61 * totalTiles;
@@ -1207,6 +1208,7 @@ function addROEGP26Equipment(config, tbody) {
     supportType,
     gp2HalfBottomRow,
     gp2HalfRows,
+    gp2HalfPosition,
   } = config;
 
   const tileWeight = productType === "ROEGP26Full" ? 19.84 : 11.44;
@@ -1268,10 +1270,11 @@ function addROEGP26Equipment(config, tbody) {
       });
 
       const rowLabel = gp2HalfRows === 1 ? "row" : "rows";
-      addEquipmentRow("6GP2HALF", `ROE GP2.6 Half 12x tile package (${halfActiveCases} active + ${halfSpareCases} spare) (for top ${gp2HalfRows} ${rowLabel})`, 0, halfTotalCases, tbody);
-      addEquipmentRow("ROEGP26HALF", `ROE GP2.6 Half LED tile 500x500mm (top ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfTilesNeeded, tbody);
+      const positionLabel = gp2HalfPosition === 'top' ? 'top' : 'bottom';
+      addEquipmentRow("6GP2HALF", `ROE GP2.6 Half 12x tile package (${halfActiveCases} active + ${halfSpareCases} spare) (for ${positionLabel} ${gp2HalfRows} ${rowLabel})`, 0, halfTotalCases, tbody);
+      addEquipmentRow("ROEGP26HALF", `ROE GP2.6 Half LED tile 500x500mm (${positionLabel} ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfTilesNeeded, tbody);
       if (gp2HalfSpareTiles > 0) {
-        addEquipmentRow("ROEGP26HALF", `ROE GP2.6 Half LED tile 500x500mm **SPARE** (top ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfSpareTiles, tbody);
+        addEquipmentRow("ROEGP26HALF", `ROE GP2.6 Half LED tile 500x500mm **SPARE** (${positionLabel} ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfSpareTiles, tbody);
       }
     } else {
       console.log('NOT adding GP2 Half equipment - gp2HalfBottomRow:', gp2HalfBottomRow, 'gp2HalfRows:', gp2HalfRows);
@@ -1299,10 +1302,11 @@ function addROEGP26Equipment(config, tbody) {
   if (doubleBases > 0) addEquipmentRow("GP2BASE2", "ROE Graphite GP base bar, 2W, V1.5", 28, doubleBases, tbody);
   if (universalBaseTruss > 0) addEquipmentRow("BPGPUBT", "ROE BP2 /GP2 universal base truss", 17, universalBaseTruss, tbody);
 
-  console.log('GP2 Half rear support check - universalBaseTruss:', universalBaseTruss, 'gp2HalfBottomRow:', gp2HalfBottomRow);
+  console.log('GP2 Half rear support check - universalBaseTruss:', universalBaseTruss, 'gp2HalfBottomRow:', gp2HalfBottomRow, 'position:', gp2HalfPosition);
   if (universalBaseTruss > 0 && gp2HalfBottomRow) {
-    console.log('Adding BPGPREAR05 for GP2 Half - quantity:', universalBaseTruss);
-    addEquipmentRow("BPGPREAR05", "ROE BP2 / GP2 rear truss .5 meter", 1, universalBaseTruss, tbody);
+    const positionLabel = gp2HalfPosition === 'top' ? 'top' : 'bottom';
+    console.log('Adding BPGPREAR05 for GP2 Half at', positionLabel, '- quantity:', universalBaseTruss);
+    addEquipmentRow("BPGPREAR05", `ROE BP2 / GP2 rear truss .5 meter (for GP2 Half ${positionLabel} row)`, 1, universalBaseTruss, tbody);
   }
 
   if (rearTruss > 0) addEquipmentRow("BPGPREAR1", "ROE BP2 / GP2 rear truss 1 meter", 1, rearTruss, tbody);
@@ -1767,6 +1771,7 @@ function displayEquipment(data) {
     const blankRows = data.blankRows || 0;
     const gp2HalfBottomRow = data.gp2HalfBottomRow || false;
     const gp2HalfRows = data.gp2HalfRows || 0;
+    const gp2HalfPosition = data.gp2HalfPosition || 'bottom';
     const gp2FullVerticalBlocks = data.gp2FullVerticalBlocks || verticalBlocks;
     const roeGraphiteMixEnabled = data.roeGraphiteMixEnabled || false;
     const graphiteMixData = data.graphiteMixData || null;
@@ -1921,6 +1926,7 @@ function displayEquipment(data) {
       blankRows,
       gp2HalfBottomRow,
       gp2HalfRows,
+      gp2HalfPosition,
       processors,
       cables,
       sandbags,

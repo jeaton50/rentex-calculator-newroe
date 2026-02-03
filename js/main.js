@@ -1958,6 +1958,24 @@ document.addEventListener('DOMContentLoaded', () => {
     generateWall();
   });
 
+  document.getElementById('gp2HalfCheckbox')?.addEventListener('change', function () {
+    const countContainer = document.getElementById('gp2HalfCountContainer');
+    if (this.checked) {
+      countContainer.style.display = 'block';
+    } else {
+      countContainer.style.display = 'none';
+    }
+    generateWall();
+  });
+
+  document.getElementById('gp2HalfCount')?.addEventListener('input', function () {
+    generateWall();
+  });
+
+  document.getElementById('gp2HalfPosition')?.addEventListener('change', function () {
+    generateWall();
+  });
+
   const screenSize = document.getElementById('screenSize');
   if (screenSize) {
     screenSize.addEventListener('change', updateBlocksBasedOnSelection);

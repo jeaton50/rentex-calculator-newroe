@@ -292,21 +292,25 @@ function generateWallConfiguration() {
     blankRows = parseInt(document.getElementById('dummyTileCount')?.value || 0, 10) || 1;
   }
 
-  // Get GP2 Half bottom row configuration for GP2 Full
+  // Get GP2 Half row configuration for GP2 Full
   console.log('📍 About to check GP2 Half checkbox...');
   const gp2HalfCheckboxElement = document.getElementById('gp2HalfCheckbox');
   const gp2HalfCountElement = document.getElementById('gp2HalfCount');
+  const gp2HalfPositionElement = document.getElementById('gp2HalfPosition');
   console.log('📍 gp2HalfCheckbox element:', gp2HalfCheckboxElement);
   console.log('📍 gp2HalfCheckbox checked?:', gp2HalfCheckboxElement?.checked);
   console.log('📍 gp2HalfCount element:', gp2HalfCountElement);
   console.log('📍 gp2HalfCount value:', gp2HalfCountElement?.value);
+  console.log('📍 gp2HalfPosition value:', gp2HalfPositionElement?.value);
 
   let gp2HalfBottomRow = false;
   let gp2HalfRows = 0;
+  let gp2HalfPosition = 'bottom';
   if (gp2HalfCheckboxElement?.checked) {
     gp2HalfBottomRow = true;
     gp2HalfRows = parseInt(gp2HalfCountElement?.value || 1, 10);
-    console.log('✅ GP2 Half checkbox CHECKED - rows:', gp2HalfRows);
+    gp2HalfPosition = gp2HalfPositionElement?.value || 'bottom';
+    console.log('✅ GP2 Half checkbox CHECKED - rows:', gp2HalfRows, 'position:', gp2HalfPosition);
   } else {
     console.log('❌ GP2 Half checkbox NOT checked');
   }
@@ -347,6 +351,7 @@ function generateWallConfiguration() {
     blankRows,
     gp2HalfBottomRow,
     gp2HalfRows,
+    gp2HalfPosition,
     gp2FullVerticalBlocks: verticalBlocks // Original GP2 Full vertical blocks (not including GP2 Half)
   };
 }
