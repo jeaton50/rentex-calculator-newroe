@@ -390,43 +390,44 @@ function generateWall() {
     blankRows = parseInt(document.getElementById('dummyTileCount')?.value || 0, 10) || 1;
   }
 
-  // Get GP2 Half top row configuration for GP2 Full
-  let gp2HalfBottomRow = false;
-  let gp2HalfRows = 0;
-  let gp2HalfPosition = 'bottom';
+  // Get GP2 Half configuration for GP2 Full
+  // Two sources: 1) Auto-detected from fractional input (always top), 2) Manual checkbox (user-specified position)
+  let gp2HalfAutoRows = 0; // Auto-detected from fractional input (always at top)
+  let gp2HalfManualRows = 0; // Manual checkbox (position specified by user)
+  let gp2HalfManualPosition = 'bottom';
   let gp2FullVerticalBlocks = blocksVer; // Store original input vertical blocks
 
   // For dimension display: use original fractional value if fractional input detected
   let displayBlocksVer = hasFractionalInput ? blocksVerRaw : blocksVer;
 
-  // Check if GP2 Half is enabled via fractional input
+  // Check if GP2 Half is enabled via fractional input (auto-detection - always at top)
   if (hasFractionalInput && autoGp2HalfRows > 0 && productType === 'ROEGP26Full') {
-    gp2HalfBottomRow = true;
-    gp2HalfRows = autoGp2HalfRows;
+    gp2HalfAutoRows = autoGp2HalfRows;
 
     // Fractional input: 4.5 means 4 Full + 1 Half (not replacement, additive)
     // blocksVer is already floored to the number of Full rows we want
     gp2FullVerticalBlocks = blocksVer;
+    console.log('✅ Fractional input detected - auto GP2 Half rows at TOP:', gp2HalfAutoRows);
   }
 
-  // Check if GP2 Half is enabled via manual checkbox (overrides fractional input if checked)
+  // Check if GP2 Half is enabled via manual checkbox (additive to fractional input)
   const gp2HalfCheckboxElement = document.getElementById('gp2HalfCheckbox');
   const gp2HalfCountElement = document.getElementById('gp2HalfCount');
   const gp2HalfPositionElement = document.getElementById('gp2HalfPosition');
 
   if (gp2HalfCheckboxElement?.checked && productType === 'ROEGP26Full') {
-    gp2HalfBottomRow = true;
-    gp2HalfRows = parseInt(gp2HalfCountElement?.value || 1, 10);
-    gp2HalfPosition = gp2HalfPositionElement?.value || 'bottom';
+    gp2HalfManualRows = parseInt(gp2HalfCountElement?.value || 1, 10);
+    gp2HalfManualPosition = gp2HalfPositionElement?.value || 'bottom';
 
-    console.log('✅ Manual GP2 Half checkbox CHECKED in generateWall() - rows:', gp2HalfRows, 'position:', gp2HalfPosition);
+    console.log('✅ Manual GP2 Half checkbox CHECKED in generateWall() - rows:', gp2HalfManualRows, 'position:', gp2HalfManualPosition);
 
-    // Manual checkbox is additive like fractional input
-    gp2FullVerticalBlocks = blocksVer;
-
-    // Update display blocks to show combined height
-    displayBlocksVer = blocksVer + (gp2HalfRows / 2);
+    // Update display blocks to show combined height (both auto and manual)
+    displayBlocksVer = blocksVer + (gp2HalfAutoRows / 2) + (gp2HalfManualRows / 2);
   }
+
+  // Legacy compatibility: if either auto or manual Half rows exist
+  const gp2HalfBottomRow = (gp2HalfAutoRows > 0) || (gp2HalfManualRows > 0);
+  const gp2HalfRows = gp2HalfAutoRows + gp2HalfManualRows; // Total for equipment calculations
 
   // Check if ROE Graphite Mix mode is enabled
   const roeGraphiteMixEnabled = document.getElementById('roeGraphicMix')?.checked || false;
@@ -535,7 +536,9 @@ function generateWall() {
     blankRows,
     gp2HalfBottomRow,
     gp2HalfRows,
-    gp2HalfPosition,
+    gp2HalfAutoRows,
+    gp2HalfManualRows,
+    gp2HalfManualPosition,
     gp2FullVerticalBlocks, // Reduced GP2 Full blocks (after replacing top rows with Half)
     roeGraphiteMixEnabled,
     graphiteMixData
