@@ -706,6 +706,10 @@ const EquipmentCalculator = {
       heightWarning,
       blankRows,
       productType,
+      gp2HalfBottomRow,
+      gp2HalfRows,
+      gp2HalfPosition,
+      gp2FullVerticalBlocks,
     } = config;
 
     let singleBases = 0,
@@ -724,12 +728,29 @@ const EquipmentCalculator = {
       rearBridge = 0;
 
     if (supportType === "Ground") {
-      const heightInMeters =
-        productType === "ROEGP26Full"
-          ? verticalBlocks * 1.0
-          : productType === "ROEGP26Half"
-          ? verticalBlocks * 0.5
-          : verticalBlocks * 0.5;
+      // Calculate height accounting for GP2 Half rows
+      let heightInMeters;
+      if (productType === "ROEGP26Full") {
+        if (gp2HalfBottomRow && gp2HalfRows > 0) {
+          // Mixed configuration: use actual GP2 Full count + GP2 Half height
+          const fullHeight = (gp2FullVerticalBlocks || verticalBlocks) * 1.0;
+          const halfHeight = gp2HalfRows * 0.5;
+          heightInMeters = fullHeight + halfHeight;
+          console.log('Support structures - Mixed GP2 height:', {
+            fullBlocks: gp2FullVerticalBlocks || verticalBlocks,
+            fullHeight,
+            halfRows: gp2HalfRows,
+            halfHeight,
+            totalHeight: heightInMeters
+          });
+        } else {
+          heightInMeters = verticalBlocks * 1.0;
+        }
+      } else if (productType === "ROEGP26Half") {
+        heightInMeters = verticalBlocks * 0.5;
+      } else {
+        heightInMeters = verticalBlocks * 0.5;
+      }
 
       const needsDenseSupport = heightInMeters > 4.0;
 
@@ -1869,6 +1890,10 @@ function displayEquipment(data) {
       heightWarning,
       blankRows,
       productType,
+      gp2HalfBottomRow,
+      gp2HalfRows,
+      gp2HalfPosition,
+      gp2FullVerticalBlocks,
     });
 
     const baseCount = supportStructures.singleBases + supportStructures.doubleBases;
