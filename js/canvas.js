@@ -299,9 +299,10 @@ const CanvasRenderer = {
         const hasGP2Half = productType === 'ROEGP26Full' && wallData.gp2HalfBottomRow && wallData.gp2HalfRows > 0;
 
         if (hasGP2Half) {
-          // Mixed GP2 Half (top) and GP2 Full (bottom) mode
+          // Mixed GP2 Half and GP2 Full mode - position depends on gp2HalfPosition
           const gp2FullRows = wallData.gp2FullVerticalBlocks || 0;
           const gp2HalfRows = wallData.gp2HalfRows || 0;
+          const gp2HalfPosition = wallData.gp2HalfPosition || 'bottom';
           const wallWidth = wallData.blocksHor * blockWidth;
 
           // blockHeight is already 2x for ROEGP26Full (1000mm)
@@ -311,29 +312,64 @@ const CanvasRenderer = {
           const halfSectionHeight = gp2HalfRows * halfBlockHeight;
           const fullSectionHeight = gp2FullRows * fullBlockHeight;
 
-          // Draw GP2 Half section (top)
-          if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
-            ctx.globalAlpha = 0.55;
-            ctx.drawImage(imageToUse, wallX, wallY, wallWidth, halfSectionHeight);
-            ctx.globalAlpha = 1.0;
-          } else {
-            ctx.globalAlpha = 0.55;
-            ctx.fillStyle = '#444'; // Slightly different color for Half tiles
-            ctx.fillRect(wallX, wallY, wallWidth, halfSectionHeight);
-            ctx.globalAlpha = 1.0;
-          }
+          let halfSectionY, fullSectionY;
 
-          // Draw GP2 Full section (bottom)
-          const fullSectionY = wallY + halfSectionHeight;
-          if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
-            ctx.globalAlpha = 0.55;
-            ctx.drawImage(imageToUse, wallX, fullSectionY, wallWidth, fullSectionHeight);
-            ctx.globalAlpha = 1.0;
+          if (gp2HalfPosition === 'bottom') {
+            // GP2 Full on top, GP2 Half on bottom
+            fullSectionY = wallY;
+            halfSectionY = wallY + fullSectionHeight;
+
+            // Draw GP2 Full section (top)
+            if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+              ctx.globalAlpha = 0.55;
+              ctx.drawImage(imageToUse, wallX, fullSectionY, wallWidth, fullSectionHeight);
+              ctx.globalAlpha = 1.0;
+            } else {
+              ctx.globalAlpha = 0.55;
+              ctx.fillStyle = '#555'; // Color for Full tiles
+              ctx.fillRect(wallX, fullSectionY, wallWidth, fullSectionHeight);
+              ctx.globalAlpha = 1.0;
+            }
+
+            // Draw GP2 Half section (bottom)
+            if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+              ctx.globalAlpha = 0.55;
+              ctx.drawImage(imageToUse, wallX, halfSectionY, wallWidth, halfSectionHeight);
+              ctx.globalAlpha = 1.0;
+            } else {
+              ctx.globalAlpha = 0.55;
+              ctx.fillStyle = '#444'; // Slightly different color for Half tiles
+              ctx.fillRect(wallX, halfSectionY, wallWidth, halfSectionHeight);
+              ctx.globalAlpha = 1.0;
+            }
           } else {
-            ctx.globalAlpha = 0.55;
-            ctx.fillStyle = '#555'; // Slightly different color for Full tiles
-            ctx.fillRect(wallX, fullSectionY, wallWidth, fullSectionHeight);
-            ctx.globalAlpha = 1.0;
+            // GP2 Half on top, GP2 Full on bottom (default/top position)
+            halfSectionY = wallY;
+            fullSectionY = wallY + halfSectionHeight;
+
+            // Draw GP2 Half section (top)
+            if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+              ctx.globalAlpha = 0.55;
+              ctx.drawImage(imageToUse, wallX, halfSectionY, wallWidth, halfSectionHeight);
+              ctx.globalAlpha = 1.0;
+            } else {
+              ctx.globalAlpha = 0.55;
+              ctx.fillStyle = '#444'; // Color for Half tiles
+              ctx.fillRect(wallX, halfSectionY, wallWidth, halfSectionHeight);
+              ctx.globalAlpha = 1.0;
+            }
+
+            // Draw GP2 Full section (bottom)
+            if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+              ctx.globalAlpha = 0.55;
+              ctx.drawImage(imageToUse, wallX, fullSectionY, wallWidth, fullSectionHeight);
+              ctx.globalAlpha = 1.0;
+            } else {
+              ctx.globalAlpha = 0.55;
+              ctx.fillStyle = '#555'; // Color for Full tiles
+              ctx.fillRect(wallX, fullSectionY, wallWidth, fullSectionHeight);
+              ctx.globalAlpha = 1.0;
+            }
           }
 
           // Draw grid lines
@@ -349,16 +385,16 @@ const CanvasRenderer = {
             ctx.stroke();
           }
 
-          // Horizontal grid lines for GP2 Half section (top)
+          // Horizontal grid lines for GP2 Half section
           for (let row = 0; row <= gp2HalfRows; row++) {
-            const lineY = wallY + row * halfBlockHeight;
+            const lineY = halfSectionY + row * halfBlockHeight;
             ctx.beginPath();
             ctx.moveTo(wallX, lineY);
             ctx.lineTo(wallX + wallWidth, lineY);
             ctx.stroke();
           }
 
-          // Horizontal grid lines for GP2 Full section (bottom)
+          // Horizontal grid lines for GP2 Full section
           for (let row = 0; row <= gp2FullRows; row++) {
             const lineY = fullSectionY + row * fullBlockHeight;
             ctx.beginPath();
