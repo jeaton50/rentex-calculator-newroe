@@ -779,11 +779,64 @@ const CanvasRenderer = {
     let currentChainType = null; // Track what type the current chain is
     let currentChainLimit = chainLimit; // Track the limit for current chain
 
+    // For mixed GP2, we need to calculate Y positions based on actual row heights
+    const calculatePosY = (row) => {
+      if (!hasMixedGP2) {
+        return extraHeightTop + row * blockHeight + blockHeight / 2;
+      }
+
+      // Calculate accumulated height up to this row
+      let accumulatedHeight = extraHeightTop;
+      const fullBlockHeight = blockHeight; // 1000mm for GP2 Full
+      const halfBlockHeight = blockHeight / 2; // 500mm for GP2 Half
+
+      // Determine layout
+      let topHalfRows = 0;
+      let bottomHalfRows = 0;
+
+      if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows += gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      } else if (gp2HalfAutoRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+      } else if (gp2HalfManualRows > 0) {
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows = gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      }
+
+      const fullRowsStart = topHalfRows;
+      const fullRowsEnd = topHalfRows + gp2FullVerticalBlocks;
+
+      // Calculate height up to this row
+      if (row < fullRowsStart) {
+        // In top Half section
+        accumulatedHeight += row * halfBlockHeight + halfBlockHeight / 2;
+      } else if (row < fullRowsEnd) {
+        // In Full section
+        accumulatedHeight += topHalfRows * halfBlockHeight; // All top Half rows
+        accumulatedHeight += (row - fullRowsStart) * fullBlockHeight + fullBlockHeight / 2;
+      } else {
+        // In bottom Half section
+        accumulatedHeight += topHalfRows * halfBlockHeight; // All top Half rows
+        accumulatedHeight += gp2FullVerticalBlocks * fullBlockHeight; // All Full rows
+        accumulatedHeight += (row - fullRowsEnd) * halfBlockHeight + halfBlockHeight / 2;
+      }
+
+      return accumulatedHeight;
+    };
+
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i];
       const tileInfo = getTileTypeForRow(tile.row);
       const posX = xOffset + tile.col * blockWidth + blockWidth / 2;
-      const posY = extraHeightTop + tile.row * blockHeight + blockHeight / 2;
+      const posY = calculatePosY(tile.row);
 
       // Check if we need to start a new chain due to type change
       const typeChanged = currentChainType !== null && currentChainType !== tileInfo.type;
@@ -919,10 +972,57 @@ const CanvasRenderer = {
       'BP2B1': { 110: 11, 208: 32 },  // ROE Black Pearl 2 B1
       'BP2B2': { 110: 11, 208: 32 },  // ROE Black Pearl 2 B2
       'BP2V2': { 110: 11, 208: 32 },  // ROE Black Pearl 2V2
-      'theatrixx': { 110: 10, 208: 30 }
+      'theatrixx': { 110: 10, 208: 30 },
+      'ROEGP26Full': { 110: 5, 208: 15 },  // ROE GP2.6 Full
+      'ROEGP26Half': { 110: 10, 208: 30 }  // ROE GP2.6 Half (double the Full, since 2 Half = 1 Full power)
     };
 
     const chainLimit = powerTileLimits[productType]?.[voltage] || 10;
+
+    // For mixed GP2 Full + GP2 Half configurations
+    const gp2HalfAutoRows = wallData.gp2HalfAutoRows || 0;
+    const gp2HalfManualRows = wallData.gp2HalfManualRows || 0;
+    const gp2HalfManualPosition = wallData.gp2HalfManualPosition || 'bottom';
+    const gp2FullVerticalBlocks = wallData.gp2FullVerticalBlocks || wallData.blocksVer;
+    const hasMixedGP2 = productType === 'ROEGP26Full' && (gp2HalfAutoRows > 0 || gp2HalfManualRows > 0);
+
+    // Function to determine tile type and power limit based on row
+    const getTileTypeForRow = (row) => {
+      if (!hasMixedGP2) {
+        return { type: productType, chainLimit };
+      }
+
+      let topHalfRows = 0;
+      let bottomHalfRows = 0;
+
+      if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows += gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      } else if (gp2HalfAutoRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+      } else if (gp2HalfManualRows > 0) {
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows = gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      }
+
+      const fullRowsStart = topHalfRows;
+      const fullRowsEnd = topHalfRows + gp2FullVerticalBlocks;
+
+      if (row < fullRowsStart) {
+        return { type: 'ROEGP26Half', chainLimit: powerTileLimits['ROEGP26Half'][voltage] };
+      } else if (row >= fullRowsEnd) {
+        return { type: 'ROEGP26Half', chainLimit: powerTileLimits['ROEGP26Half'][voltage] };
+      } else {
+        return { type: 'ROEGP26Full', chainLimit: powerTileLimits['ROEGP26Full'][voltage] };
+      }
+    };
 
     // Get power wiring direction and start position
     const direction = window.powerDirection || 'horizontal';
@@ -1099,16 +1199,111 @@ const CanvasRenderer = {
 
     // Draw power wiring lines with outline effect for better visibility
     let chainPath = []; // Store path points for current chain
+    let currentChainType = null;
+    let currentChainLimit = chainLimit;
+
+    // For mixed GP2, calculate Y positions based on actual row heights
+    const calculatePosY = (row) => {
+      if (!hasMixedGP2) {
+        return extraHeightTop + row * blockHeight + blockHeight / 2;
+      }
+
+      let accumulatedHeight = extraHeightTop;
+      const fullBlockHeight = blockHeight;
+      const halfBlockHeight = blockHeight / 2;
+
+      let topHalfRows = 0;
+      let bottomHalfRows = 0;
+
+      if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows += gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      } else if (gp2HalfAutoRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+      } else if (gp2HalfManualRows > 0) {
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows = gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      }
+
+      const fullRowsStart = topHalfRows;
+      const fullRowsEnd = topHalfRows + gp2FullVerticalBlocks;
+
+      if (row < fullRowsStart) {
+        accumulatedHeight += row * halfBlockHeight + halfBlockHeight / 2;
+      } else if (row < fullRowsEnd) {
+        accumulatedHeight += topHalfRows * halfBlockHeight;
+        accumulatedHeight += (row - fullRowsStart) * fullBlockHeight + fullBlockHeight / 2;
+      } else {
+        accumulatedHeight += topHalfRows * halfBlockHeight;
+        accumulatedHeight += gp2FullVerticalBlocks * fullBlockHeight;
+        accumulatedHeight += (row - fullRowsEnd) * halfBlockHeight + halfBlockHeight / 2;
+      }
+
+      return accumulatedHeight;
+    };
 
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i];
+      const tileInfo = getTileTypeForRow(tile.row);
       const posX = xOffset + tile.col * blockWidth + blockWidth / 2;
-      const posY = extraHeightTop + tile.row * blockHeight + blockHeight / 2;
+      const posY = calculatePosY(tile.row);
 
-      if (tilesInCurrentChain === 0) {
+      const typeChanged = currentChainType !== null && currentChainType !== tileInfo.type;
+
+      if (tilesInCurrentChain === 0 || typeChanged) {
+        // Finish previous chain if type changed
+        if (typeChanged && chainPath.length > 0) {
+          const chainColor = chainColors[(chainNumber - 1) % chainColors.length];
+
+          // Draw white outline first (thicker, dashed)
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = 8;
+          ctx.setLineDash([10, 5]);
+          ctx.beginPath();
+          ctx.moveTo(chainPath[0].x, chainPath[0].y);
+          for (let j = 1; j < chainPath.length; j++) {
+            ctx.lineTo(chainPath[j].x, chainPath[j].y);
+          }
+          ctx.stroke();
+
+          // Draw red dashed line on top
+          ctx.strokeStyle = 'red';
+          ctx.lineWidth = 4;
+          ctx.setLineDash([10, 5]);
+          ctx.beginPath();
+          ctx.moveTo(chainPath[0].x, chainPath[0].y);
+          for (let j = 1; j < chainPath.length; j++) {
+            ctx.lineTo(chainPath[j].x, chainPath[j].y);
+          }
+          ctx.stroke();
+
+          // Draw chain label
+          ctx.fillStyle = 'white';
+          ctx.strokeStyle = 'red';
+          ctx.lineWidth = 3;
+          ctx.font = 'bold 20px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const labelText = `P${chainNumber}`;
+          ctx.strokeText(labelText, chainStartX, chainStartY);
+          ctx.fillText(labelText, chainStartX, chainStartY);
+
+          // Reset for new chain
+          tilesInCurrentChain = 0;
+        }
+
         // Start of a new chain
         chainNumber++;
         chainPath = [{ x: posX, y: posY }];
+        currentChainType = tileInfo.type;
+        currentChainLimit = tileInfo.chainLimit;
 
         // Save start position for label
         chainStartX = posX;
@@ -1121,7 +1316,7 @@ const CanvasRenderer = {
       }
 
       // If we've reached the chain limit or the last tile, finish this chain
-      if (tilesInCurrentChain === chainLimit || i === tiles.length - 1) {
+      if (tilesInCurrentChain === currentChainLimit || i === tiles.length - 1) {
         const chainColor = chainColors[(chainNumber - 1) % chainColors.length];
 
         // Draw white outline first (thicker, dashed)
