@@ -549,6 +549,59 @@ const CanvasRenderer = {
     };
     const chainLimit = daisyChainLimits[productType] || 10;
 
+    // For mixed GP2 Full + GP2 Half configurations, determine which rows are which type
+    const gp2HalfAutoRows = wallData.gp2HalfAutoRows || 0;
+    const gp2HalfManualRows = wallData.gp2HalfManualRows || 0;
+    const gp2HalfManualPosition = wallData.gp2HalfManualPosition || 'bottom';
+    const gp2FullVerticalBlocks = wallData.gp2FullVerticalBlocks || wallData.blocksVer;
+    const hasMixedGP2 = productType === 'ROEGP26Full' && (gp2HalfAutoRows > 0 || gp2HalfManualRows > 0);
+
+    // Function to determine tile type and chain limit based on row
+    const getTileTypeForRow = (row) => {
+      if (!hasMixedGP2) {
+        return { type: productType, chainLimit };
+      }
+
+      // Determine layout:
+      // Auto Half rows always at top
+      // Manual Half rows at user-specified position
+      // Full rows in the middle
+      let topHalfRows = 0;
+      let bottomHalfRows = 0;
+
+      if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows += gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      } else if (gp2HalfAutoRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+      } else if (gp2HalfManualRows > 0) {
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows = gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      }
+
+      const fullRowsStart = topHalfRows;
+      const fullRowsEnd = topHalfRows + gp2FullVerticalBlocks;
+
+      // Determine if current row is Half or Full
+      if (row < fullRowsStart) {
+        // Top Half section
+        return { type: 'ROEGP26Half', chainLimit: 11 };
+      } else if (row >= fullRowsEnd) {
+        // Bottom Half section
+        return { type: 'ROEGP26Half', chainLimit: 11 };
+      } else {
+        // Full section
+        return { type: 'ROEGP26Full', chainLimit: 5 };
+      }
+    };
+
     // Get wiring direction and start position
     const direction = window.wiringDirection || 'horizontal';
     const startPosition = window.wiringStartPosition || 'bottom-left';
@@ -723,16 +776,63 @@ const CanvasRenderer = {
 
     // Draw wiring lines with outline effect for better visibility
     let chainPath = []; // Store path points for current chain
+    let currentChainType = null; // Track what type the current chain is
+    let currentChainLimit = chainLimit; // Track the limit for current chain
 
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i];
+      const tileInfo = getTileTypeForRow(tile.row);
       const posX = xOffset + tile.col * blockWidth + blockWidth / 2;
       const posY = extraHeightTop + tile.row * blockHeight + blockHeight / 2;
 
-      if (tilesInCurrentChain === 0) {
+      // Check if we need to start a new chain due to type change
+      const typeChanged = currentChainType !== null && currentChainType !== tileInfo.type;
+
+      if (tilesInCurrentChain === 0 || typeChanged) {
+        // Finish previous chain if type changed
+        if (typeChanged && chainPath.length > 0) {
+          const chainColor = chainColors[(chainNumber - 1) % chainColors.length];
+
+          // Draw white outline first (thicker)
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = 8;
+          ctx.beginPath();
+          ctx.moveTo(chainPath[0].x, chainPath[0].y);
+          for (let j = 1; j < chainPath.length; j++) {
+            ctx.lineTo(chainPath[j].x, chainPath[j].y);
+          }
+          ctx.stroke();
+
+          // Draw black line on top
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(chainPath[0].x, chainPath[0].y);
+          for (let j = 1; j < chainPath.length; j++) {
+            ctx.lineTo(chainPath[j].x, chainPath[j].y);
+          }
+          ctx.stroke();
+
+          // Draw chain label
+          ctx.fillStyle = 'white';
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 3;
+          ctx.font = 'bold 20px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const labelText = chainNumber.toString();
+          ctx.strokeText(labelText, chainStartX, chainStartY);
+          ctx.fillText(labelText, chainStartX, chainStartY);
+
+          // Reset for new chain
+          tilesInCurrentChain = 0;
+        }
+
         // Start of a new chain
         chainNumber++;
         chainPath = [{ x: posX, y: posY }];
+        currentChainType = tileInfo.type;
+        currentChainLimit = tileInfo.chainLimit;
 
         // Save start position for label
         chainStartX = posX;
@@ -745,7 +845,7 @@ const CanvasRenderer = {
       }
 
       // If we've reached the chain limit or the last tile, finish this chain
-      if (tilesInCurrentChain === chainLimit || i === tiles.length - 1) {
+      if (tilesInCurrentChain === currentChainLimit || i === tiles.length - 1) {
         const chainColor = chainColors[(chainNumber - 1) % chainColors.length];
 
         // Draw white outline first (thicker)
