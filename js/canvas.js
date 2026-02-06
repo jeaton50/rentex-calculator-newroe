@@ -867,8 +867,9 @@ const CanvasRenderer = {
       const posX = xOffset + tile.col * blockWidth + blockWidth / 2;
       const posY = calculatePosY(tile.row);
 
+      // For GP2 mixed tiles, don't start new chain on type change - allow up to 5 tiles of any type
       // Check if we need to start a new chain due to type change
-      const typeChanged = currentChainType !== null && currentChainType !== tileInfo.type;
+      const typeChanged = !hasMixedGP2 && currentChainType !== null && currentChainType !== tileInfo.type;
 
       if (tilesInCurrentChain === 0 || typeChanged) {
         // Finish previous chain if type changed
@@ -914,7 +915,8 @@ const CanvasRenderer = {
         chainNumber++;
         chainPath = [{ x: posX, y: posY }];
         currentChainType = tileInfo.type;
-        currentChainLimit = tileInfo.chainLimit;
+        // For mixed GP2, always use GP2 Full limit of 5 tiles total (any combination of Full/Half)
+        currentChainLimit = hasMixedGP2 ? 5 : tileInfo.chainLimit;
 
         // Save start position for label
         chainStartX = posX;
@@ -1310,7 +1312,8 @@ const CanvasRenderer = {
       const posX = xOffset + tile.col * blockWidth + blockWidth / 2;
       const posY = calculatePosY(tile.row);
 
-      const typeChanged = currentChainType !== null && currentChainType !== tileInfo.type;
+      // For GP2 mixed tiles, don't start new chain on type change - allow up to limit tiles of any type
+      const typeChanged = !hasMixedGP2 && currentChainType !== null && currentChainType !== tileInfo.type;
 
       if (tilesInCurrentChain === 0 || typeChanged) {
         // Finish previous chain if type changed
@@ -1358,7 +1361,8 @@ const CanvasRenderer = {
         chainNumber++;
         chainPath = [{ x: posX, y: posY }];
         currentChainType = tileInfo.type;
-        currentChainLimit = tileInfo.chainLimit;
+        // For mixed GP2, always use GP2 Full limit of 5 tiles total (any combination of Full/Half)
+        currentChainLimit = hasMixedGP2 ? 5 : tileInfo.chainLimit;
 
         // Save start position for label
         chainStartX = posX;
