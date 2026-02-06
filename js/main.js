@@ -1421,21 +1421,175 @@ window.resetScreen = function() {
   }
 };
 
+// Save all form state to localStorage before navigating away
+function saveFormState() {
+  // Basic configuration
+  const productType = document.getElementById('productType')?.value || 'absen';
+  const blocksHor = document.getElementById('blocksHor')?.value || '10';
+  const blocksVer = document.getElementById('blocksVer')?.value || '6';
+  const powerDistroType = document.getElementById('powerDistroType')?.value || '208';
+
+  // Wall type (radio buttons)
+  const wallTypeElement = document.querySelector('input[name="wallType"]:checked');
+  const wallType = wallTypeElement ? wallTypeElement.value : 'Flat';
+
+  // Support type (radio buttons - ground vs flown)
+  const flownSupport = document.getElementById('flownSupport')?.checked || false;
+  const groundSupportType = document.getElementById('groundSupportType')?.value || 'Universal Base';
+
+  // GP2 Half settings
+  const gp2HalfCheckbox = document.getElementById('gp2HalfCheckbox')?.checked || false;
+  const gp2HalfCount = document.getElementById('gp2HalfCount')?.value || '1';
+  const gp2HalfPosition = document.getElementById('gp2HalfPosition')?.value || 'bottom';
+
+  // Screen options (single vs multiple)
+  const multipleScreens = document.getElementById('multipleScreens')?.checked || false;
+  const numScreens = document.getElementById('numScreens')?.value || '1';
+
+  // Save to localStorage
+  localStorage.setItem('calc_productType', productType);
+  localStorage.setItem('calc_blocksHor', blocksHor);
+  localStorage.setItem('calc_blocksVer', blocksVer);
+  localStorage.setItem('calc_powerDistroType', powerDistroType);
+  localStorage.setItem('calc_wallType', wallType);
+  localStorage.setItem('calc_flownSupport', flownSupport);
+  localStorage.setItem('calc_groundSupportType', groundSupportType);
+  localStorage.setItem('calc_gp2HalfCheckbox', gp2HalfCheckbox);
+  localStorage.setItem('calc_gp2HalfCount', gp2HalfCount);
+  localStorage.setItem('calc_gp2HalfPosition', gp2HalfPosition);
+  localStorage.setItem('calc_multipleScreens', multipleScreens);
+  localStorage.setItem('calc_numScreens', numScreens);
+
+  // Also save to legacy keys for technical/screen views
+  localStorage.setItem('screenProduct', productType);
+  localStorage.setItem('screenBlocksHor', parseInt(blocksHor));
+  localStorage.setItem('screenBlocksVer', parseInt(blocksVer));
+  localStorage.setItem('screenPowerDistroType', powerDistroType);
+}
+
+// Restore form state from localStorage
+function restoreFormState() {
+  // Check if we have saved state
+  if (!localStorage.getItem('calc_productType')) {
+    return false; // No saved state
+  }
+
+  // Restore basic configuration
+  const productType = localStorage.getItem('calc_productType');
+  const blocksHor = localStorage.getItem('calc_blocksHor');
+  const blocksVer = localStorage.getItem('calc_blocksVer');
+  const powerDistroType = localStorage.getItem('calc_powerDistroType');
+
+  if (productType) {
+    const productSelect = document.getElementById('productType');
+    if (productSelect) {
+      productSelect.value = productType;
+      productSelect.dispatchEvent(new Event('change'));
+    }
+  }
+
+  if (blocksHor) {
+    const blocksHorInput = document.getElementById('blocksHor');
+    if (blocksHorInput) blocksHorInput.value = blocksHor;
+  }
+
+  if (blocksVer) {
+    const blocksVerInput = document.getElementById('blocksVer');
+    if (blocksVerInput) blocksVerInput.value = blocksVer;
+  }
+
+  if (powerDistroType) {
+    const powerDistroSelect = document.getElementById('powerDistroType');
+    if (powerDistroSelect) powerDistroSelect.value = powerDistroType;
+  }
+
+  // Restore wall type
+  const wallType = localStorage.getItem('calc_wallType');
+  if (wallType) {
+    const wallTypeRadio = document.querySelector(`input[name="wallType"][value="${wallType}"]`);
+    if (wallTypeRadio) {
+      wallTypeRadio.checked = true;
+      wallTypeRadio.dispatchEvent(new Event('change'));
+    }
+  }
+
+  // Restore support type
+  const flownSupport = localStorage.getItem('calc_flownSupport') === 'true';
+  const flownSupportRadio = document.getElementById('flownSupport');
+  const groundSupportRadio = document.querySelector('input[name="supportType"][value="groundSupport"]');
+
+  if (flownSupport && flownSupportRadio) {
+    flownSupportRadio.checked = true;
+    flownSupportRadio.dispatchEvent(new Event('change'));
+  } else if (groundSupportRadio) {
+    groundSupportRadio.checked = true;
+    groundSupportRadio.dispatchEvent(new Event('change'));
+  }
+
+  const groundSupportType = localStorage.getItem('calc_groundSupportType');
+  if (groundSupportType) {
+    const groundSupportTypeSelect = document.getElementById('groundSupportType');
+    if (groundSupportTypeSelect) groundSupportTypeSelect.value = groundSupportType;
+  }
+
+  // Restore GP2 Half settings
+  const gp2HalfCheckbox = localStorage.getItem('calc_gp2HalfCheckbox') === 'true';
+  const gp2HalfCheckboxEl = document.getElementById('gp2HalfCheckbox');
+  if (gp2HalfCheckboxEl) {
+    gp2HalfCheckboxEl.checked = gp2HalfCheckbox;
+    gp2HalfCheckboxEl.dispatchEvent(new Event('change'));
+  }
+
+  const gp2HalfCount = localStorage.getItem('calc_gp2HalfCount');
+  if (gp2HalfCount) {
+    const gp2HalfCountInput = document.getElementById('gp2HalfCount');
+    if (gp2HalfCountInput) gp2HalfCountInput.value = gp2HalfCount;
+  }
+
+  const gp2HalfPosition = localStorage.getItem('calc_gp2HalfPosition');
+  if (gp2HalfPosition) {
+    const gp2HalfPositionSelect = document.getElementById('gp2HalfPosition');
+    if (gp2HalfPositionSelect) gp2HalfPositionSelect.value = gp2HalfPosition;
+  }
+
+  // Restore screen options
+  const multipleScreens = localStorage.getItem('calc_multipleScreens') === 'true';
+  const singleScreenRadio = document.getElementById('singleScreen');
+  const multipleScreensRadio = document.getElementById('multipleScreens');
+
+  if (multipleScreens && multipleScreensRadio) {
+    multipleScreensRadio.checked = true;
+    multipleScreensRadio.dispatchEvent(new Event('change'));
+  } else if (singleScreenRadio) {
+    singleScreenRadio.checked = true;
+    singleScreenRadio.dispatchEvent(new Event('change'));
+  }
+
+  const numScreens = localStorage.getItem('calc_numScreens');
+  if (numScreens) {
+    const numScreensSelect = document.getElementById('numScreens');
+    if (numScreensSelect) numScreensSelect.value = numScreens;
+  }
+
+  return true; // State was restored
+}
+
 window.openScreenViews = function() {
+  // Save current state before navigating
+  saveFormState();
+
   const productType = document.getElementById('productType')?.value || 'absen';
   const blocksHor = parseInt(document.getElementById('blocksHor')?.value) || 10;
   const blocksVer = parseInt(document.getElementById('blocksVer')?.value) || 6;
   const powerDistroType = document.getElementById('powerDistroType')?.value || '208';
 
-  localStorage.setItem('screenProduct', productType);
-  localStorage.setItem('screenBlocksHor', blocksHor);
-  localStorage.setItem('screenBlocksVer', blocksVer);
-  localStorage.setItem('screenPowerDistroType', powerDistroType);
-
   window.location.href = `screen-views.html?product=${encodeURIComponent(productType)}&blocksHor=${blocksHor}&blocksVer=${blocksVer}&powerDistroType=${powerDistroType}`;
 };
 
 window.openTechnicalView = function() {
+  // Save current state before navigating
+  saveFormState();
+
   const productType = document.getElementById('productType')?.value || 'absen';
   const blocksHor = parseInt(document.getElementById('blocksHor')?.value) || 10;
   const blocksVer = parseInt(document.getElementById('blocksVer')?.value) || 6;
@@ -1697,7 +1851,11 @@ window.captureWiringDiagram = function() {
 document.addEventListener('DOMContentLoaded', () => {
 
   // Restore calculator state from URL parameters (from Screen Views back button)
+  // or from localStorage (returning from technical/screen views)
   const urlParams = new URLSearchParams(window.location.search);
+  let stateRestored = false;
+
+  // Priority 1: Restore from URL parameters (from back button)
   if (urlParams.has('product') || urlParams.has('blocksHor') || urlParams.has('blocksVer')) {
     const productType = urlParams.get('product');
     const blocksHor = urlParams.get('blocksHor');
@@ -1739,10 +1897,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Trigger wall generation with restored values
-    if (typeof generateWall === 'function') {
-      setTimeout(() => generateWall(), 100);
-    }
+    stateRestored = true;
+  }
+  // Priority 2: Restore from localStorage (returning from other pages)
+  else {
+    stateRestored = restoreFormState();
+  }
+
+  // Trigger wall generation if state was restored
+  if (stateRestored && typeof generateWall === 'function') {
+    setTimeout(() => generateWall(), 100);
   }
 
   // Attach ground support type listener with alert logic:
