@@ -388,7 +388,11 @@
         productType: urlParams.get('product') || localStorage.getItem('screenProduct') || 'absen',
         blocksHor: parseInt(urlParams.get('blocksHor') || localStorage.getItem('screenBlocksHor') || '10'),
         blocksVer: parseInt(urlParams.get('blocksVer') || localStorage.getItem('screenBlocksVer') || '6'),
-        powerDistroType: urlParams.get('powerDistroType') || localStorage.getItem('screenPowerDistroType') || '208'
+        powerDistroType: urlParams.get('powerDistroType') || localStorage.getItem('screenPowerDistroType') || '208',
+        gp2HalfAutoRows: parseInt(urlParams.get('gp2HalfAutoRows') || localStorage.getItem('gp2HalfAutoRows') || '0'),
+        gp2HalfManualRows: parseInt(urlParams.get('gp2HalfManualRows') || localStorage.getItem('gp2HalfManualRows') || '0'),
+        gp2HalfManualPosition: urlParams.get('gp2HalfManualPosition') || localStorage.getItem('gp2HalfManualPosition') || 'bottom',
+        gp2FullVerticalBlocks: parseInt(urlParams.get('gp2FullVerticalBlocks') || localStorage.getItem('gp2FullVerticalBlocks') || urlParams.get('blocksVer') || localStorage.getItem('screenBlocksVer') || '6')
       };
     }
 
@@ -628,7 +632,7 @@
     }
 
     // Draw wiring diagram on canvas
-    function drawWiringDiagram(canvas, blocksHor, blocksVer, zoomLevel, chainLimit, colors, direction, startPosition, isDashed = false, productType = 'absen') {
+    function drawWiringDiagram(canvas, blocksHor, blocksVer, zoomLevel, chainLimit, colors, direction, startPosition, isDashed = false, productType = 'absen', gp2HalfAutoRows = 0, gp2HalfManualRows = 0, gp2HalfManualPosition = 'bottom', gp2FullVerticalBlocks = 0) {
       const ctx = canvas.getContext('2d');
       const blockSize = (baseBlockPixels / 4) * zoomLevel;
 
@@ -636,33 +640,118 @@
       let blockWidth = blockSize;
       let blockHeight = blockSize;
 
+      // Check if we have mixed GP2 configuration
+      const hasMixedGP2 = productType === 'ROEGP26Full' && (gp2HalfAutoRows > 0 || gp2HalfManualRows > 0);
+
       // GP2 Full tiles are 1000mm tall (2x the width of 500mm)
-      if (productType === 'ROEGP26Full') {
+      if (productType === 'ROEGP26Full' && !hasMixedGP2) {
         blockHeight = blockSize * 2;
+      }
+
+      // For mixed GP2, we'll handle heights per-row
+      const halfBlockHeight = blockSize;      // 500mm (GP2 Half)
+      const fullBlockHeight = blockSize * 2;  // 1000mm (GP2 Full)
+
+      // Determine layout for mixed configurations
+      let topHalfRows = 0;
+      let bottomHalfRows = 0;
+
+      if (hasMixedGP2) {
+        if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+          topHalfRows = gp2HalfAutoRows;
+          if (gp2HalfManualPosition === 'top') {
+            topHalfRows += gp2HalfManualRows;
+          } else {
+            bottomHalfRows = gp2HalfManualRows;
+          }
+        } else if (gp2HalfAutoRows > 0) {
+          topHalfRows = gp2HalfAutoRows;
+        } else if (gp2HalfManualRows > 0) {
+          if (gp2HalfManualPosition === 'top') {
+            topHalfRows = gp2HalfManualRows;
+          } else {
+            bottomHalfRows = gp2HalfManualRows;
+          }
+        }
+      }
+
+      const fullRowsStart = topHalfRows;
+      const fullRowsEnd = topHalfRows + gp2FullVerticalBlocks;
+
+      // Function to get tile type for a row
+      const getTileTypeForRow = (row) => {
+        if (!hasMixedGP2) {
+          return { type: productType, chainLimit };
+        }
+
+        if (row < fullRowsStart) {
+          return { type: 'ROEGP26Half', chainLimit: 11 };
+        } else if (row >= fullRowsEnd) {
+          return { type: 'ROEGP26Half', chainLimit: 11 };
+        } else {
+          return { type: 'ROEGP26Full', chainLimit: 5 };
+        }
+      };
+
+      // Calculate Y position for a row accounting for mixed heights
+      const calculateRowY = (row) => {
+        if (!hasMixedGP2) {
+          return padding + row * blockHeight;
+        }
+
+        let accumulatedHeight = padding;
+        for (let r = 0; r < row; r++) {
+          const tileInfo = getTileTypeForRow(r);
+          accumulatedHeight += (tileInfo.type === 'ROEGP26Half') ? halfBlockHeight : fullBlockHeight;
+        }
+        return accumulatedHeight;
+      };
+
+      // Calculate row height
+      const getRowHeight = (row) => {
+        if (!hasMixedGP2) {
+          return blockHeight;
+        }
+
+        const tileInfo = getTileTypeForRow(row);
+        return (tileInfo.type === 'ROEGP26Half') ? halfBlockHeight : fullBlockHeight;
+      };
+
+      // Calculate total canvas height
+      let totalHeight;
+      if (hasMixedGP2) {
+        totalHeight = 0;
+        for (let row = 0; row < blocksVer; row++) {
+          totalHeight += getRowHeight(row);
+        }
+      } else {
+        totalHeight = blocksVer * blockHeight;
       }
 
       // Set canvas size
       canvas.width = blocksHor * blockWidth + padding * 2;
-      canvas.height = blocksVer * blockHeight + padding * 2;
+      canvas.height = totalHeight + padding * 2;
 
       // Clear and fill background
       ctx.fillStyle = '#fff';
-      ctx.fillRect(padding, padding, blocksHor * blockWidth, blocksVer * blockHeight);
+      ctx.fillRect(padding, padding, blocksHor * blockWidth, totalHeight);
 
       // Draw grid lines
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 2;
 
+      // Vertical grid lines
       for (let col = 0; col <= blocksHor; col++) {
         const x = padding + col * blockWidth;
         ctx.beginPath();
         ctx.moveTo(x, padding);
-        ctx.lineTo(x, padding + blocksVer * blockHeight);
+        ctx.lineTo(x, padding + totalHeight);
         ctx.stroke();
       }
 
+      // Horizontal grid lines (accounting for different row heights in mixed mode)
       for (let row = 0; row <= blocksVer; row++) {
-        const y = padding + row * blockHeight;
+        const y = calculateRowY(row);
         ctx.beginPath();
         ctx.moveTo(padding, y);
         ctx.lineTo(padding + blocksHor * blockWidth, y);
@@ -683,24 +772,73 @@
       let chainPath = [];
       let chainStartX = 0;
       let chainStartY = 0;
+      let currentChainType = null;
+      let currentChainLimit = chainLimit;
 
       for (let i = 0; i < tiles.length; i++) {
         const tile = tiles[i];
+        const tileInfo = getTileTypeForRow(tile.row);
+        const rowY = calculateRowY(tile.row);
+        const rowHeight = getRowHeight(tile.row);
         const posX = padding + tile.col * blockWidth + blockWidth / 2;
-        const posY = padding + tile.row * blockHeight + blockHeight / 2;
+        const posY = rowY + rowHeight / 2;
 
-        if (tilesInCurrentChain === 0) {
+        // Check if tile type changed
+        const typeChanged = currentChainType !== null && currentChainType !== tileInfo.type;
+
+        if (tilesInCurrentChain === 0 || typeChanged) {
+          // Finish previous chain if type changed
+          if (typeChanged && chainPath.length > 0) {
+            const chainColor = colors[(chainNumber - 1) % colors.length];
+
+            // Draw black outline
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.moveTo(chainPath[0].x, chainPath[0].y);
+            for (let j = 1; j < chainPath.length; j++) {
+              ctx.lineTo(chainPath[j].x, chainPath[j].y);
+            }
+            ctx.stroke();
+
+            // Draw black line
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(chainPath[0].x, chainPath[0].y);
+            for (let j = 1; j < chainPath.length; j++) {
+              ctx.lineTo(chainPath[j].x, chainPath[j].y);
+            }
+            ctx.stroke();
+
+            // Draw label
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const labelText = isDashed ? `P${chainNumber}` : chainNumber.toString();
+            ctx.strokeText(labelText, chainStartX, chainStartY);
+            ctx.fillText(labelText, chainStartX, chainStartY);
+
+            tilesInCurrentChain = 0;
+          }
+
+          // Start new chain
           chainNumber++;
           chainPath = [{ x: posX, y: posY }];
           chainStartX = posX;
           chainStartY = posY;
+          currentChainType = tileInfo.type;
+          currentChainLimit = tileInfo.chainLimit;
           tilesInCurrentChain = 1;
         } else {
           chainPath.push({ x: posX, y: posY });
           tilesInCurrentChain++;
         }
 
-        if (tilesInCurrentChain === chainLimit || i === tiles.length - 1) {
+        if (tilesInCurrentChain === currentChainLimit || i === tiles.length - 1) {
           const chainColor = colors[(chainNumber - 1) % colors.length];
 
           // Draw black outline
@@ -756,7 +894,7 @@
     function renderDataWiring() {
       const canvas = document.getElementById('dataWiringCanvas');
       const chainLimit = daisyChainLimits[params.productType] || 10;
-      drawWiringDiagram(canvas, params.blocksHor, params.blocksVer, dataZoomLevel, chainLimit, dataChainColors, wiringDirection, wiringStartPosition, false, params.productType);
+      drawWiringDiagram(canvas, params.blocksHor, params.blocksVer, dataZoomLevel, chainLimit, dataChainColors, wiringDirection, wiringStartPosition, false, params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows, params.gp2HalfManualPosition, params.gp2FullVerticalBlocks);
       document.getElementById('dataZoomLevel').textContent = `Zoom: ${dataZoomLevel}`;
     }
 
@@ -765,7 +903,7 @@
       const canvas = document.getElementById('powerWiringCanvas');
       const voltage = parseInt(powerDistroTypeSelect.value);
       const chainLimit = powerTileLimits[params.productType]?.[voltage] || 10;
-      drawWiringDiagram(canvas, params.blocksHor, params.blocksVer, powerZoomLevel, chainLimit, powerChainColors, powerDirection, powerStartPosition, true, params.productType);
+      drawWiringDiagram(canvas, params.blocksHor, params.blocksVer, powerZoomLevel, chainLimit, powerChainColors, powerDirection, powerStartPosition, true, params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows, params.gp2HalfManualPosition, params.gp2FullVerticalBlocks);
       document.getElementById('powerZoomLevel').textContent = `Zoom: ${powerZoomLevel}`;
     }
 
