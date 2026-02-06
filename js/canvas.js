@@ -602,6 +602,32 @@ const CanvasRenderer = {
       }
     };
 
+    // Calculate total number of rows for mixed GP2 configurations
+    let totalRows = wallData.blocksVer;
+    if (hasMixedGP2) {
+      let topHalfRows = 0;
+      let bottomHalfRows = 0;
+
+      if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows += gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      } else if (gp2HalfAutoRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+      } else if (gp2HalfManualRows > 0) {
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows = gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      }
+
+      totalRows = topHalfRows + gp2FullVerticalBlocks + bottomHalfRows;
+    }
+
     // Get wiring direction and start position
     const direction = window.wiringDirection || 'horizontal';
     const startPosition = window.wiringStartPosition || 'bottom-left';
@@ -626,7 +652,7 @@ const CanvasRenderer = {
     ];
 
     // Calculate total tiles
-    const totalTiles = wallData.blocksHor * wallData.blocksVer;
+    const totalTiles = wallData.blocksHor * totalRows;
 
     // Set line style for wiring
     ctx.lineWidth = 4;
@@ -646,8 +672,8 @@ const CanvasRenderer = {
       // Horizontal wiring (snake left-right on each row)
       if (startPosition === 'bottom-left') {
         // Bottom-left: snake right/left, moving up
-        for (let row = wallData.blocksVer - 1; row >= 0; row--) {
-          const rowIndex = wallData.blocksVer - 1 - row; // 0, 1, 2, ...
+        for (let row = totalRows - 1; row >= 0; row--) {
+          const rowIndex = totalRows - 1 - row; // 0, 1, 2, ...
           if (rowIndex % 2 === 0) {
             // Even rows: go right
             for (let col = 0; col < wallData.blocksHor; col++) {
@@ -662,8 +688,8 @@ const CanvasRenderer = {
         }
       } else if (startPosition === 'bottom-right') {
         // Bottom-right: snake left/right, moving up
-        for (let row = wallData.blocksVer - 1; row >= 0; row--) {
-          const rowIndex = wallData.blocksVer - 1 - row;
+        for (let row = totalRows - 1; row >= 0; row--) {
+          const rowIndex = totalRows - 1 - row;
           if (rowIndex % 2 === 0) {
             // Even rows: go left
             for (let col = wallData.blocksHor - 1; col >= 0; col--) {
@@ -678,7 +704,7 @@ const CanvasRenderer = {
         }
       } else if (startPosition === 'top-left') {
         // Top-left: snake right/left, moving down
-        for (let row = 0; row < wallData.blocksVer; row++) {
+        for (let row = 0; row < totalRows; row++) {
           if (row % 2 === 0) {
             // Even rows: go right
             for (let col = 0; col < wallData.blocksHor; col++) {
@@ -693,7 +719,7 @@ const CanvasRenderer = {
         }
       } else if (startPosition === 'top-right') {
         // Top-right: snake left/right, moving down
-        for (let row = 0; row < wallData.blocksVer; row++) {
+        for (let row = 0; row < totalRows; row++) {
           if (row % 2 === 0) {
             // Even rows: go left
             for (let col = wallData.blocksHor - 1; col >= 0; col--) {
@@ -714,12 +740,12 @@ const CanvasRenderer = {
         for (let col = 0; col < wallData.blocksHor; col++) {
           if (col % 2 === 0) {
             // Even columns: go up
-            for (let row = wallData.blocksVer - 1; row >= 0; row--) {
+            for (let row = totalRows - 1; row >= 0; row--) {
               tiles.push({ row, col });
             }
           } else {
             // Odd columns: go down
-            for (let row = 0; row < wallData.blocksVer; row++) {
+            for (let row = 0; row < totalRows; row++) {
               tiles.push({ row, col });
             }
           }
@@ -730,12 +756,12 @@ const CanvasRenderer = {
           const colIndex = wallData.blocksHor - 1 - col;
           if (colIndex % 2 === 0) {
             // Even columns: go up
-            for (let row = wallData.blocksVer - 1; row >= 0; row--) {
+            for (let row = totalRows - 1; row >= 0; row--) {
               tiles.push({ row, col });
             }
           } else {
             // Odd columns: go down
-            for (let row = 0; row < wallData.blocksVer; row++) {
+            for (let row = 0; row < totalRows; row++) {
               tiles.push({ row, col });
             }
           }
@@ -745,12 +771,12 @@ const CanvasRenderer = {
         for (let col = 0; col < wallData.blocksHor; col++) {
           if (col % 2 === 0) {
             // Even columns: go down
-            for (let row = 0; row < wallData.blocksVer; row++) {
+            for (let row = 0; row < totalRows; row++) {
               tiles.push({ row, col });
             }
           } else {
             // Odd columns: go up
-            for (let row = wallData.blocksVer - 1; row >= 0; row--) {
+            for (let row = totalRows - 1; row >= 0; row--) {
               tiles.push({ row, col });
             }
           }
@@ -761,12 +787,12 @@ const CanvasRenderer = {
           const colIndex = wallData.blocksHor - 1 - col;
           if (colIndex % 2 === 0) {
             // Even columns: go down
-            for (let row = 0; row < wallData.blocksVer; row++) {
+            for (let row = 0; row < totalRows; row++) {
               tiles.push({ row, col });
             }
           } else {
             // Odd columns: go up
-            for (let row = wallData.blocksVer - 1; row >= 0; row--) {
+            for (let row = totalRows - 1; row >= 0; row--) {
               tiles.push({ row, col });
             }
           }
@@ -1024,6 +1050,32 @@ const CanvasRenderer = {
       }
     };
 
+    // Calculate total number of rows for mixed GP2 configurations
+    let totalRows = wallData.blocksVer;
+    if (hasMixedGP2) {
+      let topHalfRows = 0;
+      let bottomHalfRows = 0;
+
+      if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows += gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      } else if (gp2HalfAutoRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+      } else if (gp2HalfManualRows > 0) {
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows = gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      }
+
+      totalRows = topHalfRows + gp2FullVerticalBlocks + bottomHalfRows;
+    }
+
     // Get power wiring direction and start position
     const direction = window.powerDirection || 'horizontal';
     const startPosition = window.powerStartPosition || 'bottom-left';
@@ -1048,7 +1100,7 @@ const CanvasRenderer = {
     ];
 
     // Calculate total tiles
-    const totalTiles = wallData.blocksHor * wallData.blocksVer;
+    const totalTiles = wallData.blocksHor * totalRows;
 
     // Set line style for power wiring (dashed to distinguish from data)
     ctx.lineWidth = 4;
@@ -1069,8 +1121,8 @@ const CanvasRenderer = {
       // Horizontal wiring (snake left-right on each row)
       if (startPosition === 'bottom-left') {
         // Bottom-left: snake right/left, moving up
-        for (let row = wallData.blocksVer - 1; row >= 0; row--) {
-          const rowIndex = wallData.blocksVer - 1 - row; // 0, 1, 2, ...
+        for (let row = totalRows - 1; row >= 0; row--) {
+          const rowIndex = totalRows - 1 - row; // 0, 1, 2, ...
           if (rowIndex % 2 === 0) {
             // Even rows: go right
             for (let col = 0; col < wallData.blocksHor; col++) {
@@ -1085,8 +1137,8 @@ const CanvasRenderer = {
         }
       } else if (startPosition === 'bottom-right') {
         // Bottom-right: snake left/right, moving up
-        for (let row = wallData.blocksVer - 1; row >= 0; row--) {
-          const rowIndex = wallData.blocksVer - 1 - row;
+        for (let row = totalRows - 1; row >= 0; row--) {
+          const rowIndex = totalRows - 1 - row;
           if (rowIndex % 2 === 0) {
             // Even rows: go left
             for (let col = wallData.blocksHor - 1; col >= 0; col--) {
@@ -1101,7 +1153,7 @@ const CanvasRenderer = {
         }
       } else if (startPosition === 'top-left') {
         // Top-left: snake right/left, moving down
-        for (let row = 0; row < wallData.blocksVer; row++) {
+        for (let row = 0; row < totalRows; row++) {
           if (row % 2 === 0) {
             // Even rows: go right
             for (let col = 0; col < wallData.blocksHor; col++) {
@@ -1116,7 +1168,7 @@ const CanvasRenderer = {
         }
       } else if (startPosition === 'top-right') {
         // Top-right: snake left/right, moving down
-        for (let row = 0; row < wallData.blocksVer; row++) {
+        for (let row = 0; row < totalRows; row++) {
           if (row % 2 === 0) {
             // Even rows: go left
             for (let col = wallData.blocksHor - 1; col >= 0; col--) {
@@ -1137,12 +1189,12 @@ const CanvasRenderer = {
         for (let col = 0; col < wallData.blocksHor; col++) {
           if (col % 2 === 0) {
             // Even columns: go up
-            for (let row = wallData.blocksVer - 1; row >= 0; row--) {
+            for (let row = totalRows - 1; row >= 0; row--) {
               tiles.push({ row, col });
             }
           } else {
             // Odd columns: go down
-            for (let row = 0; row < wallData.blocksVer; row++) {
+            for (let row = 0; row < totalRows; row++) {
               tiles.push({ row, col });
             }
           }
@@ -1153,12 +1205,12 @@ const CanvasRenderer = {
           const colIndex = wallData.blocksHor - 1 - col;
           if (colIndex % 2 === 0) {
             // Even columns: go up
-            for (let row = wallData.blocksVer - 1; row >= 0; row--) {
+            for (let row = totalRows - 1; row >= 0; row--) {
               tiles.push({ row, col });
             }
           } else {
             // Odd columns: go down
-            for (let row = 0; row < wallData.blocksVer; row++) {
+            for (let row = 0; row < totalRows; row++) {
               tiles.push({ row, col });
             }
           }
@@ -1168,12 +1220,12 @@ const CanvasRenderer = {
         for (let col = 0; col < wallData.blocksHor; col++) {
           if (col % 2 === 0) {
             // Even columns: go down
-            for (let row = 0; row < wallData.blocksVer; row++) {
+            for (let row = 0; row < totalRows; row++) {
               tiles.push({ row, col });
             }
           } else {
             // Odd columns: go up
-            for (let row = wallData.blocksVer - 1; row >= 0; row--) {
+            for (let row = totalRows - 1; row >= 0; row--) {
               tiles.push({ row, col });
             }
           }
@@ -1184,12 +1236,12 @@ const CanvasRenderer = {
           const colIndex = wallData.blocksHor - 1 - col;
           if (colIndex % 2 === 0) {
             // Even columns: go down
-            for (let row = 0; row < wallData.blocksVer; row++) {
+            for (let row = 0; row < totalRows; row++) {
               tiles.push({ row, col });
             }
           } else {
             // Odd columns: go up
-            for (let row = wallData.blocksVer - 1; row >= 0; row--) {
+            for (let row = totalRows - 1; row >= 0; row--) {
               tiles.push({ row, col });
             }
           }

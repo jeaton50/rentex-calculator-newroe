@@ -269,22 +269,69 @@
 
       const productType = (urlParams.get('product') || localStorage.getItem('screenProduct') || 'absen').toLowerCase();
 
+      // Get GP2 Half configuration parameters
+      const gp2HalfAutoRows = parseInt(urlParams.get('gp2HalfAutoRows') || localStorage.getItem('gp2HalfAutoRows') || '0');
+      const gp2HalfManualRows = parseInt(urlParams.get('gp2HalfManualRows') || localStorage.getItem('gp2HalfManualRows') || '0');
+      const gp2HalfManualPosition = urlParams.get('gp2HalfManualPosition') || localStorage.getItem('gp2HalfManualPosition') || 'bottom';
+      const gp2FullVerticalBlocks = parseInt(urlParams.get('gp2FullVerticalBlocks') || localStorage.getItem('gp2FullVerticalBlocks') || urlParams.get('blocksVer') || localStorage.getItem('screenBlocksVer') || '6');
+
       // Set block dimensions based on product type
       let blockWidth = 500;   // mm - default for most products
       let blockHeight = 500;  // mm - default for most products
 
-      if (productType === 'roegp26full') {
+      // Check if we have mixed GP2 configuration
+      const hasMixedGP2 = productType === 'roegp26full' && (gp2HalfAutoRows > 0 || gp2HalfManualRows > 0);
+
+      if (productType === 'roegp26full' && !hasMixedGP2) {
         blockWidth = 500;   // mm
         blockHeight = 1000; // mm - GP2 Full is 500x1000
+      }
+
+      // For mixed GP2, we'll handle heights per-row
+      const halfBlockHeight = 500;   // mm - GP2 Half
+      const fullBlockHeight = 1000;  // mm - GP2 Full
+
+      // Calculate total vertical blocks for mixed configurations
+      let blocksVer = parseInt(urlParams.get('blocksVer') || localStorage.getItem('screenBlocksVer') || '6');
+      if (hasMixedGP2) {
+        // Calculate layout
+        let topHalfRows = 0;
+        let bottomHalfRows = 0;
+
+        if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+          topHalfRows = gp2HalfAutoRows;
+          if (gp2HalfManualPosition === 'top') {
+            topHalfRows += gp2HalfManualRows;
+          } else {
+            bottomHalfRows = gp2HalfManualRows;
+          }
+        } else if (gp2HalfAutoRows > 0) {
+          topHalfRows = gp2HalfAutoRows;
+        } else if (gp2HalfManualRows > 0) {
+          if (gp2HalfManualPosition === 'top') {
+            topHalfRows = gp2HalfManualRows;
+          } else {
+            bottomHalfRows = gp2HalfManualRows;
+          }
+        }
+
+        blocksVer = topHalfRows + gp2FullVerticalBlocks + bottomHalfRows;
       }
 
       return {
         productType: productType,
         blocksHor: parseInt(urlParams.get('blocksHor') || localStorage.getItem('screenBlocksHor') || '10'),
-        blocksVer: parseInt(urlParams.get('blocksVer') || localStorage.getItem('screenBlocksVer') || '6'),
+        blocksVer: blocksVer,
         powerDistroType: urlParams.get('powerDistroType') || localStorage.getItem('screenPowerDistroType') || '208',
         blockWidth: blockWidth,
-        blockHeight: blockHeight
+        blockHeight: blockHeight,
+        gp2HalfAutoRows: gp2HalfAutoRows,
+        gp2HalfManualRows: gp2HalfManualRows,
+        gp2HalfManualPosition: gp2HalfManualPosition,
+        gp2FullVerticalBlocks: gp2FullVerticalBlocks,
+        hasMixedGP2: hasMixedGP2,
+        halfBlockHeight: halfBlockHeight,
+        fullBlockHeight: fullBlockHeight
       };
     }
 
@@ -347,8 +394,40 @@
 
     // Update info display
     document.getElementById('productInfo').textContent = `Product: ${config.displayName}`;
+
+    // Calculate height for mixed GP2 configurations
+    let heightInMeters;
+    if (params.hasMixedGP2) {
+      // Calculate layout
+      let topHalfRows = 0;
+      let bottomHalfRows = 0;
+
+      if (params.gp2HalfAutoRows > 0 && params.gp2HalfManualRows > 0) {
+        topHalfRows = params.gp2HalfAutoRows;
+        if (params.gp2HalfManualPosition === 'top') {
+          topHalfRows += params.gp2HalfManualRows;
+        } else {
+          bottomHalfRows = params.gp2HalfManualRows;
+        }
+      } else if (params.gp2HalfAutoRows > 0) {
+        topHalfRows = params.gp2HalfAutoRows;
+      } else if (params.gp2HalfManualRows > 0) {
+        if (params.gp2HalfManualPosition === 'top') {
+          topHalfRows = params.gp2HalfManualRows;
+        } else {
+          bottomHalfRows = params.gp2HalfManualRows;
+        }
+      }
+
+      const halfHeight = (topHalfRows + bottomHalfRows) * params.halfBlockHeight;
+      const fullHeight = params.gp2FullVerticalBlocks * params.fullBlockHeight;
+      heightInMeters = (halfHeight + fullHeight) / 1000;
+    } else {
+      heightInMeters = (params.blocksVer * params.blockHeight) / 1000;
+    }
+
     document.getElementById('dimensionsInfo').textContent =
-      `Screen Size: ${params.blocksHor} × ${params.blocksVer} tiles (${(params.blocksHor * params.blockWidth / 1000).toFixed(2)}m × ${(params.blocksVer * params.blockHeight / 1000).toFixed(2)}m)`;
+      `Screen Size: ${params.blocksHor} × ${params.blocksVer} tiles (${(params.blocksHor * params.blockWidth / 1000).toFixed(2)}m × ${heightInMeters.toFixed(2)}m)`;
 
     // Update range info text
     const convexText = config.minCurve < 0 ? '<strong>Convex:</strong> Negative angles ' : '';
@@ -402,7 +481,40 @@
       const availableWidth = canvas.width - (padding * 2);
       const availableHeight = canvas.height - (padding * 2);
 
-      const aspectRatio = params.blocksHor / params.blocksVer;
+      // Calculate aspect ratio - for mixed GP2, need to account for different tile heights
+      let actualWidth = params.blocksHor * params.blockWidth;
+      let actualHeight;
+
+      if (params.hasMixedGP2) {
+        // Calculate layout
+        let topHalfRows = 0;
+        let bottomHalfRows = 0;
+
+        if (params.gp2HalfAutoRows > 0 && params.gp2HalfManualRows > 0) {
+          topHalfRows = params.gp2HalfAutoRows;
+          if (params.gp2HalfManualPosition === 'top') {
+            topHalfRows += params.gp2HalfManualRows;
+          } else {
+            bottomHalfRows = params.gp2HalfManualRows;
+          }
+        } else if (params.gp2HalfAutoRows > 0) {
+          topHalfRows = params.gp2HalfAutoRows;
+        } else if (params.gp2HalfManualRows > 0) {
+          if (params.gp2HalfManualPosition === 'top') {
+            topHalfRows = params.gp2HalfManualRows;
+          } else {
+            bottomHalfRows = params.gp2HalfManualRows;
+          }
+        }
+
+        const halfHeight = (topHalfRows + bottomHalfRows) * params.halfBlockHeight;
+        const fullHeight = params.gp2FullVerticalBlocks * params.fullBlockHeight;
+        actualHeight = halfHeight + fullHeight;
+      } else {
+        actualHeight = params.blocksVer * params.blockHeight;
+      }
+
+      const aspectRatio = actualWidth / actualHeight;
       let screenWidth, screenHeight;
 
       if (availableWidth / availableHeight > aspectRatio) {
@@ -422,7 +534,6 @@
 
       // Draw tile grid
       const tileWidth = screenWidth / params.blocksHor;
-      const tileHeight = screenHeight / params.blocksVer;
 
       ctx.strokeStyle = '#555';
       ctx.lineWidth = 1;
@@ -436,13 +547,71 @@
         ctx.stroke();
       }
 
-      // Horizontal lines
-      for (let i = 0; i <= params.blocksVer; i++) {
-        const y = startY + (i * tileHeight);
+      // Horizontal lines - account for different row heights in mixed GP2
+      if (params.hasMixedGP2) {
+        // Calculate layout
+        let topHalfRows = 0;
+        let bottomHalfRows = 0;
+
+        if (params.gp2HalfAutoRows > 0 && params.gp2HalfManualRows > 0) {
+          topHalfRows = params.gp2HalfAutoRows;
+          if (params.gp2HalfManualPosition === 'top') {
+            topHalfRows += params.gp2HalfManualRows;
+          } else {
+            bottomHalfRows = params.gp2HalfManualRows;
+          }
+        } else if (params.gp2HalfAutoRows > 0) {
+          topHalfRows = params.gp2HalfAutoRows;
+        } else if (params.gp2HalfManualRows > 0) {
+          if (params.gp2HalfManualPosition === 'top') {
+            topHalfRows = params.gp2HalfManualRows;
+          } else {
+            bottomHalfRows = params.gp2HalfManualRows;
+          }
+        }
+
+        const fullRowsStart = topHalfRows;
+        const fullRowsEnd = topHalfRows + params.gp2FullVerticalBlocks;
+
+        // Function to get tile type for row
+        const getTileHeightForRow = (row) => {
+          if (row < fullRowsStart) {
+            return params.halfBlockHeight;
+          } else if (row >= fullRowsEnd) {
+            return params.halfBlockHeight;
+          } else {
+            return params.fullBlockHeight;
+          }
+        };
+
+        // Calculate scale factor
+        const scaleFactor = screenHeight / actualHeight;
+
+        // Draw horizontal lines at accumulated heights
+        let accumulatedY = startY;
         ctx.beginPath();
-        ctx.moveTo(startX, y);
-        ctx.lineTo(startX + screenWidth, y);
+        ctx.moveTo(startX, accumulatedY);
+        ctx.lineTo(startX + screenWidth, accumulatedY);
         ctx.stroke();
+
+        for (let row = 0; row < params.blocksVer; row++) {
+          const rowHeight = getTileHeightForRow(row);
+          accumulatedY += rowHeight * scaleFactor;
+          ctx.beginPath();
+          ctx.moveTo(startX, accumulatedY);
+          ctx.lineTo(startX + screenWidth, accumulatedY);
+          ctx.stroke();
+        }
+      } else {
+        // Uniform tile heights
+        const tileHeight = screenHeight / params.blocksVer;
+        for (let i = 0; i <= params.blocksVer; i++) {
+          const y = startY + (i * tileHeight);
+          ctx.beginPath();
+          ctx.moveTo(startX, y);
+          ctx.lineTo(startX + screenWidth, y);
+          ctx.stroke();
+        }
       }
 
       // Draw border

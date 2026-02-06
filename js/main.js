@@ -1583,7 +1583,40 @@ window.openScreenViews = function() {
   const blocksVer = parseInt(document.getElementById('blocksVer')?.value) || 6;
   const powerDistroType = document.getElementById('powerDistroType')?.value || '208';
 
-  window.location.href = `screen-views.html?product=${encodeURIComponent(productType)}&blocksHor=${blocksHor}&blocksVer=${blocksVer}&powerDistroType=${powerDistroType}`;
+  // Get GP2 Half configuration for mixed tiles
+  let gp2HalfAutoRows = 0;
+  let gp2HalfManualRows = 0;
+  let gp2HalfManualPosition = 'bottom';
+  let gp2FullVerticalBlocks = blocksVer;
+
+  if (productType === 'ROEGP26Full') {
+    // Check for fractional input (auto Half rows)
+    const blocksVerInput = document.getElementById('blocksVer');
+    const blocksVerRaw = parseFloat(blocksVerInput?.value || 0);
+    if ((blocksVerRaw % 1) !== 0) {
+      const fractionalPart = blocksVerRaw % 1;
+      gp2HalfAutoRows = Math.round(fractionalPart * 2);
+      gp2FullVerticalBlocks = Math.floor(blocksVerRaw);
+    }
+
+    // Check for manual checkbox
+    const gp2HalfCheckbox = document.getElementById('gp2HalfCheckbox');
+    if (gp2HalfCheckbox?.checked) {
+      gp2HalfManualRows = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
+      gp2HalfManualPosition = document.getElementById('gp2HalfPosition')?.value || 'bottom';
+    }
+  }
+
+  localStorage.setItem('screenProduct', productType);
+  localStorage.setItem('screenBlocksHor', blocksHor);
+  localStorage.setItem('screenBlocksVer', blocksVer);
+  localStorage.setItem('screenPowerDistroType', powerDistroType);
+  localStorage.setItem('gp2HalfAutoRows', gp2HalfAutoRows);
+  localStorage.setItem('gp2HalfManualRows', gp2HalfManualRows);
+  localStorage.setItem('gp2HalfManualPosition', gp2HalfManualPosition);
+  localStorage.setItem('gp2FullVerticalBlocks', gp2FullVerticalBlocks);
+
+  window.location.href = `screen-views.html?product=${encodeURIComponent(productType)}&blocksHor=${blocksHor}&blocksVer=${blocksVer}&powerDistroType=${powerDistroType}&gp2HalfAutoRows=${gp2HalfAutoRows}&gp2HalfManualRows=${gp2HalfManualRows}&gp2HalfManualPosition=${encodeURIComponent(gp2HalfManualPosition)}&gp2FullVerticalBlocks=${gp2FullVerticalBlocks}`;
 };
 
 window.openTechnicalView = function() {
