@@ -162,15 +162,18 @@ const CanvasRenderer = {
       const maxHorizontal = Math.max(halfHorizontal, fullHorizontal);
       singleScreenWidth = maxHorizontal * blockWidth;
       totalWallHeight = (halfVertical * halfBlockHeight) + (fullVertical * fullBlockHeight);
-    } else if (productType === 'ROEGP26Full' && wallData.gp2HalfBottomRow && wallData.gp2HalfRows > 0) {
-      // GP2 Full with GP2 Half bottom rows
+    } else if (productType === 'ROEGP26Full' && (wallData.gp2HalfAutoRows > 0 || wallData.gp2HalfManualRows > 0)) {
+      // GP2 Full with GP2 Half mixed tiles (new parameter system)
+      const gp2HalfAutoRows = wallData.gp2HalfAutoRows || 0;
+      const gp2HalfManualRows = wallData.gp2HalfManualRows || 0;
       const gp2FullRows = wallData.gp2FullVerticalBlocks || 0;
-      const gp2HalfRows = wallData.gp2HalfRows || 0;
+      const totalHalfRows = gp2HalfAutoRows + gp2HalfManualRows;
+
       singleScreenWidth = wallData.blocksHor * blockWidth;
       // blockHeight is already 2x for ROEGP26Full (1000mm)
       const fullBlockHeight = blockHeight; // 1000mm
       const halfBlockHeight = blockHeight / 2; // 500mm
-      totalWallHeight = (gp2FullRows * fullBlockHeight) + (gp2HalfRows * halfBlockHeight);
+      totalWallHeight = (gp2FullRows * fullBlockHeight) + (totalHalfRows * halfBlockHeight);
     } else {
       // Normal mode
       singleScreenWidth = wallData.blocksHor * blockWidth;

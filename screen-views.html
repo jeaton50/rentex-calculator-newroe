@@ -433,9 +433,16 @@
     const convexText = config.minCurve < 0 ? '<strong>Convex:</strong> Negative angles ' : '';
     document.getElementById('rangeInfo').innerHTML = `${convexText}${config.rangeText}`;
 
-    // Update back button to preserve calculator state
+    // Update back button to preserve calculator state including GP2 Half parameters
     const backButton = document.getElementById('backButton');
-    backButton.href = `index.html?product=${encodeURIComponent(params.productType)}&blocksHor=${params.blocksHor}&blocksVer=${params.blocksVer}&powerDistroType=${params.powerDistroType}`;
+    let backUrl = `index.html?product=${encodeURIComponent(params.productType)}&blocksHor=${params.blocksHor}&blocksVer=${params.blocksVer}&powerDistroType=${params.powerDistroType}`;
+
+    // Add GP2 Half parameters if they exist
+    if (params.gp2HalfAutoRows > 0 || params.gp2HalfManualRows > 0) {
+      backUrl += `&gp2HalfAutoRows=${params.gp2HalfAutoRows}&gp2HalfManualRows=${params.gp2HalfManualRows}&gp2HalfManualPosition=${encodeURIComponent(params.gp2HalfManualPosition)}&gp2FullVerticalBlocks=${params.gp2FullVerticalBlocks}`;
+    }
+
+    backButton.href = backUrl;
 
     // Curve control
     const curveSlider = document.getElementById('curveSlider');

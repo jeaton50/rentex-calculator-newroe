@@ -1930,6 +1930,46 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // Restore GP2 Half parameters if present
+    const gp2HalfAutoRows = urlParams.get('gp2HalfAutoRows');
+    const gp2HalfManualRows = urlParams.get('gp2HalfManualRows');
+    const gp2HalfManualPosition = urlParams.get('gp2HalfManualPosition');
+    const gp2FullVerticalBlocks = urlParams.get('gp2FullVerticalBlocks');
+
+    if ((gp2HalfAutoRows && parseInt(gp2HalfAutoRows) > 0) || (gp2HalfManualRows && parseInt(gp2HalfManualRows) > 0)) {
+      // If we have auto Half rows from fractional input, restore the fractional value
+      if (gp2HalfAutoRows && parseInt(gp2HalfAutoRows) > 0 && gp2FullVerticalBlocks) {
+        const fullBlocks = parseInt(gp2FullVerticalBlocks);
+        const halfRows = parseInt(gp2HalfAutoRows);
+        const fractionalValue = fullBlocks + (halfRows * 0.5);
+        const blocksVerInput = document.getElementById('blocksVer');
+        if (blocksVerInput) {
+          blocksVerInput.value = fractionalValue;
+        }
+      }
+
+      // Restore manual checkbox settings
+      if (gp2HalfManualRows && parseInt(gp2HalfManualRows) > 0) {
+        const gp2HalfCheckbox = document.getElementById('gp2HalfCheckbox');
+        if (gp2HalfCheckbox) {
+          gp2HalfCheckbox.checked = true;
+          gp2HalfCheckbox.dispatchEvent(new Event('change'));
+        }
+
+        const gp2HalfCountInput = document.getElementById('gp2HalfCount');
+        if (gp2HalfCountInput) {
+          gp2HalfCountInput.value = gp2HalfManualRows;
+        }
+
+        if (gp2HalfManualPosition) {
+          const gp2HalfPositionSelect = document.getElementById('gp2HalfPosition');
+          if (gp2HalfPositionSelect) {
+            gp2HalfPositionSelect.value = gp2HalfManualPosition;
+          }
+        }
+      }
+    }
+
     stateRestored = true;
   }
   // Priority 2: Restore from localStorage (returning from other pages)

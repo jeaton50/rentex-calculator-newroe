@@ -513,9 +513,16 @@
     document.getElementById('powerAmps').textContent = `${amps.toFixed(2)} A`;
     document.getElementById('powerWatts').textContent = `${watts.toFixed(0)} W`;
 
-    // Update back button
+    // Update back button to preserve calculator state including GP2 Half parameters
     const backButton = document.getElementById('backButton');
-    backButton.href = `index.html?product=${encodeURIComponent(params.productType)}&blocksHor=${params.blocksHor}&blocksVer=${params.blocksVer}&powerDistroType=${params.powerDistroType}`;
+    let backUrl = `index.html?product=${encodeURIComponent(params.productType)}&blocksHor=${params.blocksHor}&blocksVer=${params.blocksVer}&powerDistroType=${params.powerDistroType}`;
+
+    // Add GP2 Half parameters if they exist
+    if (params.gp2HalfAutoRows > 0 || params.gp2HalfManualRows > 0) {
+      backUrl += `&gp2HalfAutoRows=${params.gp2HalfAutoRows}&gp2HalfManualRows=${params.gp2HalfManualRows}&gp2HalfManualPosition=${encodeURIComponent(params.gp2HalfManualPosition)}&gp2FullVerticalBlocks=${params.gp2FullVerticalBlocks}`;
+    }
+
+    backButton.href = backUrl;
 
     // Set power distro type
     const powerDistroTypeSelect = document.getElementById('powerDistroType');
