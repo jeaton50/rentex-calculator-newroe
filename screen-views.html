@@ -435,7 +435,20 @@
 
     // Update back button to preserve calculator state including GP2 Half parameters
     const backButton = document.getElementById('backButton');
-    let backUrl = `index.html?product=${encodeURIComponent(params.productType)}&blocksHor=${params.blocksHor}&blocksVer=${params.blocksVer}&powerDistroType=${params.powerDistroType}`;
+
+    // Convert lowercase product type back to proper case for main page
+    const productTypeMap = {
+      'absen': 'absen',
+      'bp2b1': 'BP2B1',
+      'bp2b2': 'BP2B2',
+      'bp2v2': 'BP2V2',
+      'theatrixx': 'theatrixx',
+      'roegp26full': 'ROEGP26Full',
+      'roegp26half': 'ROEGP26Half'
+    };
+    const properCaseProduct = productTypeMap[params.productType] || params.productType;
+
+    let backUrl = `index.html?product=${encodeURIComponent(properCaseProduct)}&blocksHor=${params.blocksHor}&blocksVer=${params.blocksVer}&powerDistroType=${params.powerDistroType}`;
 
     // Add GP2 Half parameters if they exist
     if (params.gp2HalfAutoRows > 0 || params.gp2HalfManualRows > 0) {
