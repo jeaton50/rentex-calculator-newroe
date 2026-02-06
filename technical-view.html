@@ -400,7 +400,9 @@
       'theatrixx': 'Theatrixx Nomad 2.6',
       'BP2B1': 'ROE Black Pearl BP2B1',
       'BP2B2': 'ROE Black Pearl BP2B2',
-      'BP2V2': 'ROE Black Pearl BP2V2'
+      'BP2V2': 'ROE Black Pearl BP2V2',
+      'ROEGP26Full': 'ROE GP2.6 Full',
+      'ROEGP26Half': 'ROE GP2.6 Half'
     };
 
     // Daisy chain limits by product
@@ -420,7 +422,9 @@
       'BP2B1': { 110: 11, 208: 32 },
       'BP2B2': { 110: 11, 208: 32 },
       'BP2V2': { 110: 11, 208: 32 },
-      'theatrixx': { 110: 10, 208: 30 }
+      'theatrixx': { 110: 10, 208: 30 },
+      'ROEGP26Full': { 110: 5, 208: 15 },
+      'ROEGP26Half': { 110: 10, 208: 30 }
     };
 
     // Pixels per tile by product
@@ -429,7 +433,9 @@
       'theatrixx': 192,
       'BP2B1': 176,
       'BP2B2': 176,
-      'BP2V2': 176
+      'BP2V2': 176,
+      'ROEGP26Full': 192, // 192 wide (same as Half)
+      'ROEGP26Half': 192
     };
 
     // Weight per tile by product (lbs)
@@ -438,7 +444,9 @@
       'theatrixx': 17.6,
       'BP2B1': 20.61,
       'BP2B2': 20.61,
-      'BP2V2': 20.61
+      'BP2V2': 20.61,
+      'ROEGP26Full': 19.84, // 500x1000mm tile
+      'ROEGP26Half': 11.44  // 500x500mm tile
     };
 
     // Power specs per tile by product (amps at different voltages)
@@ -447,7 +455,9 @@
       'theatrixx': { 110: 2.41, 208: 1.27403 },
       'BP2B1': { 110: 1.73, 208: 0.914 },
       'BP2B2': { 110: 1.73, 208: 0.914 },
-      'BP2V2': { 110: 1.73, 208: 0.914 }
+      'BP2V2': { 110: 1.73, 208: 0.914 },
+      'ROEGP26Full': { 110: 2.909, 208: 1.538 }, // 320W tile
+      'ROEGP26Half': { 110: 1.455, 208: 0.769 }  // 160W tile
     };
 
     // Update info display
@@ -457,14 +467,28 @@
     // Calculate all screen info
     const totalTiles = params.blocksHor * params.blocksVer;
     const pxPerTile = pixelsPerTile[params.productType] || 200;
-    const horizontalPixels = params.blocksHor * pxPerTile;
-    const verticalPixels = params.blocksVer * pxPerTile;
-    const totalPixels = horizontalPixels * verticalPixels;
 
-    const widthFeet = (params.blocksHor * 1.64).toFixed(2);
-    const heightFeet = (params.blocksVer * 1.64).toFixed(2);
-    const widthMeters = (params.blocksHor * 0.5).toFixed(2);
-    const heightMeters = (params.blocksVer * 0.5).toFixed(2);
+    // GP2 Full tiles are 192x384 pixels (tall rectangles)
+    let horizontalPixels, verticalPixels, widthFeet, heightFeet, widthMeters, heightMeters;
+
+    if (params.productType === 'ROEGP26Full') {
+      horizontalPixels = params.blocksHor * 192;  // 192 pixels wide
+      verticalPixels = params.blocksVer * 384;    // 384 pixels tall
+      widthFeet = (params.blocksHor * 1.64).toFixed(2);   // 500mm = 1.64'
+      heightFeet = (params.blocksVer * 3.28).toFixed(2);  // 1000mm = 3.28'
+      widthMeters = (params.blocksHor * 0.5).toFixed(2);  // 500mm
+      heightMeters = (params.blocksVer * 1.0).toFixed(2); // 1000mm
+    } else {
+      // Standard square tiles
+      horizontalPixels = params.blocksHor * pxPerTile;
+      verticalPixels = params.blocksVer * pxPerTile;
+      widthFeet = (params.blocksHor * 1.64).toFixed(2);
+      heightFeet = (params.blocksVer * 1.64).toFixed(2);
+      widthMeters = (params.blocksHor * 0.5).toFixed(2);
+      heightMeters = (params.blocksVer * 0.5).toFixed(2);
+    }
+
+    const totalPixels = horizontalPixels * verticalPixels;
 
     const weight = (totalTiles * (weightPerTile[params.productType] || 20)).toFixed(1);
 
@@ -604,35 +628,44 @@
     }
 
     // Draw wiring diagram on canvas
-    function drawWiringDiagram(canvas, blocksHor, blocksVer, zoomLevel, chainLimit, colors, direction, startPosition, isDashed = false) {
+    function drawWiringDiagram(canvas, blocksHor, blocksVer, zoomLevel, chainLimit, colors, direction, startPosition, isDashed = false, productType = 'absen') {
       const ctx = canvas.getContext('2d');
       const blockSize = (baseBlockPixels / 4) * zoomLevel;
 
+      // Separate width and height for GP2 Full tiles (500mm × 1000mm)
+      let blockWidth = blockSize;
+      let blockHeight = blockSize;
+
+      // GP2 Full tiles are 1000mm tall (2x the width of 500mm)
+      if (productType === 'ROEGP26Full') {
+        blockHeight = blockSize * 2;
+      }
+
       // Set canvas size
-      canvas.width = blocksHor * blockSize + padding * 2;
-      canvas.height = blocksVer * blockSize + padding * 2;
+      canvas.width = blocksHor * blockWidth + padding * 2;
+      canvas.height = blocksVer * blockHeight + padding * 2;
 
       // Clear and fill background
       ctx.fillStyle = '#fff';
-      ctx.fillRect(padding, padding, blocksHor * blockSize, blocksVer * blockSize);
+      ctx.fillRect(padding, padding, blocksHor * blockWidth, blocksVer * blockHeight);
 
       // Draw grid lines
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 2;
 
       for (let col = 0; col <= blocksHor; col++) {
-        const x = padding + col * blockSize;
+        const x = padding + col * blockWidth;
         ctx.beginPath();
         ctx.moveTo(x, padding);
-        ctx.lineTo(x, padding + blocksVer * blockSize);
+        ctx.lineTo(x, padding + blocksVer * blockHeight);
         ctx.stroke();
       }
 
       for (let row = 0; row <= blocksVer; row++) {
-        const y = padding + row * blockSize;
+        const y = padding + row * blockHeight;
         ctx.beginPath();
         ctx.moveTo(padding, y);
-        ctx.lineTo(padding + blocksHor * blockSize, y);
+        ctx.lineTo(padding + blocksHor * blockWidth, y);
         ctx.stroke();
       }
 
@@ -653,8 +686,8 @@
 
       for (let i = 0; i < tiles.length; i++) {
         const tile = tiles[i];
-        const posX = padding + tile.col * blockSize + blockSize / 2;
-        const posY = padding + tile.row * blockSize + blockSize / 2;
+        const posX = padding + tile.col * blockWidth + blockWidth / 2;
+        const posY = padding + tile.row * blockHeight + blockHeight / 2;
 
         if (tilesInCurrentChain === 0) {
           chainNumber++;
@@ -723,7 +756,7 @@
     function renderDataWiring() {
       const canvas = document.getElementById('dataWiringCanvas');
       const chainLimit = daisyChainLimits[params.productType] || 10;
-      drawWiringDiagram(canvas, params.blocksHor, params.blocksVer, dataZoomLevel, chainLimit, dataChainColors, wiringDirection, wiringStartPosition, false);
+      drawWiringDiagram(canvas, params.blocksHor, params.blocksVer, dataZoomLevel, chainLimit, dataChainColors, wiringDirection, wiringStartPosition, false, params.productType);
       document.getElementById('dataZoomLevel').textContent = `Zoom: ${dataZoomLevel}`;
     }
 
@@ -732,7 +765,7 @@
       const canvas = document.getElementById('powerWiringCanvas');
       const voltage = parseInt(powerDistroTypeSelect.value);
       const chainLimit = powerTileLimits[params.productType]?.[voltage] || 10;
-      drawWiringDiagram(canvas, params.blocksHor, params.blocksVer, powerZoomLevel, chainLimit, powerChainColors, powerDirection, powerStartPosition, true);
+      drawWiringDiagram(canvas, params.blocksHor, params.blocksVer, powerZoomLevel, chainLimit, powerChainColors, powerDirection, powerStartPosition, true, params.productType);
       document.getElementById('powerZoomLevel').textContent = `Zoom: ${powerZoomLevel}`;
     }
 
