@@ -221,12 +221,40 @@
     </div>
 
     <div class="controls">
-      <label for="curveSlider">Curve Adjustment:</label>
-      <input type="range" id="curveSlider" min="-5" max="5" step="2.5" value="0">
-      <div>
-        <div class="curve-value" id="curveValue">0°</div>
-        <div class="curve-type" id="curveType">Flat</div>
+      <div id="singleCurveControl" style="display: flex; align-items: center; gap: 20px;">
+        <label for="curveSlider">Curve Adjustment:</label>
+        <input type="range" id="curveSlider" min="-5" max="5" step="2.5" value="0">
+        <div>
+          <div class="curve-value" id="curveValue">0°</div>
+          <div class="curve-type" id="curveType">Flat</div>
+        </div>
       </div>
+
+      <!-- Dual curve controls for GP2 products -->
+      <div id="dualCurveControls" style="display: none; width: 100%;">
+        <div style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
+          <!-- Horizontal curve control -->
+          <div style="display: flex; align-items: center; gap: 20px;">
+            <label for="horizontalCurveSlider" style="min-width: 150px;">Horizontal Curve:</label>
+            <input type="range" id="horizontalCurveSlider" min="-5" max="5" step="1" value="0" style="width: 300px;">
+            <div>
+              <div class="curve-value" id="horizontalCurveValue">0°</div>
+              <div class="curve-type" id="horizontalCurveType">Flat</div>
+            </div>
+          </div>
+
+          <!-- Vertical curve control -->
+          <div style="display: flex; align-items: center; gap: 20px;">
+            <label for="verticalCurveSlider" style="min-width: 150px;">Vertical Curve:</label>
+            <input type="range" id="verticalCurveSlider" min="-3" max="3" step="1" value="0" style="width: 300px;">
+            <div>
+              <div class="curve-value" id="verticalCurveValue">0°</div>
+              <div class="curve-type" id="verticalCurveType">Flat</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <button type="button" class="reset-button" id="resetButton">Reset View</button>
     </div>
 
@@ -430,8 +458,16 @@
       `Screen Size: ${params.blocksHor} × ${params.blocksVer} tiles (${(params.blocksHor * params.blockWidth / 1000).toFixed(2)}m × ${heightInMeters.toFixed(2)}m)`;
 
     // Update range info text
-    const convexText = config.minCurve < 0 ? '<strong>Convex:</strong> Negative angles ' : '';
-    document.getElementById('rangeInfo').innerHTML = `${convexText}${config.rangeText}`;
+    if (isGP2Product) {
+      document.getElementById('rangeInfo').innerHTML = `
+        <strong>Horizontal Curve:</strong> -5° to +5° |
+        <strong>Vertical Curve:</strong> -3° to +3° |
+        <strong>Convex:</strong> Negative angles | <strong>Flat:</strong> 0° | <strong>Concave:</strong> Positive angles
+      `;
+    } else {
+      const convexText = config.minCurve < 0 ? '<strong>Convex:</strong> Negative angles ' : '';
+      document.getElementById('rangeInfo').innerHTML = `${convexText}${config.rangeText}`;
+    }
 
     // Update back button to preserve calculator state including GP2 Half parameters
     const backButton = document.getElementById('backButton');
@@ -457,10 +493,34 @@
 
     backButton.href = backUrl;
 
-    // Curve control
+    // Check if GP2 product for dual curve controls
+    const isGP2Product = params.productType === 'roegp26full' || params.productType === 'roegp26half';
+
+    // Curve control variables
+    let horizontalCurve = 0;
+    let verticalCurve = 0;
+
+    // Show/hide appropriate controls
+    if (isGP2Product) {
+      document.getElementById('singleCurveControl').style.display = 'none';
+      document.getElementById('dualCurveControls').style.display = 'block';
+    } else {
+      document.getElementById('singleCurveControl').style.display = 'flex';
+      document.getElementById('dualCurveControls').style.display = 'none';
+    }
+
+    // Single curve control (for non-GP2 products)
     const curveSlider = document.getElementById('curveSlider');
     const curveValue = document.getElementById('curveValue');
     const curveType = document.getElementById('curveType');
+
+    // Dual curve controls (for GP2 products)
+    const horizontalCurveSlider = document.getElementById('horizontalCurveSlider');
+    const horizontalCurveValue = document.getElementById('horizontalCurveValue');
+    const horizontalCurveType = document.getElementById('horizontalCurveType');
+    const verticalCurveSlider = document.getElementById('verticalCurveSlider');
+    const verticalCurveValue = document.getElementById('verticalCurveValue');
+    const verticalCurveType = document.getElementById('verticalCurveType');
 
     // Set slider range based on product type
     curveSlider.min = config.minCurve;
@@ -486,6 +546,21 @@
       } else {
         curveType.textContent = 'Flat';
         curveType.style.color = '#666';
+      }
+    }
+
+    function updateCurveDisplayDual(angle, valueElement, typeElement) {
+      valueElement.textContent = `${angle > 0 ? '+' : ''}${angle}°`;
+
+      if (angle < 0) {
+        typeElement.textContent = 'Convex';
+        typeElement.style.color = '#dc2626';
+      } else if (angle > 0) {
+        typeElement.textContent = 'Concave';
+        typeElement.style.color = '#dc2626';
+      } else {
+        typeElement.textContent = 'Flat';
+        typeElement.style.color = '#666';
       }
     }
 
@@ -769,15 +844,29 @@
 
     // Update displays
     function updateViews() {
-      const angle = parseFloat(curveSlider.value);
-      updateCurveDisplay(angle);
-      drawFrontView();
-      drawTopView(angle);
+      if (isGP2Product) {
+        horizontalCurve = parseFloat(horizontalCurveSlider.value);
+        verticalCurve = parseFloat(verticalCurveSlider.value);
+        updateCurveDisplayDual(horizontalCurve, horizontalCurveValue, horizontalCurveType);
+        updateCurveDisplayDual(verticalCurve, verticalCurveValue, verticalCurveType);
+        drawFrontView();
+        drawTopView(horizontalCurve); // For now, use horizontal curve for top view
+      } else {
+        const angle = parseFloat(curveSlider.value);
+        updateCurveDisplay(angle);
+        drawFrontView();
+        drawTopView(angle);
+      }
     }
 
     // Reset function
     function resetView() {
-      curveSlider.value = 0;
+      if (isGP2Product) {
+        horizontalCurveSlider.value = 0;
+        verticalCurveSlider.value = 0;
+      } else {
+        curveSlider.value = 0;
+      }
       topViewZoomLevel = 0.5;
       updateZoomDisplay();
       updateViews();
@@ -788,7 +877,11 @@
       if (topViewZoomLevel < maxZoom) {
         topViewZoomLevel += zoomStep;
         updateZoomDisplay();
-        drawTopView(parseFloat(curveSlider.value));
+        if (isGP2Product) {
+          drawTopView(parseFloat(horizontalCurveSlider.value));
+        } else {
+          drawTopView(parseFloat(curveSlider.value));
+        }
       }
     }
 
@@ -796,7 +889,11 @@
       if (topViewZoomLevel > minZoom) {
         topViewZoomLevel -= zoomStep;
         updateZoomDisplay();
-        drawTopView(parseFloat(curveSlider.value));
+        if (isGP2Product) {
+          drawTopView(parseFloat(horizontalCurveSlider.value));
+        } else {
+          drawTopView(parseFloat(curveSlider.value));
+        }
       }
     }
 
@@ -873,14 +970,36 @@
     function captureTopView() {
       const productName = config.displayName.replace(/\s+/g, '_');
       const dimensions = `${params.blocksHor}x${params.blocksVer}`;
-      const curveAngle = parseFloat(curveSlider.value);
-      const curveText = curveAngle === 0 ? 'Flat' : `${curveAngle > 0 ? 'Concave' : 'Convex'}_${Math.abs(curveAngle)}deg`;
+
+      let curveText;
+      if (isGP2Product) {
+        const hCurve = parseFloat(horizontalCurveSlider.value);
+        const vCurve = parseFloat(verticalCurveSlider.value);
+        if (hCurve === 0 && vCurve === 0) {
+          curveText = 'Flat';
+        } else {
+          const hText = hCurve === 0 ? '0' : `${hCurve > 0 ? 'Concave' : 'Convex'}${Math.abs(hCurve)}`;
+          const vText = vCurve === 0 ? '0' : `${vCurve > 0 ? 'Concave' : 'Convex'}${Math.abs(vCurve)}`;
+          curveText = `H${hText}_V${vText}deg`;
+        }
+      } else {
+        const curveAngle = parseFloat(curveSlider.value);
+        curveText = curveAngle === 0 ? 'Flat' : `${curveAngle > 0 ? 'Concave' : 'Convex'}_${Math.abs(curveAngle)}deg`;
+      }
+
       const filename = `${productName}_Top_View_${dimensions}_${curveText}.png`;
       captureCanvas('topViewCanvas', filename);
     }
 
     // Event listeners
     curveSlider.addEventListener('input', updateViews);
+
+    // Add event listeners for GP2 dual curve controls
+    if (isGP2Product) {
+      horizontalCurveSlider.addEventListener('input', updateViews);
+      verticalCurveSlider.addEventListener('input', updateViews);
+    }
+
     document.getElementById('resetButton').addEventListener('click', resetView);
     document.getElementById('zoomInButton').addEventListener('click', zoomIn);
     document.getElementById('zoomOutButton').addEventListener('click', zoomOut);
