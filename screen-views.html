@@ -565,7 +565,7 @@
     }
 
     // Draw front view
-    function drawFrontView() {
+    function drawFrontView(verticalCurveAngle = 0) {
       const canvas = document.getElementById('frontViewCanvas');
       const ctx = canvas.getContext('2d');
 
@@ -622,106 +622,180 @@
 
       const startX = (canvas.width - screenWidth) / 2;
       const startY = (canvas.height - screenHeight) / 2;
+      const centerX = startX + screenWidth / 2;
+      const centerY = startY + screenHeight / 2;
 
-      // Draw screen background
-      ctx.fillStyle = '#333';
-      ctx.fillRect(startX, startY, screenWidth, screenHeight);
+      if (verticalCurveAngle === 0) {
+        // Draw flat screen (original behavior)
+        // Draw screen background
+        ctx.fillStyle = '#333';
+        ctx.fillRect(startX, startY, screenWidth, screenHeight);
 
-      // Draw tile grid
-      const tileWidth = screenWidth / params.blocksHor;
+        // Draw tile grid
+        const tileWidth = screenWidth / params.blocksHor;
 
-      ctx.strokeStyle = '#555';
-      ctx.lineWidth = 1;
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 1;
 
-      // Vertical lines
-      for (let i = 0; i <= params.blocksHor; i++) {
-        const x = startX + (i * tileWidth);
-        ctx.beginPath();
-        ctx.moveTo(x, startY);
-        ctx.lineTo(x, startY + screenHeight);
-        ctx.stroke();
-      }
-
-      // Horizontal lines - account for different row heights in mixed GP2
-      if (params.hasMixedGP2) {
-        // Calculate layout
-        let topHalfRows = 0;
-        let bottomHalfRows = 0;
-
-        if (params.gp2HalfAutoRows > 0 && params.gp2HalfManualRows > 0) {
-          topHalfRows = params.gp2HalfAutoRows;
-          if (params.gp2HalfManualPosition === 'top') {
-            topHalfRows += params.gp2HalfManualRows;
-          } else {
-            bottomHalfRows = params.gp2HalfManualRows;
-          }
-        } else if (params.gp2HalfAutoRows > 0) {
-          topHalfRows = params.gp2HalfAutoRows;
-        } else if (params.gp2HalfManualRows > 0) {
-          if (params.gp2HalfManualPosition === 'top') {
-            topHalfRows = params.gp2HalfManualRows;
-          } else {
-            bottomHalfRows = params.gp2HalfManualRows;
-          }
+        // Vertical lines
+        for (let i = 0; i <= params.blocksHor; i++) {
+          const x = startX + (i * tileWidth);
+          ctx.beginPath();
+          ctx.moveTo(x, startY);
+          ctx.lineTo(x, startY + screenHeight);
+          ctx.stroke();
         }
 
-        const fullRowsStart = topHalfRows;
-        const fullRowsEnd = topHalfRows + params.gp2FullVerticalBlocks;
+        // Horizontal lines - account for different row heights in mixed GP2
+        if (params.hasMixedGP2) {
+          // Calculate layout
+          let topHalfRows = 0;
+          let bottomHalfRows = 0;
 
-        // Function to get tile type for row
-        const getTileHeightForRow = (row) => {
-          if (row < fullRowsStart) {
-            return params.halfBlockHeight;
-          } else if (row >= fullRowsEnd) {
-            return params.halfBlockHeight;
-          } else {
-            return params.fullBlockHeight;
+          if (params.gp2HalfAutoRows > 0 && params.gp2HalfManualRows > 0) {
+            topHalfRows = params.gp2HalfAutoRows;
+            if (params.gp2HalfManualPosition === 'top') {
+              topHalfRows += params.gp2HalfManualRows;
+            } else {
+              bottomHalfRows = params.gp2HalfManualRows;
+            }
+          } else if (params.gp2HalfAutoRows > 0) {
+            topHalfRows = params.gp2HalfAutoRows;
+          } else if (params.gp2HalfManualRows > 0) {
+            if (params.gp2HalfManualPosition === 'top') {
+              topHalfRows = params.gp2HalfManualRows;
+            } else {
+              bottomHalfRows = params.gp2HalfManualRows;
+            }
           }
-        };
 
-        // Calculate scale factor
-        const scaleFactor = screenHeight / actualHeight;
+          const fullRowsStart = topHalfRows;
+          const fullRowsEnd = topHalfRows + params.gp2FullVerticalBlocks;
 
-        // Draw horizontal lines at accumulated heights
-        let accumulatedY = startY;
-        ctx.beginPath();
-        ctx.moveTo(startX, accumulatedY);
-        ctx.lineTo(startX + screenWidth, accumulatedY);
-        ctx.stroke();
+          // Function to get tile type for row
+          const getTileHeightForRow = (row) => {
+            if (row < fullRowsStart) {
+              return params.halfBlockHeight;
+            } else if (row >= fullRowsEnd) {
+              return params.halfBlockHeight;
+            } else {
+              return params.fullBlockHeight;
+            }
+          };
 
-        for (let row = 0; row < params.blocksVer; row++) {
-          const rowHeight = getTileHeightForRow(row);
-          accumulatedY += rowHeight * scaleFactor;
+          // Calculate scale factor
+          const scaleFactor = screenHeight / actualHeight;
+
+          // Draw horizontal lines at accumulated heights
+          let accumulatedY = startY;
           ctx.beginPath();
           ctx.moveTo(startX, accumulatedY);
           ctx.lineTo(startX + screenWidth, accumulatedY);
           ctx.stroke();
+
+          for (let row = 0; row < params.blocksVer; row++) {
+            const rowHeight = getTileHeightForRow(row);
+            accumulatedY += rowHeight * scaleFactor;
+            ctx.beginPath();
+            ctx.moveTo(startX, accumulatedY);
+            ctx.lineTo(startX + screenWidth, accumulatedY);
+            ctx.stroke();
+          }
+        } else {
+          // Uniform tile heights
+          const tileHeight = screenHeight / params.blocksVer;
+          for (let i = 0; i <= params.blocksVer; i++) {
+            const y = startY + (i * tileHeight);
+            ctx.beginPath();
+            ctx.moveTo(startX, y);
+            ctx.lineTo(startX + screenWidth, y);
+            ctx.stroke();
+          }
         }
+
+        // Draw border
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(startX, startY, screenWidth, screenHeight);
       } else {
-        // Uniform tile heights
-        const tileHeight = screenHeight / params.blocksVer;
-        for (let i = 0; i <= params.blocksVer; i++) {
-          const y = startY + (i * tileHeight);
+        // Draw vertically curved screen
+        const angleRad = Math.abs((verticalCurveAngle * Math.PI) / 180);
+        const totalAngle = angleRad * params.blocksVer;
+
+        // Calculate radius for vertical curve
+        const arcLength = screenHeight;
+        const radius = totalAngle > 0 ? arcLength / totalAngle : 1000;
+        const depth = screenWidth; // Depth representation
+
+        // Determine curve direction
+        const isConcave = verticalCurveAngle > 0;
+
+        // For concave: arc center to the right, for convex: arc center to the left
+        let arcCenterX;
+        let baseAngle;
+
+        if (isConcave) {
+          // Concave: curves toward viewer (arc center to the right)
+          arcCenterX = centerX + radius;
+          baseAngle = Math.PI; // Start from left pointing right
+        } else {
+          // Convex: curves away from viewer (arc center to the left)
+          arcCenterX = centerX - radius;
+          baseAngle = 0; // Start from right pointing left
+        }
+
+        // Draw each vertical tile segment
+        for (let i = 0; i < params.blocksVer; i++) {
+          const startAngle = (-totalAngle / 2) + (i * angleRad);
+          const endAngle = startAngle + angleRad;
+
+          // Draw tile segment with depth
           ctx.beginPath();
-          ctx.moveTo(startX, y);
-          ctx.lineTo(startX + screenWidth, y);
+          ctx.arc(arcCenterX, centerY, radius + depth / 2, baseAngle + startAngle, baseAngle + endAngle);
+          ctx.arc(arcCenterX, centerY, radius - depth / 2, baseAngle + endAngle, baseAngle + startAngle, true);
+          ctx.closePath();
+          ctx.fillStyle = '#333';
+          ctx.fill();
+          ctx.strokeStyle = '#555';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Draw outer arc border
+          ctx.beginPath();
+          ctx.arc(arcCenterX, centerY, radius + depth / 2, baseAngle + startAngle, baseAngle + endAngle);
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Draw inner arc border
+          ctx.beginPath();
+          ctx.arc(arcCenterX, centerY, radius - depth / 2, baseAngle + startAngle, baseAngle + endAngle);
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        // Draw horizontal grid lines across the curved surface
+        const tileWidth = depth / params.blocksHor;
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 1;
+
+        for (let i = 0; i <= params.blocksHor; i++) {
+          const innerRadius = (radius - depth / 2) + (i * tileWidth);
+          ctx.beginPath();
+          ctx.arc(arcCenterX, centerY, innerRadius, baseAngle - totalAngle / 2, baseAngle + totalAngle / 2);
           ctx.stroke();
         }
       }
-
-      // Draw border
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(startX, startY, screenWidth, screenHeight);
 
       // Add dimensions text
       ctx.fillStyle = '#000';
       ctx.font = 'bold 14px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(`${params.blocksHor} tiles`, startX + screenWidth / 2, startY - 15);
+      ctx.fillText(`${params.blocksHor} tiles`, centerX, startY - 15);
 
       ctx.save();
-      ctx.translate(startX - 15, startY + screenHeight / 2);
+      ctx.translate(startX - 15, centerY);
       ctx.rotate(-Math.PI / 2);
       ctx.fillText(`${params.blocksVer} tiles`, 0, 0);
       ctx.restore();
@@ -849,8 +923,8 @@
         verticalCurve = parseFloat(verticalCurveSlider.value);
         updateCurveDisplayDual(horizontalCurve, horizontalCurveValue, horizontalCurveType);
         updateCurveDisplayDual(verticalCurve, verticalCurveValue, verticalCurveType);
-        drawFrontView();
-        drawTopView(horizontalCurve); // For now, use horizontal curve for top view
+        drawFrontView(verticalCurve);
+        drawTopView(horizontalCurve);
       } else {
         const angle = parseFloat(curveSlider.value);
         updateCurveDisplay(angle);
