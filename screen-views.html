@@ -232,25 +232,12 @@
 
       <!-- Dual curve controls for GP2 products -->
       <div id="dualCurveControls" style="display: none; width: 100%;">
-        <div style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
-          <!-- Horizontal curve control -->
-          <div style="display: flex; align-items: center; gap: 20px;">
-            <label for="horizontalCurveSlider" style="min-width: 150px;">Horizontal Curve:</label>
-            <input type="range" id="horizontalCurveSlider" min="-5" max="5" step="1" value="0" style="width: 300px;">
-            <div>
-              <div class="curve-value" id="horizontalCurveValue">0°</div>
-              <div class="curve-type" id="horizontalCurveType">Flat</div>
-            </div>
-          </div>
-
-          <!-- Vertical curve control -->
-          <div style="display: flex; align-items: center; gap: 20px;">
-            <label for="verticalCurveSlider" style="min-width: 150px;">Vertical Curve:</label>
-            <input type="range" id="verticalCurveSlider" min="-3" max="3" step="1" value="0" style="width: 300px;">
-            <div>
-              <div class="curve-value" id="verticalCurveValue">0°</div>
-              <div class="curve-type" id="verticalCurveType">Flat</div>
-            </div>
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <label for="horizontalCurveSlider" style="min-width: 150px;">Curve:</label>
+          <input type="range" id="horizontalCurveSlider" min="-5" max="5" step="1" value="0" style="width: 300px;">
+          <div>
+            <div class="curve-value" id="horizontalCurveValue">0°</div>
+            <div class="curve-type" id="horizontalCurveType">Flat</div>
           </div>
         </div>
       </div>
@@ -420,6 +407,9 @@
 
     const config = productConfig[params.productType] || productConfig.absen;
 
+    // Check if GP2 product for dual curve controls
+    const isGP2Product = params.productType === 'roegp26full' || params.productType === 'roegp26half';
+
     // Update info display
     document.getElementById('productInfo').textContent = `Product: ${config.displayName}`;
 
@@ -460,8 +450,7 @@
     // Update range info text
     if (isGP2Product) {
       document.getElementById('rangeInfo').innerHTML = `
-        <strong>Horizontal Curve:</strong> -5° to +5° |
-        <strong>Vertical Curve:</strong> -3° to +3° |
+        <strong>Curve Range:</strong> -5° to +5° |
         <strong>Convex:</strong> Negative angles | <strong>Flat:</strong> 0° | <strong>Concave:</strong> Positive angles
       `;
     } else {
@@ -493,12 +482,8 @@
 
     backButton.href = backUrl;
 
-    // Check if GP2 product for dual curve controls
-    const isGP2Product = params.productType === 'roegp26full' || params.productType === 'roegp26half';
-
     // Curve control variables
     let horizontalCurve = 0;
-    let verticalCurve = 0;
 
     // Show/hide appropriate controls
     if (isGP2Product) {
@@ -518,9 +503,6 @@
     const horizontalCurveSlider = document.getElementById('horizontalCurveSlider');
     const horizontalCurveValue = document.getElementById('horizontalCurveValue');
     const horizontalCurveType = document.getElementById('horizontalCurveType');
-    const verticalCurveSlider = document.getElementById('verticalCurveSlider');
-    const verticalCurveValue = document.getElementById('verticalCurveValue');
-    const verticalCurveType = document.getElementById('verticalCurveType');
 
     // Set slider range based on product type
     curveSlider.min = config.minCurve;
@@ -565,7 +547,7 @@
     }
 
     // Draw front view
-    function drawFrontView(verticalCurveAngle = 0) {
+    function drawFrontView() {
       const canvas = document.getElementById('frontViewCanvas');
       const ctx = canvas.getContext('2d');
 
@@ -622,180 +604,106 @@
 
       const startX = (canvas.width - screenWidth) / 2;
       const startY = (canvas.height - screenHeight) / 2;
-      const centerX = startX + screenWidth / 2;
-      const centerY = startY + screenHeight / 2;
 
-      if (verticalCurveAngle === 0) {
-        // Draw flat screen (original behavior)
-        // Draw screen background
-        ctx.fillStyle = '#333';
-        ctx.fillRect(startX, startY, screenWidth, screenHeight);
+      // Draw screen background
+      ctx.fillStyle = '#333';
+      ctx.fillRect(startX, startY, screenWidth, screenHeight);
 
-        // Draw tile grid
-        const tileWidth = screenWidth / params.blocksHor;
+      // Draw tile grid
+      const tileWidth = screenWidth / params.blocksHor;
 
-        ctx.strokeStyle = '#555';
-        ctx.lineWidth = 1;
+      ctx.strokeStyle = '#555';
+      ctx.lineWidth = 1;
 
-        // Vertical lines
-        for (let i = 0; i <= params.blocksHor; i++) {
-          const x = startX + (i * tileWidth);
-          ctx.beginPath();
-          ctx.moveTo(x, startY);
-          ctx.lineTo(x, startY + screenHeight);
-          ctx.stroke();
+      // Vertical lines
+      for (let i = 0; i <= params.blocksHor; i++) {
+        const x = startX + (i * tileWidth);
+        ctx.beginPath();
+        ctx.moveTo(x, startY);
+        ctx.lineTo(x, startY + screenHeight);
+        ctx.stroke();
+      }
+
+      // Horizontal lines - account for different row heights in mixed GP2
+      if (params.hasMixedGP2) {
+        // Calculate layout
+        let topHalfRows = 0;
+        let bottomHalfRows = 0;
+
+        if (params.gp2HalfAutoRows > 0 && params.gp2HalfManualRows > 0) {
+          topHalfRows = params.gp2HalfAutoRows;
+          if (params.gp2HalfManualPosition === 'top') {
+            topHalfRows += params.gp2HalfManualRows;
+          } else {
+            bottomHalfRows = params.gp2HalfManualRows;
+          }
+        } else if (params.gp2HalfAutoRows > 0) {
+          topHalfRows = params.gp2HalfAutoRows;
+        } else if (params.gp2HalfManualRows > 0) {
+          if (params.gp2HalfManualPosition === 'top') {
+            topHalfRows = params.gp2HalfManualRows;
+          } else {
+            bottomHalfRows = params.gp2HalfManualRows;
+          }
         }
 
-        // Horizontal lines - account for different row heights in mixed GP2
-        if (params.hasMixedGP2) {
-          // Calculate layout
-          let topHalfRows = 0;
-          let bottomHalfRows = 0;
+        const fullRowsStart = topHalfRows;
+        const fullRowsEnd = topHalfRows + params.gp2FullVerticalBlocks;
 
-          if (params.gp2HalfAutoRows > 0 && params.gp2HalfManualRows > 0) {
-            topHalfRows = params.gp2HalfAutoRows;
-            if (params.gp2HalfManualPosition === 'top') {
-              topHalfRows += params.gp2HalfManualRows;
-            } else {
-              bottomHalfRows = params.gp2HalfManualRows;
-            }
-          } else if (params.gp2HalfAutoRows > 0) {
-            topHalfRows = params.gp2HalfAutoRows;
-          } else if (params.gp2HalfManualRows > 0) {
-            if (params.gp2HalfManualPosition === 'top') {
-              topHalfRows = params.gp2HalfManualRows;
-            } else {
-              bottomHalfRows = params.gp2HalfManualRows;
-            }
+        // Function to get tile type for row
+        const getTileHeightForRow = (row) => {
+          if (row < fullRowsStart) {
+            return params.halfBlockHeight;
+          } else if (row >= fullRowsEnd) {
+            return params.halfBlockHeight;
+          }else {
+            return params.fullBlockHeight;
           }
+        };
 
-          const fullRowsStart = topHalfRows;
-          const fullRowsEnd = topHalfRows + params.gp2FullVerticalBlocks;
+        // Calculate scale factor
+        const scaleFactor = screenHeight / actualHeight;
 
-          // Function to get tile type for row
-          const getTileHeightForRow = (row) => {
-            if (row < fullRowsStart) {
-              return params.halfBlockHeight;
-            } else if (row >= fullRowsEnd) {
-              return params.halfBlockHeight;
-            } else {
-              return params.fullBlockHeight;
-            }
-          };
+        // Draw horizontal lines at accumulated heights
+        let accumulatedY = startY;
+        ctx.beginPath();
+        ctx.moveTo(startX, accumulatedY);
+        ctx.lineTo(startX + screenWidth, accumulatedY);
+        ctx.stroke();
 
-          // Calculate scale factor
-          const scaleFactor = screenHeight / actualHeight;
-
-          // Draw horizontal lines at accumulated heights
-          let accumulatedY = startY;
+        for (let row = 0; row < params.blocksVer; row++) {
+          const rowHeight = getTileHeightForRow(row);
+          accumulatedY += rowHeight * scaleFactor;
           ctx.beginPath();
           ctx.moveTo(startX, accumulatedY);
           ctx.lineTo(startX + screenWidth, accumulatedY);
           ctx.stroke();
-
-          for (let row = 0; row < params.blocksVer; row++) {
-            const rowHeight = getTileHeightForRow(row);
-            accumulatedY += rowHeight * scaleFactor;
-            ctx.beginPath();
-            ctx.moveTo(startX, accumulatedY);
-            ctx.lineTo(startX + screenWidth, accumulatedY);
-            ctx.stroke();
-          }
-        } else {
-          // Uniform tile heights
-          const tileHeight = screenHeight / params.blocksVer;
-          for (let i = 0; i <= params.blocksVer; i++) {
-            const y = startY + (i * tileHeight);
-            ctx.beginPath();
-            ctx.moveTo(startX, y);
-            ctx.lineTo(startX + screenWidth, y);
-            ctx.stroke();
-          }
         }
-
-        // Draw border
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(startX, startY, screenWidth, screenHeight);
       } else {
-        // Draw vertically curved screen
-        const angleRad = Math.abs((verticalCurveAngle * Math.PI) / 180);
-        const totalAngle = angleRad * params.blocksVer;
-
-        // Calculate radius for vertical curve
-        const arcLength = screenHeight;
-        const radius = totalAngle > 0 ? arcLength / totalAngle : 1000;
-        const depth = screenWidth; // Depth representation
-
-        // Determine curve direction
-        const isConcave = verticalCurveAngle > 0;
-
-        // For concave: arc center to the right, for convex: arc center to the left
-        let arcCenterX;
-        let baseAngle;
-
-        if (isConcave) {
-          // Concave: curves toward viewer (arc center to the right)
-          arcCenterX = centerX + radius;
-          baseAngle = Math.PI; // Start from left pointing right
-        } else {
-          // Convex: curves away from viewer (arc center to the left)
-          arcCenterX = centerX - radius;
-          baseAngle = 0; // Start from right pointing left
-        }
-
-        // Draw each vertical tile segment
-        for (let i = 0; i < params.blocksVer; i++) {
-          const startAngle = (-totalAngle / 2) + (i * angleRad);
-          const endAngle = startAngle + angleRad;
-
-          // Draw tile segment with depth
+        // Uniform tile heights
+        const tileHeight = screenHeight / params.blocksVer;
+        for (let i = 0; i <= params.blocksVer; i++) {
+          const y = startY + (i * tileHeight);
           ctx.beginPath();
-          ctx.arc(arcCenterX, centerY, radius + depth / 2, baseAngle + startAngle, baseAngle + endAngle);
-          ctx.arc(arcCenterX, centerY, radius - depth / 2, baseAngle + endAngle, baseAngle + startAngle, true);
-          ctx.closePath();
-          ctx.fillStyle = '#333';
-          ctx.fill();
-          ctx.strokeStyle = '#555';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-
-          // Draw outer arc border
-          ctx.beginPath();
-          ctx.arc(arcCenterX, centerY, radius + depth / 2, baseAngle + startAngle, baseAngle + endAngle);
-          ctx.strokeStyle = '#000';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-
-          // Draw inner arc border
-          ctx.beginPath();
-          ctx.arc(arcCenterX, centerY, radius - depth / 2, baseAngle + startAngle, baseAngle + endAngle);
-          ctx.strokeStyle = '#000';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-
-        // Draw horizontal grid lines across the curved surface
-        const tileWidth = depth / params.blocksHor;
-        ctx.strokeStyle = '#555';
-        ctx.lineWidth = 1;
-
-        for (let i = 0; i <= params.blocksHor; i++) {
-          const innerRadius = (radius - depth / 2) + (i * tileWidth);
-          ctx.beginPath();
-          ctx.arc(arcCenterX, centerY, innerRadius, baseAngle - totalAngle / 2, baseAngle + totalAngle / 2);
+          ctx.moveTo(startX, y);
+          ctx.lineTo(startX + screenWidth, y);
           ctx.stroke();
         }
       }
+
+      // Draw border
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(startX, startY, screenWidth, screenHeight);
 
       // Add dimensions text
       ctx.fillStyle = '#000';
       ctx.font = 'bold 14px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(`${params.blocksHor} tiles`, centerX, startY - 15);
+      ctx.fillText(`${params.blocksHor} tiles`, startX + screenWidth / 2, startY - 15);
 
       ctx.save();
-      ctx.translate(startX - 15, centerY);
+      ctx.translate(startX - 15, startY + screenHeight / 2);
       ctx.rotate(-Math.PI / 2);
       ctx.fillText(`${params.blocksVer} tiles`, 0, 0);
       ctx.restore();
@@ -920,10 +828,8 @@
     function updateViews() {
       if (isGP2Product) {
         horizontalCurve = parseFloat(horizontalCurveSlider.value);
-        verticalCurve = parseFloat(verticalCurveSlider.value);
         updateCurveDisplayDual(horizontalCurve, horizontalCurveValue, horizontalCurveType);
-        updateCurveDisplayDual(verticalCurve, verticalCurveValue, verticalCurveType);
-        drawFrontView(verticalCurve);
+        drawFrontView();
         drawTopView(horizontalCurve);
       } else {
         const angle = parseFloat(curveSlider.value);
@@ -937,7 +843,6 @@
     function resetView() {
       if (isGP2Product) {
         horizontalCurveSlider.value = 0;
-        verticalCurveSlider.value = 0;
       } else {
         curveSlider.value = 0;
       }
@@ -1048,14 +953,7 @@
       let curveText;
       if (isGP2Product) {
         const hCurve = parseFloat(horizontalCurveSlider.value);
-        const vCurve = parseFloat(verticalCurveSlider.value);
-        if (hCurve === 0 && vCurve === 0) {
-          curveText = 'Flat';
-        } else {
-          const hText = hCurve === 0 ? '0' : `${hCurve > 0 ? 'Concave' : 'Convex'}${Math.abs(hCurve)}`;
-          const vText = vCurve === 0 ? '0' : `${vCurve > 0 ? 'Concave' : 'Convex'}${Math.abs(vCurve)}`;
-          curveText = `H${hText}_V${vText}deg`;
-        }
+        curveText = hCurve === 0 ? 'Flat' : `${hCurve > 0 ? 'Concave' : 'Convex'}_${Math.abs(hCurve)}deg`;
       } else {
         const curveAngle = parseFloat(curveSlider.value);
         curveText = curveAngle === 0 ? 'Flat' : `${curveAngle > 0 ? 'Concave' : 'Convex'}_${Math.abs(curveAngle)}deg`;
@@ -1071,7 +969,6 @@
     // Add event listeners for GP2 dual curve controls
     if (isGP2Product) {
       horizontalCurveSlider.addEventListener('input', updateViews);
-      verticalCurveSlider.addEventListener('input', updateViews);
     }
 
     document.getElementById('resetButton').addEventListener('click', resetView);
