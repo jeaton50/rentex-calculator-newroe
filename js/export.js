@@ -364,17 +364,44 @@ const ExportManager = {
   },
 
   /**
+   * Dynamically load a script and return a promise that resolves when loaded
+   * @param {string} src - Script URL
+   * @returns {Promise<void>}
+   */
+  loadScript(src) {
+    return new Promise((resolve, reject) => {
+      // Check if already loaded
+      const existing = document.querySelector(`script[src="${src}"]`);
+      if (existing) { resolve(); return; }
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+      document.head.appendChild(script);
+    });
+  },
+
+  /**
+   * Ensure jsPDF and autoTable plugin are loaded (on-demand)
+   * Loads jsPDF first, then the autoTable plugin which depends on it
+   * @returns {Promise<void>}
+   */
+  async ensurePDFLibraries() {
+    if (typeof jspdf === 'undefined' || !jspdf.jsPDF) {
+      await this.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js');
+    }
+    // autoTable must load after jsPDF
+    if (typeof jspdf !== 'undefined' && jspdf.jsPDF && !jspdf.jsPDF.prototype.autoTable) {
+      await this.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
+    }
+  },
+
+  /**
    * Export equipment list as PDF with embedded product images
    * Uses jsPDF with autoTable plugin
    * Images are loaded from static/images/equipment/ directory
    */
   async exportToPDF() {
-    // Check jsPDF is available
-    if (typeof jspdf === 'undefined' || !jspdf.jsPDF) {
-      alert('PDF library is still loading. Please wait a moment and try again.');
-      return;
-    }
-
     const equipmentItems = this.getCurrentEquipmentData();
     if (equipmentItems.length === 0) {
       alert('No equipment to export. Please configure a wall first.');
@@ -389,6 +416,9 @@ const ExportManager = {
     document.body.appendChild(loadingDiv);
 
     try {
+      // Load PDF libraries on-demand (jsPDF first, then autoTable)
+      await this.ensurePDFLibraries();
+
       const { jsPDF } = jspdf;
       const doc = new jsPDF('portrait', 'pt', 'letter');
       const pageWidth = doc.internal.pageSize.getWidth();
