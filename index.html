@@ -557,11 +557,19 @@
 
   <script>
     // Hidden GP2 Half product activation via Alt+S keyboard shortcut
-    let gp2HalfActivated = false;
+    // Make it globally accessible so main.js can sync the flag when auto-restoring
+    window.gp2HalfActivated = false;
 
     // Wait for DOM to be ready
     document.addEventListener('DOMContentLoaded', function() {
       console.log('GP2 Half keyboard shortcut listener initialized. Press Alt+S to activate.');
+
+      // Check if GP2 Half option already exists (e.g., restored from URL/localStorage)
+      const existingGP2HalfOption = document.getElementById('gp2HalfProductOption');
+      if (existingGP2HalfOption) {
+        window.gp2HalfActivated = true;
+        console.log('GP2 Half option already exists (restored from navigation). Flag synced.');
+      }
 
       document.addEventListener('keydown', function(event) {
         // More robust key detection - check multiple properties
@@ -579,10 +587,10 @@
 
           console.log('DEBUG - productSelect found:', productSelect !== null);
           console.log('DEBUG - existingOption found:', existingOption !== null);
-          console.log('DEBUG - gp2HalfActivated:', gp2HalfActivated);
-          console.log('DEBUG - Condition check: !gp2HalfActivated =', !gp2HalfActivated, '&& !existingOption =', !existingOption);
+          console.log('DEBUG - gp2HalfActivated:', window.gp2HalfActivated);
+          console.log('DEBUG - Condition check: !gp2HalfActivated =', !window.gp2HalfActivated, '&& !existingOption =', !existingOption);
 
-          if (!gp2HalfActivated && !existingOption) {
+          if (!window.gp2HalfActivated && !existingOption) {
             console.log('DEBUG - Adding GP2 Half option now...');
 
             // Preserve current selection
@@ -601,7 +609,7 @@
               productSelect.value = currentValue;
             }
 
-            gp2HalfActivated = true;
+            window.gp2HalfActivated = true;
 
             console.log('✓ GP2 Half option activated!');
             console.log('DEBUG - Option added. Select now has', productSelect.options.length, 'options');
@@ -613,12 +621,12 @@
             notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 5px; z-index: 10000; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
             document.body.appendChild(notification);
             setTimeout(() => notification.remove(), 2500);
-          } else if (gp2HalfActivated && existingOption) {
+          } else if (window.gp2HalfActivated && existingOption) {
             console.log('DEBUG - Removing GP2 Half option...');
 
             // Remove the option
             existingOption.remove();
-            gp2HalfActivated = false;
+            window.gp2HalfActivated = false;
             console.log('GP2 Half option deactivated');
 
             // Show notification

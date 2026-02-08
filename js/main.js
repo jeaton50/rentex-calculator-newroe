@@ -1493,6 +1493,10 @@ function restoreFormState() {
           option.id = 'gp2HalfProductOption';
           option.textContent = 'ROE GP2.6 Half';
           productSelect.appendChild(option);
+          // Sync the flag so Alt+S knows the option exists
+          if (typeof window.gp2HalfActivated !== 'undefined') {
+            window.gp2HalfActivated = true;
+          }
         }
       }
 
@@ -1924,6 +1928,10 @@ document.addEventListener('DOMContentLoaded', () => {
               option.id = 'gp2HalfProductOption';
               option.textContent = 'ROE GP2.6 Half';
               productSelect.appendChild(option);
+              // Sync the flag so Alt+S knows the option exists
+              if (typeof window.gp2HalfActivated !== 'undefined') {
+                window.gp2HalfActivated = true;
+              }
             }
           }
 
