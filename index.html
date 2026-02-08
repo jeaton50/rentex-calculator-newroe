@@ -559,45 +559,56 @@
     // Hidden GP2 Half product activation via Alt+S keyboard shortcut
     let gp2HalfActivated = false;
 
-    document.addEventListener('keydown', function(event) {
-      // Check if Alt+S is pressed (Alt key + 'S' key)
-      if (event.altKey && event.key.toLowerCase() === 's') {
-        event.preventDefault(); // Prevent default browser behavior
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('GP2 Half keyboard shortcut listener initialized. Press Alt+S to activate.');
 
-        const productSelect = document.getElementById('productType');
-        const existingOption = document.getElementById('gp2HalfOption');
+      document.addEventListener('keydown', function(event) {
+        // More robust key detection - check multiple properties
+        const isAltPressed = event.altKey;
+        const isSKey = event.key === 's' || event.key === 'S' ||
+                       event.code === 'KeyS' ||
+                       event.keyCode === 83;
 
-        if (!gp2HalfActivated && !existingOption) {
-          // Add the option
-          const option = document.createElement('option');
-          option.value = 'ROEGP26Half';
-          option.id = 'gp2HalfOption';
-          option.textContent = 'ROE GP2.6 Half';
-          productSelect.appendChild(option);
+        if (isAltPressed && isSKey) {
+          console.log('Alt+S detected!');
+          event.preventDefault(); // Prevent default browser behavior
 
-          gp2HalfActivated = true;
-          console.log('GP2 Half option activated!');
+          const productSelect = document.getElementById('productType');
+          const existingOption = document.getElementById('gp2HalfOption');
 
-          // Show a brief notification to the user
-          const notification = document.createElement('div');
-          notification.textContent = '✓ GP2 Half option activated';
-          notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 5px; z-index: 10000; font-weight: bold;';
-          document.body.appendChild(notification);
-          setTimeout(() => notification.remove(), 2000);
-        } else if (gp2HalfActivated && existingOption) {
-          // Remove the option
-          existingOption.remove();
-          gp2HalfActivated = false;
-          console.log('GP2 Half option deactivated!');
+          if (!gp2HalfActivated && !existingOption) {
+            // Add the option
+            const option = document.createElement('option');
+            option.value = 'ROEGP26Half';
+            option.id = 'gp2HalfOption';
+            option.textContent = 'ROE GP2.6 Half';
+            productSelect.appendChild(option);
 
-          // Show notification
-          const notification = document.createElement('div');
-          notification.textContent = 'GP2 Half option deactivated';
-          notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff9800; color: white; padding: 15px 20px; border-radius: 5px; z-index: 10000; font-weight: bold;';
-          document.body.appendChild(notification);
-          setTimeout(() => notification.remove(), 2000);
+            gp2HalfActivated = true;
+            console.log('✓ GP2 Half option activated!');
+
+            // Show a brief notification to the user
+            const notification = document.createElement('div');
+            notification.textContent = '✓ GP2 Half option activated';
+            notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 5px; z-index: 10000; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 2500);
+          } else if (gp2HalfActivated && existingOption) {
+            // Remove the option
+            existingOption.remove();
+            gp2HalfActivated = false;
+            console.log('GP2 Half option deactivated');
+
+            // Show notification
+            const notification = document.createElement('div');
+            notification.textContent = 'GP2 Half option deactivated';
+            notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff9800; color: white; padding: 15px 20px; border-radius: 5px; z-index: 10000; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 2500);
+          }
         }
-      }
+      });
     });
   </script>
 
