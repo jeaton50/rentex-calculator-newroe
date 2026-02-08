@@ -575,7 +575,7 @@
           event.preventDefault(); // Prevent default browser behavior
 
           const productSelect = document.getElementById('productType');
-          const existingOption = document.getElementById('gp2HalfOption');
+          const existingOption = document.getElementById('gp2HalfProductOption'); // Changed to unique ID
 
           console.log('DEBUG - productSelect found:', productSelect !== null);
           console.log('DEBUG - existingOption found:', existingOption !== null);
@@ -588,7 +588,7 @@
             // Add the option
             const option = document.createElement('option');
             option.value = 'ROEGP26Half';
-            option.id = 'gp2HalfOption';
+            option.id = 'gp2HalfProductOption'; // Changed to unique ID
             option.textContent = 'ROE GP2.6 Half';
             productSelect.appendChild(option);
 
