@@ -1483,6 +1483,19 @@ function restoreFormState() {
   if (productType) {
     const productSelect = document.getElementById('productType');
     if (productSelect) {
+      // Special handling for GP2 Half - add option if it doesn't exist
+      if (productType === 'ROEGP26Half') {
+        const existingGP2HalfOption = document.getElementById('gp2HalfProductOption');
+        if (!existingGP2HalfOption) {
+          console.log('Restoring GP2 Half option from localStorage');
+          const option = document.createElement('option');
+          option.value = 'ROEGP26Half';
+          option.id = 'gp2HalfProductOption';
+          option.textContent = 'ROE GP2.6 Half';
+          productSelect.appendChild(option);
+        }
+      }
+
       productSelect.value = productType;
       productSelect.dispatchEvent(new Event('change'));
     }
@@ -1900,6 +1913,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // Validate that productType is one of the valid values
         const validProductTypes = ['absen', 'BP2B1', 'BP2B2', 'BP2V2', 'theatrixx', 'ROEGP26Full', 'ROEGP26Half'];
         if (validProductTypes.includes(productType)) {
+
+          // Special handling for GP2 Half - add option if it doesn't exist
+          if (productType === 'ROEGP26Half') {
+            const existingGP2HalfOption = document.getElementById('gp2HalfProductOption');
+            if (!existingGP2HalfOption) {
+              console.log('Restoring GP2 Half option from URL parameter');
+              const option = document.createElement('option');
+              option.value = 'ROEGP26Half';
+              option.id = 'gp2HalfProductOption';
+              option.textContent = 'ROE GP2.6 Half';
+              productSelect.appendChild(option);
+            }
+          }
+
           productSelect.value = productType;
           // Trigger change event to update UI
           productSelect.dispatchEvent(new Event('change'));
