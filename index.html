@@ -585,12 +585,21 @@
           if (!gp2HalfActivated && !existingOption) {
             console.log('DEBUG - Adding GP2 Half option now...');
 
+            // Preserve current selection
+            const currentValue = productSelect.value;
+            console.log('DEBUG - Current productType value:', currentValue);
+
             // Add the option
             const option = document.createElement('option');
             option.value = 'ROEGP26Half';
             option.id = 'gp2HalfProductOption'; // Changed to unique ID
             option.textContent = 'ROE GP2.6 Half';
             productSelect.appendChild(option);
+
+            // Restore previous selection to prevent triggering change events
+            if (currentValue) {
+              productSelect.value = currentValue;
+            }
 
             gp2HalfActivated = true;
 
