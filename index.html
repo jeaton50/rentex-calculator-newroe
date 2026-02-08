@@ -92,6 +92,7 @@
             <option value="BP2V2">Black Pearl 2V2</option>
             <option value="theatrixx">Theatrixx</option>
             <option value="ROEGP26Full">ROE GP2.6 Full</option>
+            <option value="ROEGP26Half" id="gp2HalfOption" style="display: none;">ROE GP2.6 Half</option>
           </select>
         </div>
 
@@ -553,7 +554,36 @@
     </div>
 
 
-	
+
+
+  <script>
+    // Hidden GP2 Half product activation via Alt+S keyboard shortcut
+    document.addEventListener('keydown', function(event) {
+      // Check if Alt+S is pressed (Alt key + 'S' key)
+      if (event.altKey && event.key.toLowerCase() === 's') {
+        event.preventDefault(); // Prevent default browser behavior
+
+        const gp2HalfOption = document.getElementById('gp2HalfOption');
+        if (gp2HalfOption) {
+          // Toggle visibility
+          if (gp2HalfOption.style.display === 'none') {
+            gp2HalfOption.style.display = 'block';
+            console.log('GP2 Half option activated!');
+
+            // Optional: Show a brief notification to the user
+            const notification = document.createElement('div');
+            notification.textContent = '✓ GP2 Half option activated';
+            notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 5px; z-index: 10000; font-weight: bold;';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 2000);
+          } else {
+            gp2HalfOption.style.display = 'none';
+            console.log('GP2 Half option deactivated!');
+          }
+        }
+      }
+    });
+  </script>
 
   <script src="js/main.js?v=1770160900"></script>
 </body>
