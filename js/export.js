@@ -388,11 +388,11 @@ const ExportManager = {
    */
   async ensurePDFLibraries() {
     if (typeof jspdf === 'undefined' || !jspdf.jsPDF) {
-      await this.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js');
+      await this.loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
     }
     // autoTable must load after jsPDF
     if (typeof jspdf !== 'undefined' && jspdf.jsPDF && !jspdf.jsPDF.prototype.autoTable) {
-      await this.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
+      await this.loadScript('https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js');
     }
   },
 
