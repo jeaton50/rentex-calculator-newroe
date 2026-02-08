@@ -138,70 +138,71 @@ const SANDBAG_TABLES = {
 };
 
 // Equipment codes and names
+// Images stored in static/images/equipment/ using the equipment code as filename (e.g., PL25.png)
 const EQUIPMENT = {
   // Absen
-  PL25: { code: 'PL25', name: 'Absen PL2.5 tile', weight: 20.61 },
-  PL25_CASE: { code: 'PL25CASE', name: 'Case, Absen PL2.5, 8x', weight: 161.12 },
-  PL25_BB1: { code: 'PL25BB1', name: 'Absen PL2.5 base bar, 1W, 0.5m', weight: 16 },
-  PL25_BB2: { code: 'PL25BB2', name: 'Absen PL2.5 base bar, 2W, 1m', weight: 37 },
-  PL25_HEAD1: { code: 'PL25HEAD1', name: 'Absen PL2.5 header, 1W, 0.5m', weight: 12 },
-  PL25_HEAD2: { code: 'PL25HEAD2', name: 'Absen PL2.5 header, 2W, 1m', weight: 19 },
+  PL25: { code: 'PL25', name: 'Absen PL2.5 tile', weight: 20.61, image: 'PL25.png' },
+  PL25_CASE: { code: 'PL25CASE', name: 'Case, Absen PL2.5, 8x', weight: 161.12, image: 'PL25CASE.png' },
+  PL25_BB1: { code: 'PL25BB1', name: 'Absen PL2.5 base bar, 1W, 0.5m', weight: 16, image: 'PL25BB1.png' },
+  PL25_BB2: { code: 'PL25BB2', name: 'Absen PL2.5 base bar, 2W, 1m', weight: 37, image: 'PL25BB2.png' },
+  PL25_HEAD1: { code: 'PL25HEAD1', name: 'Absen PL2.5 header, 1W, 0.5m', weight: 12, image: 'PL25HEAD1.png' },
+  PL25_HEAD2: { code: 'PL25HEAD2', name: 'Absen PL2.5 header, 2W, 1m', weight: 19, image: 'PL25HEAD2.png' },
 
   // ROE Black Pearl
-  BP2B1: { code: 'BP2B1', name: 'ROE Black Pearl 2 Version 1 LED tile batch 1 (BP2)', weight: 20.61 },
-  BP2B2: { code: 'BP2B2', name: 'ROE Black Pearl 2 Version 1 LED tile batch 2 (BP2)', weight: 20.61 },
-  BP2V2: { code: 'BP2V2', name: 'BP2V2 ROE Black Pearl 2 Version 2.1 LED tile (BP2V2)', weight: 20.61 },
-  BP2V2_CASE: { code: 'BP2V2CASE', name: 'Case, ROE Black Pearl version2, 8x (BP2V2)', weight: 161.12 },
-  BPBO_HEAD1: { code: 'BPBOHEAD1', name: 'ROE Black Pearl header, 1W, 0.5m', weight: 12 },
-  BPBO_HEAD2: { code: 'BPBOHEAD2', name: 'ROE Black Pearl header, 2W, 1m', weight: 19 },
-  BPBO_BB1: { code: 'BPBOBB1', name: 'ROE Black Pearl base bar, 1W, 0.5m', weight: 16 },
-  BPBO_BB2: { code: 'BPBOBB2', name: 'ROE Black Pearl base bar, 2W, 1.0m', weight: 28 },
+  BP2B1: { code: 'BP2B1', name: 'ROE Black Pearl 2 Version 1 LED tile batch 1 (BP2)', weight: 20.61, image: 'BP2B1.png' },
+  BP2B2: { code: 'BP2B2', name: 'ROE Black Pearl 2 Version 1 LED tile batch 2 (BP2)', weight: 20.61, image: 'BP2B2.png' },
+  BP2V2: { code: 'BP2V2', name: 'BP2V2 ROE Black Pearl 2 Version 2.1 LED tile (BP2V2)', weight: 20.61, image: 'BP2V2.png' },
+  BP2V2_CASE: { code: 'BP2V2CASE', name: 'Case, ROE Black Pearl version2, 8x (BP2V2)', weight: 161.12, image: 'BP2V2CASE.png' },
+  BPBO_HEAD1: { code: 'BPBOHEAD1', name: 'ROE Black Pearl header, 1W, 0.5m', weight: 12, image: 'BPBOHEAD1.png' },
+  BPBO_HEAD2: { code: 'BPBOHEAD2', name: 'ROE Black Pearl header, 2W, 1m', weight: 19, image: 'BPBOHEAD2.png' },
+  BPBO_BB1: { code: 'BPBOBB1', name: 'ROE Black Pearl base bar, 1W, 0.5m', weight: 16, image: 'BPBOBB1.png' },
+  BPBO_BB2: { code: 'BPBOBB2', name: 'ROE Black Pearl base bar, 2W, 1.0m', weight: 28, image: 'BPBOBB2.png' },
 
   // ROE GP2.6
-  ROEGP26FULL: { code: 'ROEGP26FULL', name: 'ROE GP2.6 Full LED tile 500x1000mm', weight: 19.84 },
-  ROEGP26HALF: { code: 'ROEGP26HALF', name: 'ROE GP2.6 Half LED tile 500x500mm', weight: 11.44 },
-  GP2BASE1: { code: 'GP2BASE1', name: 'ROE Graphite GP base bar, 1W', weight: 16 },
-  GP2BASE2: { code: 'GP2BASE2', name: 'ROE Graphite GP base bar, 2W, V1.5', weight: 28 },
-  GP2HEAD1: { code: 'GP2HEAD1', name: 'ROE Graphite GP hanging bar, 1W, clamp and shackle', weight: 12 },
-  GP2HEAD2: { code: 'GP2HEAD2', name: 'ROE Graphite GP hanging bar, 2W, clamp and shackle', weight: 19 },
-  BPGPUBT: { code: 'BPGPUBT', name: 'ROE BP2 /GP2 universal base truss', weight: 17 },
-  BPGPREAR1: { code: 'BPGPREAR1', name: 'ROE BP2 / GP2 rear truss 1 meter', weight: 1 },
-  BPGPBRIDGE: { code: 'BPGPBRIDGE', name: 'ROE BP2 / GP2 rear bridge clamp', weight: 1 },
+  ROEGP26FULL: { code: 'ROEGP26FULL', name: 'ROE GP2.6 Full LED tile 500x1000mm', weight: 19.84, image: 'ROEGP26FULL.png' },
+  ROEGP26HALF: { code: 'ROEGP26HALF', name: 'ROE GP2.6 Half LED tile 500x500mm', weight: 11.44, image: 'ROEGP26HALF.png' },
+  GP2BASE1: { code: 'GP2BASE1', name: 'ROE Graphite GP base bar, 1W', weight: 16, image: 'GP2BASE1.png' },
+  GP2BASE2: { code: 'GP2BASE2', name: 'ROE Graphite GP base bar, 2W, V1.5', weight: 28, image: 'GP2BASE2.png' },
+  GP2HEAD1: { code: 'GP2HEAD1', name: 'ROE Graphite GP hanging bar, 1W, clamp and shackle', weight: 12, image: 'GP2HEAD1.png' },
+  GP2HEAD2: { code: 'GP2HEAD2', name: 'ROE Graphite GP hanging bar, 2W, clamp and shackle', weight: 19, image: 'GP2HEAD2.png' },
+  BPGPUBT: { code: 'BPGPUBT', name: 'ROE BP2 /GP2 universal base truss', weight: 17, image: 'BPGPUBT.png' },
+  BPGPREAR1: { code: 'BPGPREAR1', name: 'ROE BP2 / GP2 rear truss 1 meter', weight: 1, image: 'BPGPREAR1.png' },
+  BPGPBRIDGE: { code: 'BPGPBRIDGE', name: 'ROE BP2 / GP2 rear bridge clamp', weight: 1, image: 'BPGPBRIDGE.png' },
 
   // Theatrixx
-  TX_NOMAD26: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm', weight: 24 },
-  CATXLED: { code: 'CATXLED', name: 'Case, Theatrixx Nomad tile 10x', weight: 187 },
-  TX_BASE1W: { code: 'TXBASE1W', name: 'Theatrixx Nomad Exact stacking base, 1 wide', weight: 27 },
-  TX_BASE2W: { code: 'TXBASE2W', name: 'Theatrixx Nomad Exact stacking base, 2 wide', weight: 12 },
-  TX_DBL_HEAD: { code: 'TXDBLHEAD', name: 'Theatrixx Nomad double header', weight: 12 },
-  TX_SNGL_HEAD: { code: 'TXSNGLHEAD', name: 'Theatrixx Nomad single header', weight: 8 },
+  TX_NOMAD26: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm', weight: 24, image: 'TXNOMAD26.png' },
+  CATXLED: { code: 'CATXLED', name: 'Case, Theatrixx Nomad tile 10x', weight: 187, image: 'CATXLED.png' },
+  TX_BASE1W: { code: 'TXBASE1W', name: 'Theatrixx Nomad Exact stacking base, 1 wide', weight: 27, image: 'TXBASE1W.png' },
+  TX_BASE2W: { code: 'TXBASE2W', name: 'Theatrixx Nomad Exact stacking base, 2 wide', weight: 12, image: 'TXBASE2W.png' },
+  TX_DBL_HEAD: { code: 'TXDBLHEAD', name: 'Theatrixx Nomad double header', weight: 12, image: 'TXDBLHEAD.png' },
+  TX_SNGL_HEAD: { code: 'TXSNGLHEAD', name: 'Theatrixx Nomad single header', weight: 8, image: 'TXSNGLHEAD.png' },
 
   // Processors
-  SX40: { code: 'SX40', name: 'Brompton Tessera SX40 **Kit includes an XD10**', weight: 17 },
-  XD10: { code: 'XD10', name: 'Brompton Tessera XD 10G data distribution unit', weight: 8.16 },
-  S8: { code: 'S8', name: 'Brompton Tessera S8', weight: 17 },
-  MX40PRO: { code: 'MX40PRO', name: 'Novastar MX40 PRO', weight: 17 },
+  SX40: { code: 'SX40', name: 'Brompton Tessera SX40 **Kit includes an XD10**', weight: 17, image: 'SX40.png' },
+  XD10: { code: 'XD10', name: 'Brompton Tessera XD 10G data distribution unit', weight: 8.16, image: 'XD10.png' },
+  S8: { code: 'S8', name: 'Brompton Tessera S8', weight: 17, image: 'S8.png' },
+  MX40PRO: { code: 'MX40PRO', name: 'Novastar MX40 PRO', weight: 17, image: 'MX40PRO.png' },
 
   // Power Distribution
-  CUBEDIST: { code: 'CUBEDIST', name: 'Indu Electric 200A Cube Distro', weight: 177 },
-  TP1: { code: 'TP1', name: 'Indu Electric 400A Power Distro w/ (4) 208v Soca', weight: 197 },
-  L2130T1FB: { code: 'L2130T1FB', name: 'L2130 floor box to 3x True1 with pass through', weight: 7.5 },
-  SOCA6XTRU1: { code: 'SOCA6XTRU1', name: '19 Pin Socapex to 6x True1 Power Cable', weight: 5 },
+  CUBEDIST: { code: 'CUBEDIST', name: 'Indu Electric 200A Cube Distro', weight: 177, image: 'CUBEDIST.png' },
+  TP1: { code: 'TP1', name: 'Indu Electric 400A Power Distro w/ (4) 208v Soca', weight: 197, image: 'TP1.png' },
+  L2130T1FB: { code: 'L2130T1FB', name: 'L2130 floor box to 3x True1 with pass through', weight: 7.5, image: 'L2130T1FB.png' },
+  SOCA6XTRU1: { code: 'SOCA6XTRU1', name: '19 Pin Socapex to 6x True1 Power Cable', weight: 5, image: 'SOCA6XTRU1.png' },
 
   // Cables
-  ECONRJ45: { code: 'ECONRJ45', name: "Ethercon to RJ45 (CAT6) 100'", weight: 2.4 },
-  CAT5ES005: { code: 'CAT5ES005', name: "CAT5e ethernet cable 5'", weight: 1 },
-  ECON010C6: { code: 'ECON010C6', name: "Ethercon (CAT6) 10'", weight: 1 },
-  ECON025C6: { code: 'ECON025C6', name: "Ethercon (CAT6) 25'", weight: 1.5 },
-  ECON050C6: { code: 'ECON050C6', name: "Ethercon (CAT6) 50'", weight: 3 },
-  ECON100C6: { code: 'ECON100C6', name: "Ethercon (CAT6) 100'", weight: 6 },
-  ECON1M: { code: 'ECON1M', name: "Ethercon to Ethercon 1m", weight: 0.25 },
-  TRUE125FT: { code: 'TRUE125FT', name: "True1 to True1 cable, 25'", weight: 4 },
-  EDT110M: { code: 'EDT110M', name: "Edison to True1 power cable, 10 meter", weight: 3.2 },
-  T11M: { code: 'T11M', name: "True1 power cable 1M (3')", weight: 0.44 },
+  ECONRJ45: { code: 'ECONRJ45', name: "Ethercon to RJ45 (CAT6) 100'", weight: 2.4, image: 'ECONRJ45.png' },
+  CAT5ES005: { code: 'CAT5ES005', name: "CAT5e ethernet cable 5'", weight: 1, image: 'CAT5ES005.png' },
+  ECON010C6: { code: 'ECON010C6', name: "Ethercon (CAT6) 10'", weight: 1, image: 'ECON010C6.png' },
+  ECON025C6: { code: 'ECON025C6', name: "Ethercon (CAT6) 25'", weight: 1.5, image: 'ECON025C6.png' },
+  ECON050C6: { code: 'ECON050C6', name: "Ethercon (CAT6) 50'", weight: 3, image: 'ECON050C6.png' },
+  ECON100C6: { code: 'ECON100C6', name: "Ethercon (CAT6) 100'", weight: 6, image: 'ECON100C6.png' },
+  ECON1M: { code: 'ECON1M', name: "Ethercon to Ethercon 1m", weight: 0.25, image: 'ECON1M.png' },
+  TRUE125FT: { code: 'TRUE125FT', name: "True1 to True1 cable, 25'", weight: 4, image: 'TRUE125FT.png' },
+  EDT110M: { code: 'EDT110M', name: "Edison to True1 power cable, 10 meter", weight: 3.2, image: 'EDT110M.png' },
+  T11M: { code: 'T11M', name: "True1 power cable 1M (3')", weight: 0.44, image: 'T11M.png' },
 
   // Misc
-  SANDBAG25: { code: 'SANDBAG25', name: 'Sand Bag 25 lbs.', weight: 25 }
+  SANDBAG25: { code: 'SANDBAG25', name: 'Sand Bag 25 lbs.', weight: 25, image: 'SANDBAG25.png' }
 };
 
 // Export for use in other modules
