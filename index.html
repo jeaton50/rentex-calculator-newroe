@@ -564,13 +564,6 @@
     document.addEventListener('DOMContentLoaded', function() {
       console.log('GP2 Half keyboard shortcut listener initialized. Press Alt+S to activate.');
 
-      // Check if GP2 Half option already exists (e.g., restored from URL/localStorage)
-      const existingGP2HalfOption = document.getElementById('gp2HalfProductOption');
-      if (existingGP2HalfOption) {
-        window.gp2HalfActivated = true;
-        console.log('GP2 Half option already exists (restored from navigation). Flag synced.');
-      }
-
       document.addEventListener('keydown', function(event) {
         // More robust key detection - check multiple properties
         const isAltPressed = event.altKey;

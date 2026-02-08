@@ -1483,25 +1483,17 @@ function restoreFormState() {
   if (productType) {
     const productSelect = document.getElementById('productType');
     if (productSelect) {
-      // Special handling for GP2 Half - add option if it doesn't exist
+      // Special handling for GP2 Half - DON'T auto-restore it
+      // User must press Alt+S to re-activate the hidden option
       if (productType === 'ROEGP26Half') {
-        const existingGP2HalfOption = document.getElementById('gp2HalfProductOption');
-        if (!existingGP2HalfOption) {
-          console.log('Restoring GP2 Half option from localStorage');
-          const option = document.createElement('option');
-          option.value = 'ROEGP26Half';
-          option.id = 'gp2HalfProductOption';
-          option.textContent = 'ROE GP2.6 Half';
-          productSelect.appendChild(option);
-          // Sync the flag so Alt+S knows the option exists
-          if (typeof window.gp2HalfActivated !== 'undefined') {
-            window.gp2HalfActivated = true;
-          }
-        }
+        console.log('GP2 Half was selected, but not auto-restoring. User must press Alt+S to activate.');
+        // Default to ROEGP26Full instead
+        productSelect.value = 'ROEGP26Full';
+        productSelect.dispatchEvent(new Event('change'));
+      } else {
+        productSelect.value = productType;
+        productSelect.dispatchEvent(new Event('change'));
       }
-
-      productSelect.value = productType;
-      productSelect.dispatchEvent(new Event('change'));
     }
   }
 
@@ -1918,26 +1910,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const validProductTypes = ['absen', 'BP2B1', 'BP2B2', 'BP2V2', 'theatrixx', 'ROEGP26Full', 'ROEGP26Half'];
         if (validProductTypes.includes(productType)) {
 
-          // Special handling for GP2 Half - add option if it doesn't exist
+          // Special handling for GP2 Half - DON'T auto-restore it
+          // User must press Alt+S to re-activate the hidden option
           if (productType === 'ROEGP26Half') {
-            const existingGP2HalfOption = document.getElementById('gp2HalfProductOption');
-            if (!existingGP2HalfOption) {
-              console.log('Restoring GP2 Half option from URL parameter');
-              const option = document.createElement('option');
-              option.value = 'ROEGP26Half';
-              option.id = 'gp2HalfProductOption';
-              option.textContent = 'ROE GP2.6 Half';
-              productSelect.appendChild(option);
-              // Sync the flag so Alt+S knows the option exists
-              if (typeof window.gp2HalfActivated !== 'undefined') {
-                window.gp2HalfActivated = true;
-              }
-            }
+            console.log('GP2 Half was selected, but not auto-restoring. User must press Alt+S to activate.');
+            // Default to ROEGP26Full instead
+            productSelect.value = 'ROEGP26Full';
+            productSelect.dispatchEvent(new Event('change'));
+          } else {
+            productSelect.value = productType;
+            // Trigger change event to update UI
+            productSelect.dispatchEvent(new Event('change'));
           }
-
-          productSelect.value = productType;
-          // Trigger change event to update UI
-          productSelect.dispatchEvent(new Event('change'));
         }
       }
     }
