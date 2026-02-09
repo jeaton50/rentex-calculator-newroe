@@ -145,8 +145,8 @@ const EQUIPMENT = {
   PL25_CASE: { code: 'PL25CASE', name: 'Case, Absen PL2.5, 8x', weight: 161.12, image: 'PL25CASE.png' },
   PL25_BB1: { code: 'PL25BB1', name: 'Absen PL2.5 base bar, 1W, 0.5m', weight: 16, image: 'PL25BB1.png' },
   PL25_BB2: { code: 'PL25BB2', name: 'Absen PL2.5 base bar, 2W, 1m', weight: 37, image: 'PL25BB2.png' },
-  PL25_HEAD1: { code: 'PL25HEAD1', name: 'Absen PL2.5 header, 1W, 0.5m', weight: 12, image: 'PL25HEAD1.png' },
-  PL25_HEAD2: { code: 'PL25HEAD2', name: 'Absen PL2.5 header, 2W, 1m', weight: 19, image: 'PL25HEAD2.png' },
+  PL25_HEAD1: { code: 'PL25HEAD1', name: 'Absen PL2.5 header, 1W, 0.5m', weight: 12, image: 'PL25BEAM50.png' },
+  PL25_HEAD2: { code: 'PL25HEAD2', name: 'Absen PL2.5 header, 2W, 1m', weight: 19, image: 'PL25BEAM1K.png' },
 
   // ROE Black Pearl
   BP2B1: { code: 'BP2B1', name: 'ROE Black Pearl 2 Version 1 LED tile batch 1 (BP2)', weight: 20.61, image: 'BP2B1.png' },
