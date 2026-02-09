@@ -149,6 +149,7 @@ const EQUIPMENT = {
   PL25_HEAD2: { code: 'PL25HEAD2', name: 'Absen PL2.5 header, 2W, 1m', weight: 19, image: 'PL25BEAM1K.png' },
   PL25_CLAMP: { code: 'PL25CLAMP', name: 'Absen PL2.5 clamp', weight: 0, image: 'PL25CLAMP.png' },
   PL25_BEAM1K: { code: 'PL25BEAM1K', name: 'Absen PL2.5 support beam, 1000 mm', weight: 0, image: 'PL25BEAM1K.png' },
+  PL25_BEAM50: { code: 'PL25BEAM50', name: 'Absen PL2.5 support beam, 500 mm', weight: 0, image: 'PL25BEAM50.png' },
   PL25_LAD1M: { code: 'PL25LAD1M', name: 'Absen PL2.5 ladder, 1m', weight: 0, image: 'PL25LAD1M.png' },
   PL25_OUT: { code: 'PL25OUT', name: 'Absen PL2.5 outrigger', weight: 0, image: 'PL25OUT.png' },
   PL25_PLAT: { code: 'PL25PLAT', name: 'Absen PL2.5 platform', weight: 0, image: 'PL25PLAT.png' },
