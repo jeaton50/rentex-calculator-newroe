@@ -152,6 +152,7 @@ const EQUIPMENT = {
   PL25_OUT: { code: 'PL25OUT', name: 'Absen PL2.5 outrigger', weight: 0, image: 'PL25OUT.png' },
   PL25_PLAT: { code: 'PL25PLAT', name: 'Absen PL2.5 platform', weight: 0, image: 'PL25PLAT.png' },
   PL25_BEAMAD: { code: 'PL25BEAMAD', name: 'Absen PL2.5 support beam conn, adjustable', weight: 0, image: 'PL25BEAMAD.png' },
+  PL25_LAD1M: { code: 'PL25LAD1M', name: 'Absen PL2.5 ladder 1m', weight: 0, image: 'PL25LAD1M.png' },
 
   // ROE Black Pearl
   BP2B1: { code: 'BP2B1', name: 'ROE Black Pearl 2 Version 1 LED tile batch 1 (BP2)', weight: 20.61, image: 'BP2B1.png' },
