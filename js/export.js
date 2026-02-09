@@ -318,7 +318,7 @@ const ExportManager = {
 
   /**
    * Get current equipment data from table or multi-screen configs
-   * Returns a flat array of { ecode, name, quantity } items
+   * Returns a flat array of { ecode, name, quantity, weight } items
    * @returns {Array} Equipment items
    */
   getCurrentEquipmentData() {
@@ -337,7 +337,7 @@ const ExportManager = {
           if (qty > 0) {
             const key = `${item.ecode.trim()}|${item.name.trim()}`;
             if (!combinedEquipment[key]) {
-              combinedEquipment[key] = { ecode: item.ecode, name: item.name, quantity: 0 };
+              combinedEquipment[key] = { ecode: item.ecode, name: item.name, quantity: 0, weight: Number(item.weight) || 0 };
             }
             combinedEquipment[key].quantity += qty;
           }
@@ -355,8 +355,9 @@ const ExportManager = {
         const ecode = cells[0] ? cells[0].textContent.trim() : '';
         const name = cells[1] ? cells[1].textContent.trim() : '';
         const quantity = cells[2] ? Number(cells[2].textContent.trim()) : 0;
+        const weight = cells[3] ? Number(cells[3].textContent.trim()) : 0;
         if (name && !name.toLowerCase().includes('total weight') && quantity > 0) {
-          items.push({ ecode, name, quantity });
+          items.push({ ecode, name, quantity, weight });
         }
       });
       return items;
@@ -510,7 +511,8 @@ const ExportManager = {
         { header: 'Image', dataKey: 'image' },
         { header: 'Ecode', dataKey: 'ecode' },
         { header: 'Equipment Name', dataKey: 'name' },
-        { header: 'Qty', dataKey: 'quantity' }
+        { header: 'Qty', dataKey: 'quantity' },
+        { header: 'Weight (lbs)', dataKey: 'weight' }
       ];
 
       // Table data
@@ -518,15 +520,17 @@ const ExportManager = {
         image: '',
         ecode: item.ecode,
         name: item.name,
-        quantity: item.quantity.toString()
+        quantity: item.quantity.toString(),
+        weight: item.weight ? Number(item.weight).toFixed(2) : '0.00'
       }));
 
       // Column styles
       const columnStyles = {
         image: { cellWidth: imgCellSize + 10 },
-        ecode: { cellWidth: 80, valign: 'middle', fontSize: 9 },
+        ecode: { cellWidth: 70, valign: 'middle', fontSize: 9 },
         name: { valign: 'middle', fontSize: 9 },
-        quantity: { cellWidth: 40, halign: 'center', valign: 'middle', fontSize: 10, fontStyle: 'bold' }
+        quantity: { cellWidth: 30, halign: 'center', valign: 'middle', fontSize: 10, fontStyle: 'bold' },
+        weight: { cellWidth: 55, halign: 'right', valign: 'middle', fontSize: 9 }
       };
 
       // Generate table using autoTable
