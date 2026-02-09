@@ -501,22 +501,17 @@ const ExportManager = {
       const rowPadding = 5;
       const rowHeight = imgCellSize + (rowPadding * 2);
 
-      // Determine if any images exist
-      const hasAnyImages = uniqueEcodes.some(ec => imageCache[ec]);
+      // Build a quick lookup: row index -> has image loaded
+      const rowHasImage = equipmentItems.map(item => !!imageCache[item.ecode]);
+      const hasAnyImages = rowHasImage.some(Boolean);
 
-      // Table column config
-      const columns = hasAnyImages
-        ? [
-            { header: 'Image', dataKey: 'image' },
-            { header: 'Ecode', dataKey: 'ecode' },
-            { header: 'Equipment Name', dataKey: 'name' },
-            { header: 'Qty', dataKey: 'quantity' }
-          ]
-        : [
-            { header: 'Ecode', dataKey: 'ecode' },
-            { header: 'Equipment Name', dataKey: 'name' },
-            { header: 'Qty', dataKey: 'quantity' }
-          ];
+      // Always include Image column so layout is ready as images are added
+      const columns = [
+        { header: 'Image', dataKey: 'image' },
+        { header: 'Ecode', dataKey: 'ecode' },
+        { header: 'Equipment Name', dataKey: 'name' },
+        { header: 'Qty', dataKey: 'quantity' }
+      ];
 
       // Table data
       const tableData = equipmentItems.map(item => ({
@@ -527,18 +522,12 @@ const ExportManager = {
       }));
 
       // Column styles
-      const columnStyles = hasAnyImages
-        ? {
-            image: { cellWidth: imgCellSize + 10, minCellHeight: rowHeight },
-            ecode: { cellWidth: 80, valign: 'middle', fontSize: 9 },
-            name: { valign: 'middle', fontSize: 9 },
-            quantity: { cellWidth: 40, halign: 'center', valign: 'middle', fontSize: 10, fontStyle: 'bold' }
-          }
-        : {
-            ecode: { cellWidth: 90, valign: 'middle', fontSize: 9 },
-            name: { valign: 'middle', fontSize: 9 },
-            quantity: { cellWidth: 50, halign: 'center', valign: 'middle', fontSize: 10, fontStyle: 'bold' }
-          };
+      const columnStyles = {
+        image: { cellWidth: imgCellSize + 10 },
+        ecode: { cellWidth: 80, valign: 'middle', fontSize: 9 },
+        name: { valign: 'middle', fontSize: 9 },
+        quantity: { cellWidth: 40, halign: 'center', valign: 'middle', fontSize: 10, fontStyle: 'bold' }
+      };
 
       // Generate table using autoTable
       doc.autoTable({
@@ -567,20 +556,28 @@ const ExportManager = {
         },
         didDrawCell: (data) => {
           // Draw equipment image in the image column
-          if (hasAnyImages && data.column.dataKey === 'image' && data.section === 'body') {
-            const item = equipmentItems[data.row.index];
-            const imgData = imageCache[item.ecode];
-            if (imgData) {
-              const cellX = data.cell.x + rowPadding;
-              const cellY = data.cell.y + rowPadding;
-              doc.addImage(imgData, 'PNG', cellX, cellY, imgCellSize, imgCellSize);
+          if (data.column.dataKey === 'image' && data.section === 'body') {
+            try {
+              const item = equipmentItems[data.row.index];
+              if (!item) return;
+              const imgData = imageCache[item.ecode];
+              if (imgData) {
+                const cellX = data.cell.x + rowPadding;
+                const cellY = data.cell.y + rowPadding;
+                doc.addImage(imgData, 'PNG', cellX, cellY, imgCellSize, imgCellSize);
+              }
+            } catch (e) {
+              console.warn('Could not draw image for row', data.row.index, e);
             }
           }
         },
         didParseCell: (data) => {
-          // Set minimum row height for image rows
-          if (hasAnyImages && data.column.dataKey === 'image' && data.section === 'body') {
-            data.cell.styles.minCellHeight = rowHeight;
+          // Only set tall row height for rows that actually have an image
+          if (data.column.dataKey === 'image' && data.section === 'body') {
+            const idx = data.row.index;
+            if (idx >= 0 && idx < rowHasImage.length && rowHasImage[idx]) {
+              data.cell.styles.minCellHeight = rowHeight;
+            }
           }
         }
       });
