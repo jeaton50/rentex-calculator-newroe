@@ -130,6 +130,10 @@ const EQUIPMENT = {
   BPBO_HEAD2: { code: 'BPBOHEAD2', name: 'ROE Black Pearl header, 2W, 1m', weight: 19 },
   BPBO_BB1: { code: 'BPBOBB1', name: 'ROE Black Pearl base bar, 1W, 0.5m', weight: 16 },
   BPBO_BB2: { code: 'BPBOBB2', name: 'ROE Black Pearl base bar, 2W, 1.0m', weight: 28 },
+  BP25DREE: { code: 'BP25DREE', name: 'ROE Black Pearl 5 Degree Bracket', weight: 0.25 },
+  BPGPUBT: { code: 'BPGPUBT', name: 'ROE Black Pearl universal base truss', weight: 17 },
+  BPGPREAR1: { code: 'BPGPREAR1', name: 'ROE Black Pearl rear truss', weight: 1 },
+  BPGPBRIDGE: { code: 'BPGPBRIDGE', name: 'ROE Black Pearl rear bridge clamp', weight: 1 },
 
   // Theatrixx
   TX_NOMAD26: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm', weight: 17.6 },
