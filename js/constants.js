@@ -164,6 +164,7 @@ const EQUIPMENT = {
   BPBO_HEAD2: { code: 'BPBOHEAD2', name: 'ROE Black Pearl header, 2W, 1m', weight: 19, image: 'BPBOHEAD2.png' },
   BPBO_BB1: { code: 'BPBOBB1', name: 'ROE Black Pearl base bar, 1W, 0.5m', weight: 16, image: 'BPBOBB1.png' },
   BPBO_BB2: { code: 'BPBOBB2', name: 'ROE Black Pearl base bar, 2W, 1.0m', weight: 28, image: 'BPBOBB2.png' },
+  BP25DREE: { code: 'BP25DREE', name: 'ROE Black Pearl BP25DREE', weight: 0, image: 'BP25DREE.png' },
 
   // ROE GP2.6
   ROEGP26FULL: { code: 'ROEGP26FULL', name: 'ROE GP2.6 Full LED tile 500x1000mm', weight: 19.84, image: 'ROEGP26FULL.png' },
