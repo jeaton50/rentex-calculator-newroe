@@ -238,6 +238,7 @@ const MultiScreenManager = {
     const redundancyEl = document.getElementById('redundancy');
     const sourceSignalsEl = document.getElementById('sourceSignals');
 
+    // Set product type first (without triggering change yet)
     if (productTypeEl) productTypeEl.value = config.productType;
     if (blocksHorEl) blocksHorEl.value = config.blocksHor;
     if (blocksVerEl) blocksVerEl.value = config.blocksVer;
@@ -264,6 +265,20 @@ const MultiScreenManager = {
     if (powerDistroTypeEl) powerDistroTypeEl.value = config.powerDistroType;
     if (redundancyEl) redundancyEl.value = config.redundancy;
     if (sourceSignalsEl) sourceSignalsEl.value = config.sourceSignals;
+
+    // Dispatch change event AFTER all values are set so product-specific UI
+    // updates correctly (dummy tiles, GP2 half, step/min, table colors, etc.)
+    if (productTypeEl) productTypeEl.dispatchEvent(new Event('change'));
+
+    // Re-apply support option after change event (the handler resets it to defaults)
+    if (config.supportType === 'groundSupport') {
+      if (groundSupportTypeEl) groundSupportTypeEl.value = config.supportOption;
+    } else {
+      if (flownSupportTypeEl) flownSupportTypeEl.value = config.supportOption;
+    }
+    // Re-apply blocks after change event (handler may round blocksVer)
+    if (blocksHorEl) blocksHorEl.value = config.blocksHor;
+    if (blocksVerEl) blocksVerEl.value = config.blocksVer;
   },
 
   /**
@@ -952,8 +967,19 @@ if (typeof window !== 'undefined') {
 
   // Export add/remove/switch functions
   window.addScreenConfiguration = function() {
+    // Save current screen before creating new one
+    MultiScreenManager.saveCurrentScreenConfig();
+    const currentConfig = window.screenConfigurations[window.activeScreenIndex];
+
     const newId = window.screenConfigurations.length + 1;
-    window.screenConfigurations.push(new ScreenConfig(newId));
+    const newConfig = new ScreenConfig(newId);
+
+    // Inherit product type from current screen
+    if (currentConfig) {
+      newConfig.productType = currentConfig.productType;
+    }
+
+    window.screenConfigurations.push(newConfig);
     MultiScreenManager.updateScreenSelector();
     window.switchToScreen(newId - 1);
   };
