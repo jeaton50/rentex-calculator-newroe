@@ -599,7 +599,6 @@ const EquipmentCalculator = {
 
     let CAT5ES005 = 0,
       ECON010C6 = 0,
-      ECON025C6 = 0,
       ECON050C6 = 0,
       ECON100C6 = 0;
 
@@ -611,7 +610,6 @@ const EquipmentCalculator = {
 
     if (cableDistance < 7) CAT5ES005 = numberOfCables;
     else if (cableDistance < 11) ECON010C6 = numberOfCables;
-    else if (cableDistance < 26) ECON025C6 = numberOfCables;
     else if (cableDistance < 51) ECON050C6 = numberOfCables;
     else ECON100C6 = numberOfCables;
 
@@ -634,7 +632,7 @@ const EquipmentCalculator = {
     }
     const adjustedCircuits = Math.ceil(circuits * 1.05);
 
-    // Calculate ECONRJ45 per reference code
+    // Calculate ECON100C6 for distribution units (was ECONRJ45)
     // B35 is the base calculation used by all products
     const B35 = distributionUnitCount + (distributionUnitCount > 0 && distributionUnitCount < 5
       ? 1
@@ -642,13 +640,12 @@ const EquipmentCalculator = {
       ? 3
       : 0);
 
-    // For Absen/Theatrixx/GP2.6: ECONRJ45 = B35 (no SX40 subtraction)
-    // For ROE (BP2): ECONRJ45 = Math.max(B35 - SX40, 0)
-    let ECONRJ45;
+    // For Absen/Theatrixx/GP2.6: ECON100C6 += B35 (no SX40 subtraction)
+    // For ROE (BP2): ECON100C6 += Math.max(B35 - SX40, 0)
     if (productType === "BP2B1" || productType === "BP2B2" || productType === "BP2V2") {
-      ECONRJ45 = Math.max(B35 - (sx40Count || 0), 0);
+      ECON100C6 += Math.max(B35 - (sx40Count || 0), 0);
     } else {
-      ECONRJ45 = B35;
+      ECON100C6 += B35;
     }
 
     // Calculate total tiles with spares including GP2 Half tiles
@@ -679,11 +676,9 @@ const EquipmentCalculator = {
       // Data cables
       CAT5ES005,
       ECON010C6,
-      ECON025C6,
       ECON050C6,
       ECON100C6,
       ECON1M: totalTilesWithSparesIncludingHalf,
-      ECONRJ45,
 
       // Power cables / circuits
       EDT110M: adjustedPowerCables, // shown only on 120V in display logic
@@ -1026,10 +1021,8 @@ function addAbsenEquipment(config, tbody) {
   if (singleHeaders > 0) addEquipmentRow("PL25HEAD1", "Absen PL2.5 header, 1W, 0.5m", 12, singleHeaders, tbody);
   if (doubleHeaders > 0) addEquipmentRow("PL25HEAD2", "Absen PL2.5 header, 2W, 1m", 19, doubleHeaders, tbody);
 
-  if (cables.ECONRJ45 > 0) addEquipmentRow("ECONRJ45", "Ethercon to RJ45 (CAT6) 100'", 2.4, cables.ECONRJ45, tbody);
   if (cables.CAT5ES005 > 0) addEquipmentRow("CAT5ES005", "CAT5e ethernet cable 5'", 1, cables.CAT5ES005, tbody);
   if (cables.ECON010C6 > 0) addEquipmentRow("ECON010C6", "Ethercon (CAT6) 10'", 1, cables.ECON010C6, tbody);
-  if (cables.ECON025C6 > 0) addEquipmentRow("ECON025C6", "Ethercon (CAT6) 25'", 1.5, cables.ECON025C6, tbody);
   if (cables.ECON050C6 > 0) addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
   if (cables.ECON100C6 > 0) addEquipmentRow("ECON100C6", "Ethercon (CAT6) 100'", 6, cables.ECON100C6, tbody);
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
@@ -1053,7 +1046,7 @@ function addAbsenEquipment(config, tbody) {
     caseWeight += 110 * outriggers;
     caseWeight += 91 * singleHeaders;
     caseWeight += 127 * doubleHeaders;
-    caseWeight += 120 * cables.ECONRJ45;
+    caseWeight += 120 * cables.ECON100C6;
     caseWeight += 63 * processors.SX40;
     caseWeight += 57 * processors.S8;
     displayEstShippingWeight(caseWeight);
@@ -1169,10 +1162,8 @@ function addROEEquipment(config, tbody) {
     if (swivelCouplers > 0) addEquipmentRow("15PIPECPL", '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', 1.5, swivelCouplers, tbody);
   }
 
-  if (cables.ECONRJ45 > 0) addEquipmentRow("ECONRJ45", "Ethercon to RJ45 (CAT6) 100'", 2.4, cables.ECONRJ45, tbody);
   if (cables.CAT5ES005 > 0) addEquipmentRow("CAT5ES005", "CAT5e ethernet cable 5'", 1, cables.CAT5ES005, tbody);
   if (cables.ECON010C6 > 0) addEquipmentRow("ECON010C6", "Ethercon (CAT6) 10'", 1, cables.ECON010C6, tbody);
-  if (cables.ECON025C6 > 0) addEquipmentRow("ECON025C6", "Ethercon (CAT6) 25'", 1.5, cables.ECON025C6, tbody);
   if (cables.ECON050C6 > 0) addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
   if (cables.ECON100C6 > 0) addEquipmentRow("ECON100C6", "Ethercon (CAT6) 100'", 6, cables.ECON100C6, tbody);
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
@@ -1195,7 +1186,7 @@ function addROEEquipment(config, tbody) {
     caseWeight += 113 * doubleBases;
     caseWeight += 91 * singleHeaders;
     caseWeight += 127 * doubleHeaders;
-    caseWeight += 120 * cables.ECONRJ45;
+    caseWeight += 120 * cables.ECON100C6;
     caseWeight += 65 * processors.SX40;
     caseWeight += 57 * processors.S8;
     displayEstShippingWeight(caseWeight);
@@ -1364,15 +1355,13 @@ function addROEGP26Equipment(config, tbody) {
   // GP2 Full specific cables (one per column)
   if (productType === "ROEGP26Full") {
     addEquipmentRow("T1016", "True1 Power Cable 16' (5m)", 2, horizontalBlocks, tbody);
-    addEquipmentRow("ECON025C6", "Ethercon (CAT6) 25'", 1.5, horizontalBlocks, tbody);
+    addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, horizontalBlocks, tbody);
   }
 
-  if (cables.ECONRJ45 > 0) addEquipmentRow("ECONRJ45", "Ethercon to RJ45 (CAT6) 100'", 2.4, cables.ECONRJ45, tbody);
   if (cables.CAT5ES005 > 0) addEquipmentRow("CAT5ES005", "CAT5e ethernet cable 5'", 1, cables.CAT5ES005, tbody);
   if (cables.ECON010C6 > 0) addEquipmentRow("ECON010C6", "Ethercon (CAT6) 10'", 1, cables.ECON010C6, tbody);
-  // ECON025C6 is added separately for GP2 Full (one per column), so skip it here
-  if (cables.ECON025C6 > 0 && productType !== "ROEGP26Full") addEquipmentRow("ECON025C6", "Ethercon (CAT6) 25'", 1.5, cables.ECON025C6, tbody);
-  if (cables.ECON050C6 > 0) addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
+  // ECON050C6 is added separately for GP2 Full (one per column), so skip it here
+  if (cables.ECON050C6 > 0 && productType !== "ROEGP26Full") addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
   if (cables.ECON100C6 > 0) addEquipmentRow("ECON100C6", "Ethercon (CAT6) 100'", 6, cables.ECON100C6, tbody);
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
   if (cables.TRUE125FT > 0) addEquipmentRow("TRUE125FT", "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
@@ -1411,7 +1400,7 @@ function addROEGP26Equipment(config, tbody) {
     caseWeight += 91 * singleHeaders;
     caseWeight += 127 * doubleHeaders;
     caseWeight += 17 * universalBaseTruss;
-    caseWeight += 120 * cables.ECONRJ45;
+    caseWeight += 120 * cables.ECON100C6;
     caseWeight += 65 * processors.SX40;
     caseWeight += 57 * processors.S8;
     caseWeight += 25 * sandbags;
@@ -1601,7 +1590,7 @@ function addTheatrixxEquipment(config, tbody) {
     addEquipmentRow("TXT92ETRCN", "Theatrixx Nomad XVT9 to EtherCon adapter", 0.25, H59, tbody);
   }
 
-  // Theatrixx does NOT use standard cables (ECONRJ45, CAT5ES005, ECON010C6, etc.)
+  // Theatrixx does NOT use standard cables (ECON100C6, CAT5ES005, ECON010C6, etc.)
   // Those are only for Absen/ROE products
 
   // Power distribution
@@ -1713,10 +1702,10 @@ function addROEGraphiteMixEquipment(config, tbody) {
   if (sandbags > 0) addEquipmentRow("SANDBAG25", "Sand Bag 25 lbs.", 25, sandbags, tbody);
 
   // Add cables
-  if (cables.ECONRJ45 > 0) addEquipmentRow("ECONRJ45", "Ethercon to RJ45 (CAT6) 100'", 2.4, cables.ECONRJ45, tbody);
+  if (cables.ECON100C6 > 0) addEquipmentRow("ECON100C6", "Ethercon (CAT6) 100'", 6, cables.ECON100C6, tbody);
   if (cables.CAT5ES005 > 0) addEquipmentRow("CAT5ES005", "CAT5e ethernet cable 5'", 1, cables.CAT5ES005, tbody);
   if (cables.ECON010C6 > 0) addEquipmentRow("ECON010C6", "Ethercon (CAT6) 10'", 1, cables.ECON010C6, tbody);
-  if (cables.ECON025C6 > 0) addEquipmentRow("ECON025C6", "Ethercon (CAT6) 25'", 1.5, cables.ECON025C6, tbody);
+  if (cables.ECON050C6 > 0) addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
   if (cables.T1016 > 0) addEquipmentRow("T1016", "True1 Power Cable 16' (5m)", 2, cables.T1016, tbody);
   if (cables.TRUE125FT > 0) addEquipmentRow("TRUE125FT", "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
@@ -1744,7 +1733,7 @@ function addROEGraphiteMixEquipment(config, tbody) {
     caseWeight += 113 * (doubleBases || 0);
     caseWeight += 91 * (singleHeaders || 0);
     caseWeight += 127 * (doubleHeaders || 0);
-    caseWeight += 120 * (cables.ECONRJ45 || 0);
+    caseWeight += 120 * (cables.ECON100C6 || 0);
     caseWeight += 63 * (processors.SX40 || 0);
     caseWeight += 57 * (processors.S8 || 0);
     displayEstShippingWeight(caseWeight);
