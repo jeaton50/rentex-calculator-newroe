@@ -190,10 +190,7 @@ const EQUIPMENT = {
   SOCA6XTRU1: { code: 'SOCA6XTRU1', name: '19 Pin Socapex to 6x True1 Power Cable', weight: 5, image: 'SOCA6XTRU1.png' },
 
   // Cables
-  ECONRJ45: { code: 'ECONRJ45', name: "Ethercon to RJ45 (CAT6) 100'", weight: 2.4, image: 'ECONRJ45.png' },
-  CAT5ES005: { code: 'CAT5ES005', name: "CAT5e ethernet cable 5'", weight: 1, image: 'CAT5ES005.png' },
   ECON010C6: { code: 'ECON010C6', name: "Ethercon (CAT6) 10'", weight: 1, image: 'ECON010C6.png' },
-  ECON025C6: { code: 'ECON025C6', name: "Ethercon (CAT6) 25'", weight: 1.5, image: 'ECON025C6.png' },
   ECON050C6: { code: 'ECON050C6', name: "Ethercon (CAT6) 50'", weight: 3, image: 'ECON050C6.png' },
   ECON100C6: { code: 'ECON100C6', name: "Ethercon (CAT6) 100'", weight: 6, image: 'ECON100C6.png' },
   ECON1M: { code: 'ECON1M', name: "Ethercon to Ethercon 1m", weight: 0.25, image: 'ECON1M.png' },
