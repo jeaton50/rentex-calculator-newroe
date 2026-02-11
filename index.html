@@ -21,18 +21,18 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
   <!-- Critical Application JavaScript - Load synchronously for proper initialization -->
-  <script src="js/constants.js?v=c6f4088"></script>
-  <script src="js/utils.js?v=c6f4088"></script>
-  <script src="js/state.js?v=c6f4088"></script>
-  <script src="js/app.js?v=c6f4088"></script>
-  <script src="js/canvas.js?v=20251121c"></script>
-  <script src="js/equipment.js?v=c6f4088"></script>
-  <script src="js/calculator.js?v=c6f4088"></script>
-  <script src="js/ui.js?v=c6f4088"></script>
-  <script src="js/multiscreen.js?v=c6f4088"></script>
+  <script src="js/constants.js?v=f878b28"></script>
+  <script src="js/utils.js?v=1768313500"></script>
+  <script src="js/state.js?v=1768313500"></script>
+  <script src="js/app.js?v=1768313500"></script>
+  <script src="js/canvas.js?v=1770161000"></script>
+  <script src="js/equipment.js?v=1770156000"></script>
+  <script src="js/calculator.js?v=1770154225"></script>
+  <script src="js/ui.js?v=1768313500"></script>
+  <script src="js/multiscreen.js?v=1768313500"></script>
 
   <!-- Export library - Defer as it's only used on demand -->
-  <script defer src="js/export.js?v=c6f4088"></script>
+  <script defer src="js/export.js?v=f878b28"></script>
 
   <!-- Non-critical external libraries - Load async -->
   <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" media="print" onload="this.media='all'">
@@ -46,6 +46,8 @@
   <!-- Export libraries - Load async as they're only used on demand -->
   <script async src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script async src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- jsPDF loaded on-demand by export.js when PDF export is triggered -->
 
 </head>
 <body>
@@ -66,7 +68,7 @@
     <!-- Action Buttons -->
     <div id="headerButtons" style="display: flex; gap: 8px; margin-left: 20px;">
       <button type="button" onclick="captureEntireScreen()">Email</button>
-      <button type="button" id="exportButton" onclick="exportToExcel()">Export to SL+</button>
+      <button type="button" onclick="exportEquipmentPDF()" style="background-color: #28a745; color: white; font-weight: bold;">Export PDF</button>
       <button type="button" onclick="zoomIn()">Zoom In</button>
       <button type="button" onclick="zoomOut()">Zoom Out</button>
       <button type="button" onclick="resetScreen()">Reset</button>
@@ -87,65 +89,16 @@
         <div id="productTypeDropdown">
           <label for="productType">Select Wall Type:</label>
           <select id="productType" name="productType">
-
-		  <script>
-  function updateTableRowColor(productType) {
-    let newColor;
-
-    switch (productType) {
-      case "absen":
-        newColor = "#ffecec"; // light red
-        break;
-      case "BP2B1":
-        newColor = "#ecf7ff"; // light blue
-        break;
-      case "BP2B2":
-        newColor = "#eaffec"; // light green
-        break;
-      case "BP2V2":
-        newColor = "#fdf7e7"; // light yellow
-        break;
-      case "theatrixx":
-        newColor = "#f3eaff"; // light purple
-        break;
-      default:
-        newColor = "#ffecec"; // fallback
-    }
-
-    document.getElementById("dynamicTableStyle").textContent = `
-      #equipmentTable tbody tr:nth-child(even) {
-        background-color: ${newColor};
-      }
-    `;
-  }
-
-  // Attach event listener to Product Type dropdown
-  document.getElementById("productType").addEventListener("change", function () {
-    updateTableRowColor(this.value);
-  });
-
-// Function displayIBoltWarning is now in js/ui.js
-
-// Trigger once on page load
-window.addEventListener("DOMContentLoaded", () => {
-  const initialProductType = document.getElementById("productType").value;
-  updateTableRowColor(initialProductType);
-
-  // Check if flown support is selected and update IBolt warning
-  if (document.getElementById('flownSupport').checked) {
-    UI.displayIBoltWarning(initialProductType);
-  }
-});
-</script>
-
-            <option value="absen">Absen</option>
+            <option value="absen" selected>Absen</option>
             <option value="BP2B1">Black Pearl 2 B1</option>
             <option value="BP2B2">Black Pearl 2 B2</option>
             <option value="BP2V2">Black Pearl 2V2</option>
             <option value="theatrixx">Theatrixx</option>
+            <option value="ROEGP26Full">ROE GP2.6 Full</option>
           </select>
-
         </div>
+
+
 
         <!-- Wall Configuration radio buttons -->
         <label>Wall Configuration:</label>
@@ -253,11 +206,67 @@ window.addEventListener("DOMContentLoaded", () => {
           <label for="dimensionInput">Input Dimensions</label>
         </div>
 
+        <!-- ROE Graphite Mix Section -->
+        <div id="roeGraphicMixContainer" style="margin-top:10px; margin-bottom:15px; display:none;">
+          <input type="checkbox" id="roeGraphicMix" name="roeGraphicMix">
+          <label for="roeGraphicMix">
+            <strong>ROE Graphite Mix</strong>
+            <span class="info-icon" title="Use to mix full and half panels" style="cursor: help; color: #0066cc; margin-left: 5px; font-size: 14px;">ℹ️</span>
+          </label>
+
+          <!-- Mixed tile inputs (shown when ROE Graphite Mix is enabled) -->
+          <div id="mixedTileInputs" style="display:none; margin-top:10px; padding:10px; border:1px solid #ddd; border-radius:5px; background-color:#f9f9f9;">
+            <div style="margin-bottom:10px;">
+              <label><strong>ROE GP2.6 Half Tiles (Bottom):</strong></label>
+              <div style="display:flex; gap:10px; margin-top:5px;">
+                <div>
+                  <label for="halfHorizontal">Horizontal:</label>
+                  <input type="number" id="halfHorizontal" name="halfHorizontal" min="1" max="20" value="5" style="width:60px;">
+                </div>
+                <div>
+                  <label for="halfVertical">Vertical:</label>
+                  <input type="number" id="halfVertical" name="halfVertical" min="1" max="20" value="3" style="width:60px;">
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-bottom:10px;">
+              <label><strong>ROE GP2.6 Full Tiles (500x1000mm):</strong></label>
+              <div style="display:flex; gap:10px; margin-top:5px;">
+                <div>
+                  <label for="fullHorizontal">Horizontal:</label>
+                  <input type="number" id="fullHorizontal" name="fullHorizontal" min="1" max="20" value="5" style="width:60px;">
+                </div>
+                <div>
+                  <label for="fullVertical">Vertical:</label>
+                  <input type="number" id="fullVertical" name="fullVertical" min="1" max="20" value="3" style="width:60px;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Full tile position selection -->
+            <div style="margin-top:10px; padding:8px; background-color:#e8f4f8; border-radius:4px;">
+              <label><strong>Full Tile Position:</strong></label>
+              <div style="display:flex; gap:15px; margin-top:5px;">
+                <div>
+                  <input type="radio" id="fullTilesTop" name="fullTilePosition" value="top" checked>
+                  <label for="fullTilesTop">Top</label>
+                </div>
+                <div>
+                  <input type="radio" id="fullTilesBottom" name="fullTilePosition" value="bottom">
+                  <label for="fullTilesBottom">Bottom</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Block inputs -->
         <div id="blockInputs">
   <label for="blocksHor">Horizontal/Vertical</label><br>
   <input type="number" id="blocksHor" name="blocksHor" min="1" value="5" style="width: 80px; margin-right: 10px;">
-  <input type="number" id="blocksVer" name="blocksVer" min="1" value="5" style="width: 80px;">
+  <input type="number" id="blocksVer" name="blocksVer" min="1" step="1" value="5" style="width: 80px;">
+  <span id="halfRowHint" style="font-size: 11px; color: #666; margin-left: 5px; display: none;">(.5 = half row)</span>
 </div>
 
         <!-- Dimension inputs -->
@@ -353,6 +362,22 @@ window.addEventListener("DOMContentLoaded", () => {
           </div>
         </div>
 
+        <!-- GP2 Half Row Option (for GP2.6 Full) -->
+        <div id="gp2HalfOption" style="display: none; margin-top: 10px;">
+          <input type="checkbox" id="gp2HalfCheckbox" name="gp2HalfCheckbox">
+          <label for="gp2HalfCheckbox">Add GP2.6 Half Row</label>
+          <div id="gp2HalfCountContainer" style="display: none; margin-top: 5px;">
+            <label for="gp2HalfCount">Number of Half Rows:</label>
+            <input type="number" id="gp2HalfCount" name="gp2HalfCount" min="1" max="2" value="1" style="width: 60px;">
+            <br>
+            <label for="gp2HalfPosition" style="margin-top: 5px; display: inline-block;">Position:</label>
+            <select id="gp2HalfPosition" name="gp2HalfPosition" style="margin-top: 5px;">
+              <option value="bottom">Bottom</option>
+              <option value="top">Top</option>
+            </select>
+          </div>
+        </div>
+
         <!-- Wall Type Selection with Radio Buttons -->
         <div class="radio-group">
           <label>Select Wall Type:</label><br>
@@ -405,13 +430,6 @@ window.addEventListener("DOMContentLoaded", () => {
           </select>
 		  <div id="IBoltWarning" style="display: none; color: red; font-weight: bold; margin-top: 8px;"></div>
 
-        </div>
-        <br>
-
-        <!-- Checkbox for Toggling Block Numbers -->
-        <div class="input-group">
-          <input type="checkbox" id="toggleNumbers" name="toggleNumbers">
-          <label for="toggleNumbers">Show Tile Numbers</label>
         </div>
         <br>
 
@@ -537,1617 +555,91 @@ window.addEventListener("DOMContentLoaded", () => {
 
     </div>
 
-    <script>
-      // Define initial zoom level and global variables
-      let zoomLevel = 1;
 
-      window.showNumbers = false;
-      window.showWiring = false;
-      window.wiringDirection = 'horizontal';
-      window.wiringStartPosition = 'bottom-left';
-      window.showPower = false;
-      window.powerDirection = 'horizontal';
-      window.powerStartPosition = 'bottom-left';
-      var totalWeight = 0;
-      let hasChecked = false;
 
-      // Constants are now exported from calculator.js
 
-      // Flags for preventing recursive updates
-      let isUpdatingDimensions = false;
-      let isUpdatingBlocks = false;
+  <script>
+    // Hidden GP2 Half product activation via Alt+S keyboard shortcut
+    // Make it globally accessible so main.js can sync the flag when auto-restoring
+    window.gp2HalfActivated = false;
 
-      // Spinner control variables
-      let spinnerTimeout = null;
-      let isSpinnerVisible = false;
-
-      // Preload the block image
-      let blockImage = new Image();
-      blockImage.src = 'static/images/block.png';
-      blockImage.onload = () => { console.log('Block image loaded successfully.'); };
-      blockImage.onerror = () => {
-        console.error('Failed to load the block image.');
-        alert('Error: Unable to load the block image. Please check the image path and try again.');
-      };
-
-      // Wall background image - this will be stretched across the entire wall
-      window.wallBackgroundImage = new Image();
-      window.wallBackgroundImage.src = 'static/images/wall_background.png';
-      window.wallBackgroundImage.onload = () => { console.log('Wall background image loaded successfully.'); };
-      window.wallBackgroundImage.onerror = () => {
-        console.error('Failed to load the wall background image.');
-        console.log('Will use block image as fallback.');
-      };
-
-      // Helper Functions - Using modules where available
-      // roundToDimension is now in js/calculator.js
-
-      function debounce(func, wait) {
-        let timeout;
-        return function (...args) {
-          clearTimeout(timeout);
-          timeout = setTimeout(() => func.apply(this, args), wait);
-        };
-      }
-
-      // Wrapper function - calls Calculator module
-      function handleDimensionInput(input) {
-        const widthFeet = parseFloat(document.getElementById('widthFeet')?.value || 0);
-        const heightFeet = parseFloat(document.getElementById('heightFeet')?.value || 0);
-
-        if (typeof Calculator !== 'undefined' && Calculator.calculateBlocksFromDimensions) {
-          const blocks = Calculator.calculateBlocksFromDimensions(widthFeet, heightFeet);
-          const blocksHorInput = document.getElementById('blocksHor');
-          const blocksVerInput = document.getElementById('blocksVer');
-          if (blocksHorInput) blocksHorInput.value = blocks.horizontalBlocks;
-          if (blocksVerInput) blocksVerInput.value = blocks.verticalBlocks;
-        }
-
-        if (typeof UI !== 'undefined' && UI.updateWarning) {
-          UI.updateWarning();
-        }
-        if (typeof generateWall === 'function') {
-          generateWall();
-        }
-      }
-
-      function handleArrowKeys(e, input) {
-        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-          e.preventDefault();
-          const increment = e.key === 'ArrowUp' ? BLOCK_SIZE_FEET : -BLOCK_SIZE_FEET;
-          incrementDimension(input, increment);
-        }
-      }
-
-      // Wrapper function - uses Calculator module
-      function incrementDimension(input, increment) {
-        const currentValue = parseFloat(input.value);
-        if (!isNaN(currentValue) && typeof Calculator !== 'undefined') {
-          const newValue = Calculator.roundToDimension(currentValue + increment, BLOCK_SIZE_FEET, BLOCK_SIZE_FEET);
-          input.value = newValue.toFixed(2);
-          handleDimensionInput(input);
-        }
-      }
-
-      function updateDimensionsFromBlocks() {
-        updateWarning();
-        generateWall();
-        isUpdatingDimensions = false;
-      }
-
-      function updateWall() {
-        handleWallTypeChange();
-        updateDimensionsFromBlocks();
-        updateWarning();
-      }
-
-      function generateWall() {
-
-
-        const productType = document.getElementById('productType').value;
-        //let blocksHor = parseInt(document.getElementById('blocksHor').value, 10);
-        //let blocksVer = parseInt(document.getElementById('blocksVer').value, 10);
-        let blocksHor, blocksVer;
-        var widthAsFeet = document.getElementById('widthFeet').value;
-        var heightAsFeet = document.getElementById('heightFeet').value;
-        let radioButton = document.getElementById("dimensionInput");
-        if (radioButton.checked) {
-          document.getElementById('blocksHor').value = Math.round(widthAsFeet / 1.64042); // ROUND(Calculator::Table 1::D13÷1.64042,0)
-          document.getElementById('blocksVer').value = Math.round(heightAsFeet / 1.64042); //ROUND(Calculator::Table 1::G13÷1.64042,0)
-        }
-
-        blocksHor = parseInt(document.getElementById('blocksHor').value, 10);
-        blocksVer = parseInt(document.getElementById('blocksVer').value, 10);
-
-        const groundSupport = document.getElementById('groundSupport').checked;
-        const groundSupportTypeElement = document.getElementById('groundSupportType');
-        const groundSupportType = groundSupportTypeElement ? groundSupportTypeElement.value : null;
-        const flownSupport = document.getElementById('flownSupport').checked;
-        const flownSupportTypeElement = document.getElementById('flownSupportType');
-        const flownSupportType = flownSupportTypeElement ? flownSupportTypeElement.value : null;
-        var voltage = (powerDistroType.value == 110) ? 110 : 208;
-        const powerDistro = document.getElementById('powerDistroType').value;
-        const wallTypeElement = document.querySelector('input[name="wallType"]:checked');
-        const wallType = wallTypeElement ? wallTypeElement.value : 'Flat';
-        const aspectRatioDropdown = document.getElementById('popularFormatsDropdown');
-        let screenSize = null;
-        if (aspectRatioDropdown.style.display !== 'none') {
-          const aspectRatioValue = document.getElementById('aspectRatio').value;
-          if (aspectRatioValue === "1:1") {
-            screenSize = document.getElementById('screenSize').value;
-          }
-        }
-
-        // Calculate total blocks, spares, etc.
-        var totalBlocks = blocksHor * blocksVer;
-        var totalSpares = calcSpares(totalBlocks, productType === "theatrixx" ? 10 : 8, productType === "theatrixx" ? 2 : 1.5);
-        var totalBlocksWithSpares = totalSpares + totalBlocks;
-
-        const requestData = {
-          productType,
-          blocksHor,
-          blocksVer,
-          totalBlocks,
-          totalSpares,
-          totalBlocksWithSpares,
-          groundSupport,
-          groundSupportType,
-          flownSupport,
-          flownSupportType,
-          voltage,
-          wallType,
-          screenSize,
-          powerDistro,
-          powerDistroType
-        };
-
-        // Call module functions (showLoadingSpinner/hideLoadingSpinner removed)
-        if (typeof displayEquipment === 'function') {
-          displayEquipment(requestData);
-        }
-        if (typeof CanvasRenderer !== 'undefined' && CanvasRenderer.displayWallDimensions) {
-          CanvasRenderer.displayWallDimensions(productType);
-        }
-        if (typeof CanvasRenderer !== 'undefined' && CanvasRenderer.drawWall) {
-          const zoom = window.currentZoomLevel || 4;
-          const showNumbers = window.showNumbers || false;
-          CanvasRenderer.drawWall(requestData, zoom, showNumbers);
-        }
-        if (typeof display208CircuitsNeeded === 'function') {
-          display208CircuitsNeeded();
-        }
-      }
-
-  // <-- existing generateWall() function end
-
-// Insert the new function right here:
-      const singleHeaderImage = new Image();
-      singleHeaderImage.src = 'static/images/single_header.png';
-      singleHeaderImage.onload = function () { console.log('Single header image loaded successfully'); };
-      singleHeaderImage.onerror = function () { console.error('Error loading single header image'); };
-
-      const doubleHeaderImage = new Image();
-      doubleHeaderImage.src = 'static/images/double_header.png';
-      doubleHeaderImage.onload = function () { console.log('Double header image loaded successfully'); };
-      doubleHeaderImage.onerror = function () { console.error('Error loading double header image'); };
-
-      const singleBaseImage = new Image();
-      singleBaseImage.src = 'static/images/single_base.png';
-      singleBaseImage.onload = function () { console.log('Single base image loaded successfully'); };
-      singleBaseImage.onerror = function () { console.error('Error loading single base image'); };
-
-      const doubleBaseImage = new Image();
-      doubleBaseImage.src = 'static/images/double_base.png';
-      doubleBaseImage.onload = function () { console.log('Double base image loaded successfully'); };
-      doubleBaseImage.onerror = function () { console.error('Error loading double base image'); };
-
-   // Find the exportToExcel function in your code
-// Look for where the data array is built for the Excel export
-// We need to establish and maintain the original ordering
-
-// Helper function to get equipment for a specific screen configuration
-      // Event Listeners for Initial Setup
-      document.addEventListener('DOMContentLoaded', () => {
-
-        // Restore calculator state from URL parameters (from Screen Views back button)
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('product') || urlParams.has('blocksHor') || urlParams.has('blocksVer')) {
-          const productType = urlParams.get('product');
-          const blocksHor = urlParams.get('blocksHor');
-          const blocksVer = urlParams.get('blocksVer');
-
-          if (productType) {
-            const productSelect = document.getElementById('productType');
-            if (productSelect) {
-              productSelect.value = productType;
-              // Trigger change event to update UI
-              productSelect.dispatchEvent(new Event('change'));
-            }
-          }
-
-          if (blocksHor) {
-            const blocksHorInput = document.getElementById('blocksHor');
-            if (blocksHorInput) {
-              blocksHorInput.value = blocksHor;
-            }
-          }
-
-          if (blocksVer) {
-            const blocksVerInput = document.getElementById('blocksVer');
-            if (blocksVerInput) {
-              blocksVerInput.value = blocksVer;
-            }
-          }
-
-          // Restore powerDistroType if present
-          const powerDistroType = urlParams.get('powerDistroType');
-          if (powerDistroType) {
-            const powerDistroSelect = document.getElementById('powerDistroType');
-            if (powerDistroSelect) {
-              powerDistroSelect.value = powerDistroType;
-            }
-          }
-
-          // Trigger wall generation with restored values
-          if (typeof generateWall === 'function') {
-            setTimeout(() => generateWall(), 100);
-          }
-        }
-
-        // Attach ground support type listener with alert logic:
-        // Attach ground support type listener with alert logic for Absen only:
-        const groundSupportTypeSelect = document.getElementById('groundSupportType');
-        if (groundSupportTypeSelect) {
-          groundSupportTypeSelect.addEventListener('change', function () {
-            const productType = document.getElementById('productType').value;
-            const alertSpan = document.getElementById('doubleBaseAlert');
-            if (productType === 'absen' && this.value === 'Double Base') {
-              alertSpan.style.display = 'inline';
-            } else {
-              alertSpan.style.display = 'none';
-            }
-            updateWall(); // Optional: update the wall if needed
-          });
-        }
-
-// Toggle the display of multiple screens options based on the radio selection.
-  document.getElementById('singleScreen').addEventListener('change', function() {
-    // When switching to single screen
-    document.getElementById('multipleScreensOptions').style.display = 'none';
-    // Reset to 1 screen
-    document.getElementById('numScreens').value = '1';
-    // Regenerate the wall to apply the change
-    generateWall();
-  });
-
-  document.getElementById('multipleScreens').addEventListener('change', function() {
-    // When switching to multiple screens
-    document.getElementById('multipleScreensOptions').style.display = 'block';
-    // Reset to 1 screen
-    document.getElementById('numScreens').value = '1';
-    // Regenerate the wall to apply the change
-    generateWall();
-  });
-
-  // Set initial state based on which radio button is checked
-  if (document.getElementById('multipleScreens').checked) {
-    document.getElementById('multipleScreensOptions').style.display = 'block';
-  } else {
-    document.getElementById('multipleScreensOptions').style.display = 'none';
-  }
-
-  // ... the rest of your existing code ...
-
-
-
-        const flownSupportTypeSelect = document.getElementById('flownSupportType');
-        if (flownSupportTypeSelect) {
-          flownSupportTypeSelect.addEventListener('change', () => { updateWall(); });
-        }
-        const powerDistroTypeSelect = document.getElementById('powerDistroType');
-        if (powerDistroTypeSelect) {
-          powerDistroTypeSelect.addEventListener('change', () => {
-            console.log("UPDATING WALL BECAUSE POWER DISTRO CHANGE");
-            updateWall();
-			display110Circuits();
-          });
-        }
-        const redundancySelect = document.getElementById('redundancy');
-        if (redundancySelect) {
-          redundancySelect.addEventListener('change', () => {
-            console.log("UPDATING WALL BECAUSE REDUNDANCY CHANGE");
-            updateWall();
-          });
-        }
-        const sourceSignalsSelect = document.getElementById('sourceSignals');
-        if (sourceSignalsSelect) {
-          sourceSignalsSelect.addEventListener('change', () => {
-            console.log("UPDATING WALL BECAUSE SIGNAL CHANGE");
-            updateWall();
-          });
-        }
-        // Product Type change listener with integrated wall type handling
-        document.getElementById('productType').addEventListener('change', function () {
-  const productType = this.value;
-  const groundSupportTypeSelect = document.getElementById('groundSupportType');
-  if (groundSupportTypeSelect) {
-    if (productType === 'absen') {
-      groundSupportTypeSelect.value = 'Single Base';
-    } else if (
-      productType === 'BP2B1' ||
-      productType === 'BP2B2' ||
-      productType === 'BP2V2' ||
-      productType === 'theatrixx'
-    ) {
-      groundSupportTypeSelect.value = 'Double Base';
-    } else {
-      // For any other product types, you might default back to "Single Base"
-      groundSupportTypeSelect.value = 'Single Base';
-    }
-  }
-  // Hide the double base alert if the product is not Absen.
-  if (productType !== 'absen') {
-    document.getElementById('doubleBaseAlert').style.display = 'none';
-  }
-  
-  updateTableRowColor(productType);
-
-  // Update any warning message for flown support if it is active
-  if (document.getElementById('flownSupport').checked) {
-    displayIBoltWarning(productType);
-  }
-  
-           const convexOption = document.getElementById('optionConvex');
-          const dummyTileOption = document.getElementById('dummyTileOption');
-          const currentWallType = document.querySelector('input[name="wallType"]:checked');
-          if (productType === 'BP2B1' || productType === "BP2B2" || productType === 'BP2V2') {
-            convexOption.style.display = 'none';
-            dummyTileOption.style.display = 'block';
-            if (currentWallType && currentWallType.value === 'Convex') {
-              document.getElementById('flat').checked = true;
-            }
-          } else {
-            convexOption.style.display = 'inline-block';
-            dummyTileOption.style.display = 'none';
-          }
-          restrictGroundSupportTypes(currentWallType && (currentWallType.value === 'Concave' || currentWallType.value === 'Convex'));
-          restrictFlownSupportTypes(currentWallType && (currentWallType.value === 'Concave' || currentWallType.value === 'Convex'));
-          updateWall();
-        });
-
-        // Wall type radios listener: also hide alert when wall type is changed to Concave/Convex
-        const wallTypeRadios = document.getElementsByName('wallType');
-        wallTypeRadios.forEach(radio => {
-          radio.addEventListener('change', () => {
-            handleWallTypeChange();
-            generateWall();
-
-            // Check if the product is Absen and the wall type is not Flat
-            const productType = document.getElementById('productType').value;
-            if (productType === 'absen') {
-              const currentWallType = document.querySelector('input[name="wallType"]:checked').value;
-              if (currentWallType !== 'Flat') {
-                document.getElementById('doubleBaseAlert').style.display = 'none';
-              }
-            }
-          });
-        });
-
-// Toggle display of advanced options (tile quantity input and possible screen sizes)
-document.getElementById('advancedOptionsCheckbox').addEventListener('change', function () {
-  const tileQtyDiv = document.getElementById('tileQuantityInput');
-  const possibleSizesDiv = document.getElementById('possibleScreenSizes');
-  if (this.checked) {
-    tileQtyDiv.style.display = 'block';
-    possibleSizesDiv.style.display = 'block';
-  } else {
-    tileQtyDiv.style.display = 'none';
-    possibleSizesDiv.style.display = 'none';
-  }
-});
-
-
-
-
-
-
-       document.getElementById('dummyTilesCheckbox').addEventListener('change', function () {
-  const countContainer = document.getElementById('dummyTileCountContainer');
-  if (this.checked) {
-    countContainer.style.display = 'block';
-  } else {
-    countContainer.style.display = 'none';
-  }
-  generateWall(); // refresh the wall drawing if needed
-});// Toggle the dummy tile count container based on checkbox status.
-document.getElementById('dummyTilesCheckbox').addEventListener('change', function () {
-  const countContainer = document.getElementById('dummyTileCountContainer');
-  countContainer.style.display = this.checked ? 'block' : 'none';
-  updateDummyTileQty();
-});
-
-// Update the wall when the dummy tile count changes.
-document.getElementById('dummyTileCount').addEventListener('input', function () {
-  updateDummyTileQty();
-});
-
-// Function to read the dummy tile count and update the wall.
-// When performing your calculations, use a helper like this:
-        const screenSize = document.getElementById('screenSize');
-        if (screenSize) {
-          screenSize.addEventListener('change', updateBlocksBasedOnSelection);
-          console.log("Event listener added to screenSize");
-        }
-
-        const customConfig = document.getElementById('customConfig');
-        const popularFormats = document.getElementById('popularFormats');
-        if (customConfig) {
-          customConfig.addEventListener('change', handleWallConfigChange);
-          console.log("Event listener added to customConfig");
-        }
-        if (popularFormats) {
-          popularFormats.addEventListener('change', handleWallConfigChange);
-          console.log("Event listener added to popularFormats");
-        }
-        const aspectRatio = document.getElementById('aspectRatio');
-        if (aspectRatio) {
-          aspectRatio.addEventListener('change', handleAspectRatioChange);
-          console.log("Event listener added to aspectRatio");
-        }
-        const blockInputRadio = document.getElementById('blockInput');
-        const dimensionInputRadio = document.getElementById('dimensionInput');
-        const blockInputs = document.getElementById('blockInputs');
-        const dimensionInputs = document.getElementById('dimensionInputs');
-        dimensionInputs.style.display = 'none';
-        if (blockInputRadio && dimensionInputRadio) {
-          blockInputRadio.addEventListener('change', toggleInputType);
-          dimensionInputRadio.addEventListener('change', toggleInputType);
-          toggleInputType();
-        }
-        const widthFeetInput = document.getElementById('widthFeet');
-        const heightFeetInput = document.getElementById('heightFeet');
-        const blocksHorInput = document.getElementById('blocksHor');
-        const blocksVerInput = document.getElementById('blocksVer');
-        const toggleNumbersCheckbox = document.getElementById('toggleNumbers');
-        const debouncedCalculateBlocks = debounce(calculateBlocks, 300);
-        const debouncedUpdateDimensionsFromBlocks = debounce(updateDimensionsFromBlocks, 300);
-        if (widthFeetInput) {
-          widthFeetInput.addEventListener('input', handleDimensionInput.bind(null, widthFeetInput));
-          widthFeetInput.addEventListener('keydown', (e) => handleArrowKeys(e, widthFeetInput));
-        }
-        if (heightFeetInput) {
-          heightFeetInput.addEventListener('input', handleDimensionInput.bind(null, heightFeetInput));
-          heightFeetInput.addEventListener('keydown', (e) => handleArrowKeys(e, heightFeetInput));
-        }
-        if (blocksHorInput) {
-          blocksHorInput.addEventListener('input', debouncedUpdateDimensionsFromBlocks);
-          blocksHorInput.addEventListener('change', debouncedUpdateDimensionsFromBlocks);
-        }
-        if (blocksVerInput) {
-          blocksVerInput.addEventListener('input', debouncedUpdateDimensionsFromBlocks);
-          blocksVerInput.addEventListener('change', debouncedUpdateDimensionsFromBlocks);
-        }
-        if (toggleNumbersCheckbox) {
-          window.showNumbers = toggleNumbersCheckbox.checked;
-          toggleNumbersCheckbox.addEventListener('change', () => {
-            window.showNumbers = toggleNumbersCheckbox.checked;
-            generateWall();
-          });
-        }
-        document.querySelectorAll('select[name="groundSupportType"], select[name="flownSupportType"]')
-          .forEach(select => select.addEventListener('change', generateWall));
-        setupVerticalWarning();
-        handleWallTypeChange();
-        toggleGroundSupportOptions();
-        toggleFlownSupportOptions();
-        generateWall();
-      });
-
-// The next function (addEquipmentRow) should start here:
-     // REPLACE YOUR EXISTING displayTotalPower FUNCTION WITH THIS:
-// ADD THE NEW FUNCTION HERE
-// ==== NEW 208V CIRCUITS LOGIC ====
-
-// ==== SINGLE DEFINITION OF displayTotalPower ====
-// ==== HOOK INTO powerDistroType CHANGE ====
-document.getElementById('powerDistroType')?.addEventListener('change', () => {
-  console.log("UPDATING WALL BECAUSE POWER DISTRO CHANGE");
-  updateWall();               
-  display110Circuits();       
-  display208Circuits();       
-});
-
- // Also, make sure displayTotalPower is only called once and clears previous content
- // Add the new function here:
-     // Add the new function here:
-// Add the new function here:
-  // ---------------------------
-  // End new functions
-  // ---------------------------
-
-      const powerDistroCheckbox = document.getElementById('powerDistro');
-      if (powerDistroCheckbox) {
-        powerDistroCheckbox.addEventListener('change', () => {
-          togglePowerDistroOptions();
-          updateWall();
-        });
-      }
-
-      const powerDistroTypeSelect = document.getElementById('powerDistroType');
-      if (powerDistroTypeSelect) {
-        powerDistroTypeSelect.addEventListener('input', () => {
-          updateWall();
-        });
-      }
-
-      document.getElementById("toggleNumbers").addEventListener("change", function () {
-        showNumbers = this.checked;
-        generateWall();
-      });
-    </script>
-	
-	 <script>
-    // Multi-screen management system
-	// Function to identify power distribution equipment
-// Function to identify power distribution equipment - with exceptions for specific True1 cables
-// Function to identify power distribution equipment - with exceptions for specific True1 cables
-// Add checkbox toggle to individual screen section
-// Function to add both toggle options to each screen
-// Update the addEquipmentTogglesToScreen function to properly position the toggles side by side
-/* --- Helper for dummy‐tile detection --- */
-// Function to update the power-weight summary in the top section
-// Updated combined equipment function
-// Update the combined equipment function with improved consistent sorting
-  // Multi-screen functions are exported from multiscreen.js module
-
-
-    // FIXED: Combined distro calculation function
-    // FIXED: Apply combined distro function
-    // Generate combined equipment list for all screens
-    window.generateAllEquipment = function() {
-      if (typeof MultiScreenManager !== "undefined" && MultiScreenManager.saveCurrentScreenConfig) {
-        MultiScreenManager.saveCurrentScreenConfig();
-      }
-      
-      const controlsSection = document.getElementById('controls');
-      const wallDimensionsSection = document.getElementById('wallDimensions');
-      const canvasContainer = document.getElementById('canvasContainer');
-      
-      if (controlsSection) controlsSection.style.display = 'none';
-      if (wallDimensionsSection) wallDimensionsSection.style.display = 'none';
-      if (canvasContainer) canvasContainer.style.display = 'none';
-      
-      const tbody = document.querySelector('#equipmentTable tbody');
-      if (!tbody) return;
-      tbody.innerHTML = '';
-      
-      const combinedEquipment = {};
-      
-      let screenEquipmentContainer = document.getElementById('screenEquipmentContainer');
-      if (screenEquipmentContainer) {
-        screenEquipmentContainer.remove();
-      }
-      
-      screenEquipmentContainer = document.createElement('div');
-      screenEquipmentContainer.id = 'screenEquipmentContainer';
-      screenEquipmentContainer.className = 'screen-equipment-container';
-      screenEquipmentContainer.style.width = '100%';
-      
-      const containerTitle = document.createElement('h2');
-      containerTitle.textContent = 'Combined Equipment List';
-      containerTitle.style.textAlign = 'left';
-      containerTitle.style.marginBottom = '20px';
-      screenEquipmentContainer.appendChild(containerTitle);
-      
-      const backButton = document.createElement('button');
-      backButton.textContent = 'Back to Equipment Requirements';
-      backButton.style.cssText = `
-        display: block;
-        margin-bottom: 20px;
-        padding: 8px 15px;
-        background-color: #6c757d;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-      `;
-      
-      backButton.onclick = function() {
-        const controlsSection = document.getElementById('controls');
-        const wallDimensionsSection = document.getElementById('wallDimensions');
-        const canvasContainer = document.getElementById('canvasContainer');
-        const topSection = document.getElementById('topSection');
-
-        if (controlsSection) controlsSection.style.display = 'block';
-        if (wallDimensionsSection) wallDimensionsSection.style.display = 'flex';
-        if (canvasContainer) canvasContainer.style.display = 'flex';
-
-        // Reset topSection to original layout
-        topSection.style.display = 'flex';
-        topSection.style.alignItems = 'flex-start';
-        topSection.style.gap = '10px';
-        topSection.style.margin = '0px 0';
-        topSection.style.flexWrap = '';  // Clear the nowrap setting
-        topSection.style.justifyContent = 'flex-start';  // Reset to CSS default
-
-        const screenEquipmentContainer = document.getElementById('screenEquipmentContainer');
-        if (screenEquipmentContainer) {
-          screenEquipmentContainer.style.display = 'none';
-        }
-
-        generateWall();
-      };
-
-      // Create summary section
-      const summarySectionContainer = document.createElement('div');
-      summarySectionContainer.style.cssText = `
-        padding: 15px;
-        background-color: #f9f9f9;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        margin-bottom: 20px;
-      `;
-      
-      const summaryHeader = document.createElement('h3');
-      summaryHeader.textContent = 'Check with LED team to consolidate power and processing';
-      summaryHeader.style.cssText = `
-        margin-top: 0;
-        margin-bottom: 10px;
-        color: red;
-      `;
-      summarySectionContainer.appendChild(summaryHeader);
-
-      const message1 = document.createElement('p');
-      message1.textContent = "WDC, Boston, Ft. Lauderdale, Nashville & Phoenix cannot process LED tiles.";
-      message1.style.cssText = 'color: red; margin: 5px 0;';
-      summarySectionContainer.appendChild(message1);
-
-      const message2 = document.createElement('p');
-      message2.textContent = "Reach out to the LED Team for questions about power and processing requirements.";
-      message2.style.cssText = 'color: blue; margin: 5px 0 10px 0;';
-      summarySectionContainer.appendChild(message2);
-      
-      const summaryContent = document.createElement('div');
-      summaryContent.id = 'powerWeightSummary';
-      summarySectionContainer.appendChild(summaryContent);
-      
-      screenEquipmentContainer.appendChild(backButton);
-      screenEquipmentContainer.appendChild(summarySectionContainer);
-
-      // Create flex container for screen sections
-      const flexContainer = document.createElement('div');
-      flexContainer.style.cssText = `
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-        justify-content: flex-start;
-      `;
-      screenEquipmentContainer.appendChild(flexContainer);
-      
-      let totalCombinedWeight = 0;
-      let combinedVoltage = [];
-      let combinedAmps = 0;
-      let combinedWatts = 0;
-      
-      // Loop through each screen and generate its equipment
-      window.screenConfigurations.forEach((config, index) => {
-        const screenSection = document.createElement('div');
-        screenSection.className = 'screen-equipment-section';
-        screenSection.style.cssText = `
-          flex: 1;
-          min-width: 30%;
-          max-width: calc(33.33% - 20px);
-        `;
-        
-        const totalBlocks = config.blocksHor * config.blocksVer;
-        const productType = config.productType;
-        let voltage = (config.powerDistroType == "110") ? 110 : 208;
-        let amps, watts;
-        
-        if (productType === "absen") {
-          amps = (voltage == 110) ? totalBlocks * 0.59 : totalBlocks * 0.312;
-          watts = totalBlocks * 192;
-        } else if (productType === "BP2B1" || productType === "BP2B2" || productType === "BP2V2") {
-          amps = (voltage == 110) ? (totalBlocks * 95) / 110 : (totalBlocks * 95) / 208;
-          watts = totalBlocks * 190;
-        } else if (productType === "theatrixx") {
-          amps = (voltage == 110) ? totalBlocks * 1.63636 : (totalBlocks * 865.38461) / 1000;
-          watts = totalBlocks * 190;
-        } else {
-          amps = 0;
-          watts = 0;
-        }
-        
-        if (!combinedVoltage.includes(voltage)) {
-          combinedVoltage.push(voltage);
-        }
-        combinedAmps += amps;
-        combinedWatts += watts;
-        
-        screenSection.innerHTML = `
-          <h3>Screen ${config.id} Equipment</h3>
-          <div class="screen-power-summary" style="margin-bottom: 15px; padding: 8px; background-color: #f0f0f0; border-radius: 5px;">
-            <div><strong>Product Type:</strong> ${productType}</div>
-            <div><strong>Dimensions:</strong> ${config.blocksHor} x ${config.blocksVer} tiles</div>
-            <div><strong>Size:</strong> ${(config.blocksHor * 1.64).toFixed(2)}' x ${(config.blocksVer * 1.64).toFixed(2)}'</div>
-            <div><strong>Voltage:</strong> ${voltage}V</div>
-            <div><strong>Amperage:</strong> ${amps.toFixed(2)}A</div>
-            <div><strong>Power:</strong> ${watts.toFixed(2)}W</div>
-          </div>
-        `;
-        
-        // ✅ ADD EQUIPMENT TOGGLES TO EACH SCREEN
-        // addEquipmentTogglesToScreen(screenSection, config.id); // TODO: Function removed in Phase 3
-        
-        const screenTable = document.createElement('table');
-        screenTable.className = 'equipment-table';
-        screenTable.style.width = '100%';
-        screenTable.style.fontSize = '12px';
-        screenTable.innerHTML = `
-          <thead>
-            <tr>
-              <th>Ecode</th>
-              <th>Equipment Name</th>
-              <th>Quantity</th>
-              <th>Weight (lbs)</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        `;
-        
-        const screenEquipment = getEquipmentForScreen(config);
-        const screenTbody = screenTable.querySelector('tbody');
-        let screenWeight = 0;
-        
-        for (const item of screenEquipment) {
-          if (item.quantity > 0) {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${item.ecode || ''}</td>
-              <td>${item.name}</td>
-              <td>${item.quantity}</td>
-              <td>${(item.weight * item.quantity).toFixed(2)}</td>
-            `;
-            screenTbody.appendChild(row);
-            screenWeight += item.weight * item.quantity;
-            
-            const key = `${item.ecode}|${item.name}`;
-            if (!combinedEquipment[key]) {
-              combinedEquipment[key] = {
-                ecode: item.ecode,
-                name: item.name,
-                quantity: 0,
-                weight: item.weight
-              };
-            }
-            combinedEquipment[key].quantity = +combinedEquipment[key].quantity + +item.quantity;
-          }
-        }
-        
-        totalCombinedWeight += screenWeight;
-        
-        const totalRow = document.createElement('tr');
-        totalRow.className = 'total-row';
-        totalRow.innerHTML = `
-          <td colspan="3"><strong>Total Weight:</strong></td>
-          <td><strong>${screenWeight.toFixed(2)} lbs</strong></td>
-        `;
-        screenTbody.appendChild(totalRow);
-        
-        screenSection.appendChild(screenTable);
-        flexContainer.appendChild(screenSection);
-      });
-      
-      // Fill in the combined power and weight summary
-      const summaryContentDiv = document.getElementById('powerWeightSummary');
-      if (summaryContentDiv) {
-        summaryContentDiv.innerHTML = `
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div class="power-summary">
-              <h4 style="margin-top: 0;">Power Requirements</h4>
-              <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
-              <div><strong>Total Amperage:</strong> ${combinedAmps.toFixed(2)}A</div>
-              <div><strong>Total Power:</strong> ${combinedWatts.toFixed(2)}W</div>
-            </div>
-            <div class="weight-summary">
-              <h4 style="margin-top: 0;">Weight Summary</h4>
-              <div><strong>Total Equipment Weight:</strong> ${totalCombinedWeight.toFixed(2)} lbs</div>
-              <div><strong>Est. Shipping Weight:</strong> ${(totalCombinedWeight * 1.15).toFixed(2)} lbs</div>
-            </div>
-          </div>
-        `;
-      }
-
-      // Add combined equipment header
-      const combinedHeader = document.createElement('h3');
-      combinedHeader.textContent = 'Total Combined Equipment';
-      combinedHeader.style.cssText = `
-        margin-top: 30px;
-        padding: 10px 0;
-        border-top: 2px solid #007bff;
-        border-bottom: 2px solid #007bff;
-        clear: both;
-        width: 100%;
-        text-align: left;
-      `;
-      screenEquipmentContainer.appendChild(combinedHeader);
-
-      // Add combine buttons (Combine Distro and Combine Processing)
-      const combineButtonsContainer = document.createElement('div');
-      combineButtonsContainer.style.cssText = `
-        margin-top: 15px;
-        margin-bottom: 15px;
-        display: flex;
-        gap: 15px;
-        align-items: center;
-      `;
-
-      const combineDistroBtn = document.createElement('button');
-      combineDistroBtn.type = 'button';
-      combineDistroBtn.textContent = 'Combine Distro';
-      combineDistroBtn.style.cssText = `
-        padding: 8px 16px;
-        background-color: #28a745;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-      `;
-      combineDistroBtn.onclick = () => {
-        if (typeof window.showCombineDistroDialog === 'function') {
-          window.showCombineDistroDialog();
-        }
-      };
-
-      const combineProcessingBtn = document.createElement('button');
-      combineProcessingBtn.type = 'button';
-      combineProcessingBtn.textContent = 'Combine Processing';
-      combineProcessingBtn.style.cssText = `
-        padding: 8px 16px;
-        background-color: #007bff;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-      `;
-      combineProcessingBtn.onclick = () => {
-        console.log('Combine Processing button clicked');
-        console.log('window.showCombineProcessingDialog:', typeof window.showCombineProcessingDialog);
-        if (typeof window.showCombineProcessingDialog === 'function') {
-          console.log('Calling showCombineProcessingDialog...');
-          window.showCombineProcessingDialog();
-        } else {
-          console.error('showCombineProcessingDialog is not a function!');
-        }
-      };
-
-      combineButtonsContainer.appendChild(combineDistroBtn);
-      combineButtonsContainer.appendChild(combineProcessingBtn);
-      screenEquipmentContainer.appendChild(combineButtonsContainer);
-
-      // Create combined table
-      const combinedTable = document.createElement('table');
-      combinedTable.className = 'equipment-table';
-      combinedTable.style.cssText = 'width: 100%; margin-top: 20px;';
-      combinedTable.innerHTML = `
-        <thead>
-          <tr>
-            <th>Ecode</th>
-            <th>Equipment Name</th>
-            <th>Quantity</th>
-            <th>Weight (lbs)</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      `;
-      
-      const combinedTbody = combinedTable.querySelector('tbody');
-      const consolidatedEquipment = Object.values(combinedEquipment);
-      
-      // Sort equipment for consistent display
-      consolidatedEquipment.sort((a, b) => {
-        if (a.ecode !== b.ecode) {
-          return a.ecode.localeCompare(b.ecode);
-        }
-        return a.name.localeCompare(b.name);
-      });
-
-      // Add combined equipment to table
-      for (const item of consolidatedEquipment) {
-        if (item.quantity > 0) {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${item.ecode || ''}</td>
-            <td>${item.name}</td>
-            <td>${item.quantity}</td>
-            <td>${(item.weight * item.quantity).toFixed(2)}</td>
-          `;
-          combinedTbody.appendChild(row);
-          
-          // Also add to original table
-          const origRow = document.createElement('tr');
-          origRow.innerHTML = row.innerHTML;
-          tbody.appendChild(origRow);
-        }
-      }
-
-      // Add total weight for combined equipment
-      const totalCombinedRow = document.createElement('tr');
-      totalCombinedRow.className = 'total-row';
-      totalCombinedRow.innerHTML = `
-        <td colspan="3"><strong>Total Combined Weight:</strong></td>
-        <td><strong>${totalCombinedWeight.toFixed(2)} lbs</strong></td>
-      `;
-      combinedTbody.appendChild(totalCombinedRow);
-
-      screenEquipmentContainer.appendChild(combinedTable);
-
-      // Position the container
-      const configContainer = document.getElementById('configContainer');
-      const topSection = document.getElementById('topSection');
-
-      if (configContainer && topSection) {
-        topSection.style.display = 'flex';
-        topSection.style.flexWrap = 'nowrap';
-        topSection.style.gap = '20px';
-        topSection.style.alignItems = 'flex-start';
-        
-        screenEquipmentContainer.style.flex = '1';
-        screenEquipmentContainer.style.marginTop = '0';
-        screenEquipmentContainer.style.maxWidth = 'calc(100% - 370px)';
-        
-        topSection.insertBefore(screenEquipmentContainer, configContainer.nextSibling);
-      } else {
-        const controlsDiv = document.getElementById('controls');
-        if (controlsDiv && controlsDiv.parentNode) {
-          controlsDiv.parentNode.insertBefore(screenEquipmentContainer, controlsDiv.nextSibling);
-        }
-      }
-
-      return totalCombinedWeight;
-    };
-
-    // Export to Excel function
-    // Email capture function
-    // Multi-screen functions are exported from multiscreen.js
-
-    // Display functions for power and weight information
-    window.displayWallWeight = function(weight) {
-      const totalWeightDiv = document.getElementById('totalWallWeight');
-      if (!totalWeightDiv) return;
-      totalWeightDiv.innerHTML = `<strong>Wall Weight:</strong><br>${weight.toFixed(2)} lbs`;
-    };
-
-    window.displayEstShippingWeight = function(weight) {
-      const totalWeightDiv = document.getElementById('totalWeight');
-      if (!totalWeightDiv) return;
-      totalWeightDiv.innerHTML = `<strong>EST Shipping Weight:</strong><br><div style="text-align: center;">${weight.toFixed(2)} lbs</div>`;
-    };
-
-    window.displayTotalPixels = function(pixels) {
-      const totalPixelsDiv = document.getElementById('totalPixels');
-      if (!totalPixelsDiv) return;
-      totalPixelsDiv.innerHTML = `<strong>Total Pixels:</strong><br>${pixels.toLocaleString()} px`;
-    };
-
-    window.displayTotalPower = function(voltage, amps, watts) {
-      const totalPowerDiv = document.getElementById('totalPower');
-      if (!totalPowerDiv) return;
-      totalPowerDiv.innerHTML = `
-        <strong>Average Power Consumption:</strong><br>
-        Voltage: ${voltage}V<br>
-        Total Amperage: ${amps.toFixed(2)} A<br>
-        Total Max Watts: ${watts.toFixed(2)} W
-      `;
-
-      // Show 110V circuits if applicable
-      if (typeof display110Circuits === 'function') {
-        display110Circuits();
-      }
-
-      // Show 208V circuits when "Auto" is chosen
-      if (typeof display208Circuits === 'function') {
-        display208Circuits();
-      }
-    };
-
-    window.displayDataPortsNeeded = function(productType, totalTiles) {
-      const dataPortsDiv = document.getElementById('dataPortsNeeded');
-      if (!dataPortsDiv) return;
-
-      // Define daisy chain limits for each product type
-      const daisyChainLimits = {
-        'absen': 10,
-        'BP2B1': 13,  // ROE Black Pearl 2 B1
-        'BP2B2': 13,  // ROE Black Pearl 2 B2
-        'BP2V2': 13,  // ROE Black Pearl 2V2
-        'theatrixx': 10,
-        // Legacy support for old calls
-        'Absen': 10,
-        'ROE': 13,
-        'Theatrixx': 10
-      };
-
-      const limit = daisyChainLimits[productType];
-
-      if (!limit) {
-        dataPortsDiv.innerHTML = '';
-        return;
-      }
-
-      // Calculate number of data ports needed (round up)
-      const portsNeeded = Math.ceil(totalTiles / limit);
-
-      dataPortsDiv.innerHTML = `
-        <strong>Data Ports Needed:</strong><br>
-        ${portsNeeded} port${portsNeeded !== 1 ? 's' : ''} (${totalTiles} tiles ÷ ${limit} per chain)
-      `;
-    };
-
-    window.display110Circuits = function() {
-      const totalPowerDiv = document.getElementById('totalPower');
-      if (!totalPowerDiv) return;
-
-      // Remove ALL existing circuits displays first (in case there are multiple)
-      const existingCircuitsDivs = document.querySelectorAll('#circuits110Display');
-      existingCircuitsDivs.forEach(div => div.remove());
-
-      // Also remove any divs that might have been created without the ID
-      const allDivs = totalPowerDiv.querySelectorAll('div');
-      allDivs.forEach(div => {
-        if (div.textContent.includes('Number of 110 circuits needed')) {
-          div.remove();
-        }
-      });
-
-      // Check if 110V is selected
-      const powerDistroType = document.getElementById('powerDistroType').value;
-      const voltage = (powerDistroType == "110") ? 110 : 208;
-
-      if (voltage === 110) {
-        // Look for EDT110M quantity in the equipment table
-        const equipmentRows = document.querySelectorAll('#equipmentTable tbody tr');
-        let edt110mQuantity = 0;
-
-        equipmentRows.forEach(row => {
-          const cells = row.cells;
-          if (cells.length >= 3) {
-            const ecode = cells[0].textContent.trim();
-            const name = cells[1].textContent.trim();
-            // Check both ecode and name to catch different variations
-            if (ecode === 'EDT110M' || name.includes('Edison to True1 power cable')) {
-              edt110mQuantity = parseInt(cells[2].textContent.trim(), 10) || 0;
-            }
-          }
-        });
-
-        // If EDT110M not found in table, calculate it directly based on product type
-        if (edt110mQuantity === 0) {
-          const productType = document.getElementById('productType').value;
-          const blocksHor = parseInt(document.getElementById('blocksHor').value, 10);
-          const blocksVer = parseInt(document.getElementById('blocksVer').value, 10);
-          const totalBlocks = blocksHor * blocksVer;
-
-          let O32, P32;
-
-          if (productType === "absen") {
-            // For Absen: Math.ceil(totalBlocksWithSpares / 8)
-            const totalSpares = window.calcSpares(totalBlocks, 8, 1.5);
-            const totalBlocksWithSpares = totalBlocks + totalSpares;
-            O32 = Math.ceil(totalBlocksWithSpares / 8);
-            P32 = Math.ceil(O32 + (O32 * 0.05));
-            edt110mQuantity = P32;
-          } else if (productType === "BP2B1" || productType === "BP2B2" || productType === "BP2V2") {
-            // For ROE: Math.ceil(totalBlocks / 11)
-            O32 = Math.ceil(totalBlocks / 11);
-            P32 = Math.ceil(O32 + (O32 * 0.05));
-            edt110mQuantity = P32;
-          } else if (productType === "theatrixx") {
-            // For Theatrixx: Math.ceil(totalBlocksWithSpares / 2.409)
-            const totalSpares = window.calcSpares(totalBlocks, 10, 2);
-            const totalBlocksWithSpares = totalBlocks + totalSpares;
-            const O25 = Math.ceil(totalBlocksWithSpares / 2.409);
-            const P25 = Math.ceil((O25 / 8.302) * 2);
-            edt110mQuantity = P25;
-          }
-        }
-
-        // Create and append the circuits display ONLY ONCE
-        if (edt110mQuantity > 0) {
-          const circuitsDiv = document.createElement('div');
-          circuitsDiv.id = 'circuits110Display';
-          circuitsDiv.innerHTML = `<strong>Number of 110v circuits needed: ${edt110mQuantity}</strong>`;
-          circuitsDiv.style.marginTop = '5px';
-          circuitsDiv.style.color = '#333';
-          totalPowerDiv.appendChild(circuitsDiv);
-        }
-      }
-    };
-
-    window.display208Circuits = function() {
-      const totalPowerDiv = document.getElementById('totalPower');
-      if (!totalPowerDiv) return;
-
-      // Remove any previous 208V circuits display
-      const existing208Div = document.querySelector('#circuits208Display');
-      if (existing208Div) existing208Div.remove();
-
-      // Show for Auto, CUBEDIST, and TP1
-      const distro = document.getElementById('powerDistroType').value;
-      if (distro !== "Auto" && distro !== "CUBEDIST" && distro !== "TP1") return;
-
-      // Read blocksHor, blocksVer, numScreens
-      const blocksHor = parseInt(document.getElementById('blocksHor').value, 10) || 0;
-      const blocksVer = parseInt(document.getElementById('blocksVer').value, 10) || 0;
-      const numScreens = parseInt(document.getElementById('numScreens')?.value || "1", 10);
-
-      const totalTiles = blocksHor * blocksVer * numScreens;
-      if (totalTiles <= 0) return;
-
-      // Divide by 16, round up
-      const neededCircuits = Math.ceil(totalTiles / 16);
-
-      const circuitsDiv = document.createElement('div');
-      circuitsDiv.id = 'circuits208Display';
-      circuitsDiv.innerHTML = `<strong>Number of 208v circuits needed: ${neededCircuits}</strong>`;
-      circuitsDiv.style.marginTop = '5px';
-      circuitsDiv.style.color = '#333';
-
-      totalPowerDiv.appendChild(circuitsDiv);
-    };
-
-        // Zoom functions for canvas
-    window.currentZoomLevel = 1; // Default zoom level
-
-    window.zoomIn = function() {
-      window.currentZoomLevel = Math.min(window.currentZoomLevel + 1, 8);
-      if (typeof generateWall === 'function') {
-        generateWall();
-      }
-    };
-
-    window.zoomOut = function() {
-      window.currentZoomLevel = Math.max(window.currentZoomLevel - 1, 1);
-      if (typeof generateWall === 'function') {
-        generateWall();
-      }
-    };
-
-    window.resetScreen = function() {
-      // Reset zoom level
-      window.currentZoomLevel = 1;
-
-      // Reset product type to first option (Absen)
-      const productTypeSelect = document.getElementById('productType');
-      if (productTypeSelect && productTypeSelect.options.length > 0) {
-        productTypeSelect.selectedIndex = 0;
-        productTypeSelect.dispatchEvent(new Event('change'));
-      }
-
-      // Reset block inputs to default (5x5)
-      const blocksHorInput = document.getElementById('blocksHor');
-      const blocksVerInput = document.getElementById('blocksVer');
-      if (blocksHorInput) blocksHorInput.value = '5';
-      if (blocksVerInput) blocksVerInput.value = '5';
-
-      // Reset to block input mode (not dimension input)
-      const blockInputRadio = document.getElementById('blockInput');
-      if (blockInputRadio) {
-        blockInputRadio.checked = true;
-        const blockInputsDiv = document.getElementById('blockInputs');
-        const dimensionInputsDiv = document.getElementById('dimensionInputs');
-        if (blockInputsDiv) blockInputsDiv.style.display = 'block';
-        if (dimensionInputsDiv) dimensionInputsDiv.style.display = 'none';
-      }
-
-      // Reset dimension inputs
-      const widthFeetInput = document.getElementById('widthFeet');
-      const heightFeetInput = document.getElementById('heightFeet');
-      if (widthFeetInput) widthFeetInput.value = '1';
-      if (heightFeetInput) heightFeetInput.value = '1';
-
-      // Uncheck multiple screen management
-      const multiScreenCheckbox = document.getElementById('multipleScreenManagementCheckbox');
-      if (multiScreenCheckbox) {
-        multiScreenCheckbox.checked = false;
-        multiScreenCheckbox.dispatchEvent(new Event('change'));
-      }
-
-      // Uncheck and hide advanced options
-      const advancedCheckbox = document.getElementById('advancedOptionsCheckbox');
-      if (advancedCheckbox) {
-        advancedCheckbox.checked = false;
-        const tileQuantityInput = document.getElementById('tileQuantityInput');
-        const possibleScreenSizes = document.getElementById('possibleScreenSizes');
-        if (tileQuantityInput) tileQuantityInput.style.display = 'none';
-        if (possibleScreenSizes) possibleScreenSizes.style.display = 'none';
-      }
-
-      // Reset power distro type to Auto
-      const powerDistroSelect = document.getElementById('powerDistroType');
-      if (powerDistroSelect) {
-        powerDistroSelect.value = 'Auto';
-        powerDistroSelect.dispatchEvent(new Event('change'));
-      }
-
-      // Reset redundancy to None
-      const redundancySelect = document.getElementById('redundancy');
-      if (redundancySelect) redundancySelect.value = 'None';
-
-      // Reset source signals to 1
-      const sourceSignalsInput = document.getElementById('sourceSignals');
-      if (sourceSignalsInput) sourceSignalsInput.value = '1';
-
-      // Uncheck and hide dummy tiles option
-      const dummyTilesCheckbox = document.getElementById('dummyTilesCheckbox');
-      if (dummyTilesCheckbox) {
-        dummyTilesCheckbox.checked = false;
-        const dummyTileOption = document.getElementById('dummyTileOption');
-        const dummyTileCountContainer = document.getElementById('dummyTileCountContainer');
-        if (dummyTileOption) dummyTileOption.style.display = 'none';
-        if (dummyTileCountContainer) dummyTileCountContainer.style.display = 'none';
-      }
-
-      // Reset wall type to Flat
-      const flatRadio = document.getElementById('flat');
-      if (flatRadio) flatRadio.checked = true;
-
-      // Reset to Ground Support
-      const groundSupportRadio = document.getElementById('groundSupport');
-      if (groundSupportRadio) {
-        groundSupportRadio.checked = true;
-        groundSupportRadio.dispatchEvent(new Event('change'));
-      }
-
-      // Reset ground support type to Single Base
-      const groundSupportTypeSelect = document.getElementById('groundSupportType');
-      if (groundSupportTypeSelect) {
-        groundSupportTypeSelect.value = 'Single Base';
-        groundSupportTypeSelect.dispatchEvent(new Event('change'));
-      }
-
-      // Reset flown support type to Double Header
-      const flownSupportTypeSelect = document.getElementById('flownSupportType');
-      if (flownSupportTypeSelect) flownSupportTypeSelect.value = 'Double Header';
-
-      // Uncheck "Show Tile Numbers"
-      const toggleNumbersCheckbox = document.getElementById('toggleNumbers');
-      if (toggleNumbersCheckbox) toggleNumbersCheckbox.checked = false;
-
-      // Uncheck "Show Data Wiring Diagram"
-      const toggleWiringCheckbox = document.getElementById('toggleWiring');
-      if (toggleWiringCheckbox) {
-        toggleWiringCheckbox.checked = false;
-        toggleWiringCheckbox.dispatchEvent(new Event('change'));
-      }
-
-      // Clear order information
-      const orderNumberInput = document.getElementById('orderNumber');
-      const orderDateInput = document.getElementById('orderDate');
-      const locationInput = document.getElementById('location');
-      if (orderNumberInput) orderNumberInput.value = '';
-      if (orderDateInput) orderDateInput.value = '';
-      if (locationInput) locationInput.value = '';
-
-      // Regenerate the wall with reset values
-      if (typeof generateWall === 'function') {
-        generateWall();
-      }
-    };
-
-    window.openScreenViews = function() {
-      // Get current screen parameters
-      const productType = document.getElementById('productType')?.value || 'absen';
-      const blocksHor = parseInt(document.getElementById('blocksHor')?.value) || 10;
-      const blocksVer = parseInt(document.getElementById('blocksVer')?.value) || 6;
-      const powerDistroType = document.getElementById('powerDistroType')?.value || '208';
-
-      // Save to localStorage as backup
-      localStorage.setItem('screenProduct', productType);
-      localStorage.setItem('screenBlocksHor', blocksHor);
-      localStorage.setItem('screenBlocksVer', blocksVer);
-      localStorage.setItem('screenPowerDistroType', powerDistroType);
-
-      // Navigate to screen views page with URL parameters
-      window.location.href = `screen-views.html?product=${encodeURIComponent(productType)}&blocksHor=${blocksHor}&blocksVer=${blocksVer}&powerDistroType=${powerDistroType}`;
-    };
-
-    window.openTechnicalView = function() {
-      // Get current screen parameters
-      const productType = document.getElementById('productType')?.value || 'absen';
-      const blocksHor = parseInt(document.getElementById('blocksHor')?.value) || 10;
-      const blocksVer = parseInt(document.getElementById('blocksVer')?.value) || 6;
-      const powerDistroType = document.getElementById('powerDistroType')?.value || '208';
-
-      // Save to localStorage as backup
-      localStorage.setItem('screenProduct', productType);
-      localStorage.setItem('screenBlocksHor', blocksHor);
-      localStorage.setItem('screenBlocksVer', blocksVer);
-      localStorage.setItem('screenPowerDistroType', powerDistroType);
-
-      // Navigate to technical view page with URL parameters
-      window.location.href = `technical-view.html?product=${encodeURIComponent(productType)}&blocksHor=${blocksHor}&blocksVer=${blocksVer}&powerDistroType=${powerDistroType}`;
-    };
-
-
-    // Event listeners
+    // Wait for DOM to be ready
     document.addEventListener('DOMContentLoaded', function() {
-      const multiScreenCheckbox = document.getElementById('multipleScreenManagementCheckbox');
-      if (multiScreenCheckbox) {
-        multiScreenCheckbox.addEventListener('change', function() {
-          if (typeof toggleMultiScreenManagement === 'function') {
-            toggleMultiScreenManagement();
-          } else {
-            console.error('toggleMultiScreenManagement is not defined');
-          }
-        });
-      }
+      console.log('GP2 Half keyboard shortcut listener initialized. Press Alt+S to activate.');
 
-      const blockInputRadio = document.getElementById('blockInput');
-      const dimensionInputRadio = document.getElementById('dimensionInput');
-      if (blockInputRadio && dimensionInputRadio) {
-        blockInputRadio.addEventListener('change', toggleInputType);
-        dimensionInputRadio.addEventListener('change', toggleInputType);
-        toggleInputType();
-      }
+      document.addEventListener('keydown', function(event) {
+        // More robust key detection - check multiple properties
+        const isAltPressed = event.altKey;
+        const isSKey = event.key === 's' || event.key === 'S' ||
+                       event.code === 'KeyS' ||
+                       event.keyCode === 83;
 
-      const groundSupportRadio = document.getElementById('groundSupport');
-      const flownSupportRadio = document.getElementById('flownSupport');
-      if (groundSupportRadio && flownSupportRadio) {
-        groundSupportRadio.addEventListener('change', toggleGroundSupportOptions);
-        flownSupportRadio.addEventListener('change', toggleFlownSupportOptions);
-        toggleGroundSupportOptions();
-        toggleFlownSupportOptions();
-      }
+        if (isAltPressed && isSKey) {
+          console.log('Alt+S detected!');
+          event.preventDefault(); // Prevent default browser behavior
 
-      const toggleNumbersCheckbox = document.getElementById('toggleNumbers');
-      if (toggleNumbersCheckbox) {
-        window.showNumbers = toggleNumbersCheckbox.checked;
-        toggleNumbersCheckbox.addEventListener('change', () => {
-          window.showNumbers = toggleNumbersCheckbox.checked;
-          generateWall();
-        });
-      }
+          const productSelect = document.getElementById('productType');
+          const existingOption = document.getElementById('gp2HalfProductOption'); // Changed to unique ID
 
-      // Wiring diagram controls
-      const toggleWiringCheckbox = document.getElementById('toggleWiring');
-      const wiringDirectionSelect = document.getElementById('wiringDirection');
-      const wiringStartPositionSelect = document.getElementById('wiringStartPosition');
-      const wiringDirectionGroup = document.getElementById('wiringDirectionGroup');
-      const wiringStartPositionGroup = document.getElementById('wiringStartPositionGroup');
+          console.log('DEBUG - productSelect found:', productSelect !== null);
+          console.log('DEBUG - existingOption found:', existingOption !== null);
+          console.log('DEBUG - gp2HalfActivated:', window.gp2HalfActivated);
+          console.log('DEBUG - Condition check: !gp2HalfActivated =', !window.gp2HalfActivated, '&& !existingOption =', !existingOption);
 
-      if (toggleWiringCheckbox) {
-        window.showWiring = toggleWiringCheckbox.checked;
+          if (!window.gp2HalfActivated && !existingOption) {
+            console.log('DEBUG - Adding GP2 Half option now...');
 
-        // Function to toggle visibility of wiring options
-        const toggleWiringOptions = () => {
-          const isChecked = toggleWiringCheckbox.checked;
-          if (wiringDirectionGroup) {
-            wiringDirectionGroup.style.display = isChecked ? 'block' : 'none';
-          }
-          if (wiringStartPositionGroup) {
-            wiringStartPositionGroup.style.display = isChecked ? 'block' : 'none';
-          }
-          updateCaptureButtonVisibility();
-        };
+            // Preserve current selection
+            const currentValue = productSelect.value;
+            console.log('DEBUG - Current productType value:', currentValue);
 
-        toggleWiringCheckbox.addEventListener('change', () => {
-          window.showWiring = toggleWiringCheckbox.checked;
-          toggleWiringOptions();
-          generateWall();
-        });
-      }
-      if (wiringDirectionSelect) {
-        window.wiringDirection = wiringDirectionSelect.value;
-        wiringDirectionSelect.addEventListener('change', () => {
-          window.wiringDirection = wiringDirectionSelect.value;
-          generateWall();
-        });
-      }
-      if (wiringStartPositionSelect) {
-        window.wiringStartPosition = wiringStartPositionSelect.value;
-        wiringStartPositionSelect.addEventListener('change', () => {
-          window.wiringStartPosition = wiringStartPositionSelect.value;
-          generateWall();
-        });
-      }
+            // Add the option
+            const option = document.createElement('option');
+            option.value = 'ROEGP26Half';
+            option.id = 'gp2HalfProductOption'; // Changed to unique ID
+            option.textContent = 'ROE GP2.6 Half';
+            productSelect.appendChild(option);
 
-      // Power diagram controls
-      const togglePowerCheckbox = document.getElementById('togglePower');
-      const powerDirectionSelect = document.getElementById('powerDirection');
-      const powerStartPositionSelect = document.getElementById('powerStartPosition');
-      const powerDirectionGroup = document.getElementById('powerDirectionGroup');
-      const powerStartPositionGroup = document.getElementById('powerStartPositionGroup');
-
-      if (togglePowerCheckbox) {
-        window.showPower = togglePowerCheckbox.checked;
-
-        // Function to toggle visibility of power options
-        const togglePowerOptions = () => {
-          const isChecked = togglePowerCheckbox.checked;
-          if (powerDirectionGroup) {
-            powerDirectionGroup.style.display = isChecked ? 'block' : 'none';
-          }
-          if (powerStartPositionGroup) {
-            powerStartPositionGroup.style.display = isChecked ? 'block' : 'none';
-          }
-          updateCaptureButtonVisibility();
-        };
-
-        togglePowerCheckbox.addEventListener('change', () => {
-          window.showPower = togglePowerCheckbox.checked;
-          togglePowerOptions();
-          generateWall();
-        });
-      }
-      if (powerDirectionSelect) {
-        window.powerDirection = powerDirectionSelect.value;
-        powerDirectionSelect.addEventListener('change', () => {
-          window.powerDirection = powerDirectionSelect.value;
-          generateWall();
-        });
-      }
-      if (powerStartPositionSelect) {
-        window.powerStartPosition = powerStartPositionSelect.value;
-        powerStartPositionSelect.addEventListener('change', () => {
-          window.powerStartPosition = powerStartPositionSelect.value;
-          generateWall();
-        });
-      }
-
-      const blocksHorInput = document.getElementById('blocksHor');
-      const blocksVerInput = document.getElementById('blocksVer');
-      if (blocksHorInput && blocksVerInput) {
-        blocksHorInput.addEventListener('input', generateWall);
-        blocksVerInput.addEventListener('input', generateWall);
-      }
-
-      const productTypeSelect = document.getElementById('productType');
-      if (productTypeSelect) {
-        productTypeSelect.addEventListener('change', generateWall);
-      }
-
-      const powerDistroSelect = document.getElementById('powerDistroType');
-      if (powerDistroSelect) {
-        powerDistroSelect.addEventListener('change', generateWall);
-      }
-
-      const redundancySelect = document.getElementById('redundancy');
-      if (redundancySelect) {
-        redundancySelect.addEventListener('change', generateWall);
-      }
-
-      const sourceSignalsInput = document.getElementById('sourceSignals');
-      if (sourceSignalsInput) {
-        sourceSignalsInput.addEventListener('change', generateWall);
-      }
-
-      const wallTypeRadios = document.querySelectorAll('input[name="wallType"]');
-      wallTypeRadios.forEach(radio => {
-        radio.addEventListener('change', generateWall);
-      });
-
-      const supportTypeRadios = document.querySelectorAll('input[name="supportType"]');
-      supportTypeRadios.forEach(radio => {
-        radio.addEventListener('change', () => {
-          toggleGroundSupportOptions();
-          toggleFlownSupportOptions();
-          generateWall();
-        });
-      });
-
-      const groundSupportTypeSelect = document.getElementById('groundSupportType');
-      const flownSupportTypeSelect = document.getElementById('flownSupportType');
-      if (groundSupportTypeSelect) {
-        groundSupportTypeSelect.addEventListener('change', generateWall);
-      }
-      if (flownSupportTypeSelect) {
-        flownSupportTypeSelect.addEventListener('change', generateWall);
-      }
-
-      // Capture button functionality
-      function updateCaptureButtonVisibility() {
-        const captureButton = document.getElementById('captureWiringButton');
-        const captureContainer = document.getElementById('captureButtonContainer');
-        const toggleWiring = document.getElementById('toggleWiring');
-        const togglePower = document.getElementById('togglePower');
-
-        if (captureButton && captureContainer) {
-          const showWiringDiagram = toggleWiring && toggleWiring.checked;
-          const showPowerDiagram = togglePower && togglePower.checked;
-
-          if (showWiringDiagram || showPowerDiagram) {
-            captureContainer.style.display = 'block';
-            captureButton.style.display = 'inline-block';
-
-            // Update button text based on what's shown
-            if (showWiringDiagram && showPowerDiagram) {
-              captureButton.textContent = '📸 Capture Wiring Diagrams';
-            } else if (showWiringDiagram) {
-              captureButton.textContent = '📸 Capture Data Wiring';
-            } else {
-              captureButton.textContent = '📸 Capture Power Wiring';
+            // Restore previous selection to prevent triggering change events
+            if (currentValue) {
+              productSelect.value = currentValue;
             }
+
+            window.gp2HalfActivated = true;
+
+            console.log('✓ GP2 Half option activated!');
+            console.log('DEBUG - Option added. Select now has', productSelect.options.length, 'options');
+            console.log('DEBUG - Last option:', productSelect.options[productSelect.options.length - 1].textContent);
+
+            // Show a brief notification to the user
+            const notification = document.createElement('div');
+            notification.textContent = '✓ GP2 Half option activated';
+            notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 5px; z-index: 10000; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 2500);
+          } else if (window.gp2HalfActivated && existingOption) {
+            console.log('DEBUG - Removing GP2 Half option...');
+
+            // Remove the option
+            existingOption.remove();
+            window.gp2HalfActivated = false;
+            console.log('GP2 Half option deactivated');
+
+            // Show notification
+            const notification = document.createElement('div');
+            notification.textContent = 'GP2 Half option deactivated';
+            notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff9800; color: white; padding: 15px 20px; border-radius: 5px; z-index: 10000; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 2500);
           } else {
-            captureContainer.style.display = 'none';
-            captureButton.style.display = 'none';
+            console.log('DEBUG - No action taken. Current state does not match any condition.');
           }
         }
-      }
-
-      function captureWiringDiagram() {
-        const canvas = document.getElementById('wallCanvas2D');
-        if (!canvas) return;
-
-        // Create a temporary canvas with extra height for info text
-        const tempCanvas = document.createElement('canvas');
-        const infoHeight = 80;
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height + infoHeight;
-        const ctx = tempCanvas.getContext('2d');
-
-        // Fill with white background
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-        // Copy original canvas content
-        ctx.drawImage(canvas, 0, 0);
-
-        // Add info text at the bottom
-        const productType = document.getElementById('productType')?.value || 'LED';
-        const blocksHor = document.getElementById('blocksHor')?.value || '10';
-        const blocksVer = document.getElementById('blocksVer')?.value || '6';
-        const toggleWiring = document.getElementById('toggleWiring');
-        const togglePower = document.getElementById('togglePower');
-
-        let diagramType = '';
-        if (toggleWiring && toggleWiring.checked && togglePower && togglePower.checked) {
-          diagramType = 'Data & Power Wiring';
-        } else if (toggleWiring && toggleWiring.checked) {
-          diagramType = 'Data Wiring';
-        } else if (togglePower && togglePower.checked) {
-          diagramType = 'Power Wiring';
-        }
-
-        // Draw info section background
-        ctx.fillStyle = '#f0f0f0';
-        ctx.fillRect(0, canvas.height, tempCanvas.width, infoHeight);
-
-        // Draw text
-        ctx.fillStyle = '#000000';
-        ctx.font = 'bold 20px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(diagramType, tempCanvas.width / 2, canvas.height + 30);
-
-        // Add product and dimensions info
-        ctx.font = '16px Arial';
-        ctx.fillText(`${productType.toUpperCase()} - ${blocksHor} × ${blocksVer} tiles`, tempCanvas.width / 2, canvas.height + 55);
-
-        // Convert to data URL and download
-        const dataURL = tempCanvas.toDataURL('image/png');
-        const link = document.createElement('a');
-
-        // Create filename
-        const diagramTypeClean = diagramType.replace(/\s+/g, '_').replace(/&/g, 'and');
-        link.download = `${productType.toUpperCase()}_${diagramTypeClean}_${blocksHor}x${blocksVer}.png`;
-        link.href = dataURL;
-        link.click();
-      }
-
-      // Add event listener for capture button
-      const captureWiringButton = document.getElementById('captureWiringButton');
-      if (captureWiringButton) {
-        captureWiringButton.addEventListener('click', captureWiringDiagram);
-      }
-
-      // Initial generation
-      generateWall();
-
-
+      });
     });
   </script>
+
+  <script src="js/main.js?v=1770160900"></script>
 </body>
 </html>
 

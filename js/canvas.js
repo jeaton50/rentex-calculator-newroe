@@ -112,13 +112,42 @@ const CanvasRenderer = {
     // Use provided blockImage or fall back to loaded image or create fallback
     const tileImage = blockImage || this.images.block;
 
-    const blockSize = (this.config.baseBlockPixels / 4) * zoomLevel;
+    // Check if ROE Graphite Mix mode is enabled
+    const roeGraphicMixEnabled = document.getElementById('roeGraphicMix')?.checked || false;
+
+    // Get product type to determine tile dimensions
+    const productType = wallData.productType || 'absen';
+
+    // Calculate block size based on product type
+    // ROE GP2.6 Full is 500mm × 1000mm (tall rectangle)
+    // All other products are 500mm × 500mm (square)
+    let blockWidth = (this.config.baseBlockPixels / 4) * zoomLevel;
+    let blockHeight = (this.config.baseBlockPixels / 4) * zoomLevel;
+
+    // Handle ROE Graphite Mix mode (mixed Half and Full tiles)
+    let mixedTileMode = false;
+    let halfHorizontal = 0, halfVertical = 0;
+    let fullHorizontal = 0, fullVertical = 0;
+    let halfBlockHeight = blockHeight; // 500mm (standard)
+    let fullBlockHeight = blockHeight * 2; // 1000mm (2x height)
+
+    if (roeGraphicMixEnabled) {
+      mixedTileMode = true;
+      halfHorizontal = parseInt(document.getElementById('halfHorizontal')?.value || 0, 10);
+      halfVertical = parseInt(document.getElementById('halfVertical')?.value || 0, 10);
+      fullHorizontal = parseInt(document.getElementById('fullHorizontal')?.value || 0, 10);
+      fullVertical = parseInt(document.getElementById('fullVertical')?.value || 0, 10);
+      console.log('ROE Graphite Mix mode:', { halfHorizontal, halfVertical, fullHorizontal, fullVertical });
+    } else if (productType === 'ROEGP26Full') {
+      blockHeight = blockHeight * 2; // 1000mm is 2x the standard 500mm
+      console.log('ROE GP2.6 Full visualization: using tall rectangles', { blockWidth, blockHeight });
+    }
 
     // Get number of screens (default to 1)
     const numScreens = parseInt(document.getElementById('numScreens')?.value || "1", 10);
 
     // Calculate support heights
-    const supportHeight = blockSize / 4;
+    const supportHeight = blockWidth / 4; // Use blockWidth as base for support size
     const extraHeightTop = wallData.flownSupport ? supportHeight * 2 : 0;
     const extraHeightBottom = wallData.groundSupport ? supportHeight * 2 : 0;
 
@@ -126,9 +155,33 @@ const CanvasRenderer = {
     const gridLinePadding = 5;
 
     // Calculate canvas dimensions
-    const singleScreenWidth = wallData.blocksHor * blockSize;
+    let singleScreenWidth, totalWallHeight;
+
+    if (mixedTileMode) {
+      // Mixed mode: use max horizontal count and sum of half/full heights
+      const maxHorizontal = Math.max(halfHorizontal, fullHorizontal);
+      singleScreenWidth = maxHorizontal * blockWidth;
+      totalWallHeight = (halfVertical * halfBlockHeight) + (fullVertical * fullBlockHeight);
+    } else if (productType === 'ROEGP26Full' && (wallData.gp2HalfAutoRows > 0 || wallData.gp2HalfManualRows > 0)) {
+      // GP2 Full with GP2 Half mixed tiles (new parameter system)
+      const gp2HalfAutoRows = wallData.gp2HalfAutoRows || 0;
+      const gp2HalfManualRows = wallData.gp2HalfManualRows || 0;
+      const gp2FullRows = wallData.gp2FullVerticalBlocks || 0;
+      const totalHalfRows = gp2HalfAutoRows + gp2HalfManualRows;
+
+      singleScreenWidth = wallData.blocksHor * blockWidth;
+      // blockHeight is already 2x for ROEGP26Full (1000mm)
+      const fullBlockHeight = blockHeight; // 1000mm
+      const halfBlockHeight = blockHeight / 2; // 500mm
+      totalWallHeight = (gp2FullRows * fullBlockHeight) + (totalHalfRows * halfBlockHeight);
+    } else {
+      // Normal mode
+      singleScreenWidth = wallData.blocksHor * blockWidth;
+      totalWallHeight = wallData.blocksVer * blockHeight;
+    }
+
     canvas.width = (singleScreenWidth * numScreens) + (this.config.screenSpacing * (numScreens - 1)) + (gridLinePadding * 2);
-    canvas.height = wallData.blocksVer * blockSize + extraHeightTop + extraHeightBottom + (gridLinePadding * 2);
+    canvas.height = totalWallHeight + extraHeightTop + extraHeightBottom + (gridLinePadding * 2);
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -144,9 +197,7 @@ const CanvasRenderer = {
       ctx.rect(xOffset - gridLinePadding, 0, singleScreenWidth + (gridLinePadding * 2), canvas.height);
       ctx.clip();
 
-      // Draw wall background as a single stretched image
-      const wallWidth = wallData.blocksHor * blockSize;
-      const wallHeight = wallData.blocksVer * blockSize;
+      // Draw wall background and grid
       const wallX = xOffset;
       const wallY = gridLinePadding + extraHeightTop;
 
@@ -155,67 +206,305 @@ const CanvasRenderer = {
         ? window.wallBackgroundImage
         : tileImage;
 
-      if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
-        // Draw background image at 55% opacity
-        ctx.globalAlpha = 0.55;
-        ctx.drawImage(imageToUse, wallX, wallY, wallWidth, wallHeight);
-        ctx.globalAlpha = 1.0; // Reset to full opacity
+      if (mixedTileMode) {
+        // Get Full tile position preference
+        const fullTilePositionTop = document.querySelector('input[name="fullTilePosition"]:checked')?.value === 'top';
+
+        // Mixed mode: draw tiles based on position preference
+        const maxHorizontal = Math.max(halfHorizontal, fullHorizontal);
+        const wallWidth = maxHorizontal * blockWidth;
+        const halfSectionHeight = halfVertical * halfBlockHeight;
+        const fullSectionHeight = fullVertical * fullBlockHeight;
+
+        // Determine positions based on user preference
+        const firstSectionY = wallY;
+        const secondSectionY = wallY + (fullTilePositionTop ? fullSectionHeight : halfSectionHeight);
+        const firstSectionHeight = fullTilePositionTop ? fullSectionHeight : halfSectionHeight;
+        const secondSectionHeight = fullTilePositionTop ? halfSectionHeight : fullSectionHeight;
+        const firstSectionColor = fullTilePositionTop ? '#555' : '#444';
+        const secondSectionColor = fullTilePositionTop ? '#444' : '#555';
+
+        // Draw first section
+        if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+          ctx.globalAlpha = 0.55;
+          ctx.drawImage(imageToUse, wallX, firstSectionY, wallWidth, firstSectionHeight);
+          ctx.globalAlpha = 1.0;
+        } else {
+          ctx.globalAlpha = 0.55;
+          ctx.fillStyle = firstSectionColor;
+          ctx.fillRect(wallX, firstSectionY, wallWidth, firstSectionHeight);
+          ctx.globalAlpha = 1.0;
+        }
+
+        // Draw second section
+        if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+          ctx.globalAlpha = 0.55;
+          ctx.drawImage(imageToUse, wallX, secondSectionY, wallWidth, secondSectionHeight);
+          ctx.globalAlpha = 1.0;
+        } else {
+          ctx.globalAlpha = 0.55;
+          ctx.fillStyle = secondSectionColor;
+          ctx.fillRect(wallX, secondSectionY, wallWidth, secondSectionHeight);
+          ctx.globalAlpha = 1.0;
+        }
+
+        // Draw grid lines for mixed tiles
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2;
+
+        // Vertical grid lines (same for both sections)
+        for (let col = 0; col <= maxHorizontal; col++) {
+          const lineX = xOffset + col * blockWidth;
+          ctx.beginPath();
+          ctx.moveTo(lineX, wallY);
+          ctx.lineTo(lineX, wallY + halfSectionHeight + fullSectionHeight);
+          ctx.stroke();
+        }
+
+        // Horizontal grid lines - order depends on position preference
+        if (fullTilePositionTop) {
+          // Full tiles on top
+          for (let row = 0; row <= fullVertical; row++) {
+            const lineY = wallY + row * fullBlockHeight;
+            ctx.beginPath();
+            ctx.moveTo(wallX, lineY);
+            ctx.lineTo(wallX + wallWidth, lineY);
+            ctx.stroke();
+          }
+          // Half tiles on bottom
+          for (let row = 0; row <= halfVertical; row++) {
+            const lineY = wallY + fullSectionHeight + row * halfBlockHeight;
+            ctx.beginPath();
+            ctx.moveTo(wallX, lineY);
+            ctx.lineTo(wallX + wallWidth, lineY);
+            ctx.stroke();
+          }
+        } else {
+          // Half tiles on top
+          for (let row = 0; row <= halfVertical; row++) {
+            const lineY = wallY + row * halfBlockHeight;
+            ctx.beginPath();
+            ctx.moveTo(wallX, lineY);
+            ctx.lineTo(wallX + wallWidth, lineY);
+            ctx.stroke();
+          }
+          // Full tiles on bottom
+          for (let row = 0; row <= fullVertical; row++) {
+            const lineY = wallY + halfSectionHeight + row * fullBlockHeight;
+            ctx.beginPath();
+            ctx.moveTo(wallX, lineY);
+            ctx.lineTo(wallX + wallWidth, lineY);
+            ctx.stroke();
+          }
+        }
       } else {
-        // Fallback: draw colored rectangle
-        ctx.globalAlpha = 0.55;
-        ctx.fillStyle = '#444';
-        ctx.fillRect(wallX, wallY, wallWidth, wallHeight);
-        ctx.globalAlpha = 1.0; // Reset to full opacity
-      }
+        // Normal mode: check for GP2 Full with GP2 Half rows
+        const gp2HalfAutoRows = wallData.gp2HalfAutoRows || 0; // From fractional input (always top)
+        const gp2HalfManualRows = wallData.gp2HalfManualRows || 0; // From manual checkbox
+        const gp2HalfManualPosition = wallData.gp2HalfManualPosition || 'bottom';
+        const hasGP2Half = productType === 'ROEGP26Full' && (gp2HalfAutoRows > 0 || gp2HalfManualRows > 0);
 
-      // Draw grid lines to show block boundaries
-      ctx.strokeStyle = '#FFFFFF';  // White grid lines
-      ctx.lineWidth = 2;
+        if (hasGP2Half) {
+          // Mixed GP2 Half and GP2 Full mode
+          const gp2FullRows = wallData.gp2FullVerticalBlocks || 0;
+          const wallWidth = wallData.blocksHor * blockWidth;
 
-      // Draw vertical grid lines
-      for (let col = 0; col <= wallData.blocksHor; col++) {
-        const lineX = xOffset + col * blockSize;
-        ctx.beginPath();
-        ctx.moveTo(lineX, wallY);
-        ctx.lineTo(lineX, wallY + wallHeight);
-        ctx.stroke();
-      }
+          // blockHeight is already 2x for ROEGP26Full (1000mm)
+          const fullBlockHeight = blockHeight; // 1000mm
+          const halfBlockHeight = blockHeight / 2; // 500mm
 
-      // Draw horizontal grid lines
-      for (let row = 0; row <= wallData.blocksVer; row++) {
-        const lineY = wallY + row * blockSize;
-        ctx.beginPath();
-        ctx.moveTo(wallX, lineY);
-        ctx.lineTo(wallX + wallWidth, lineY);
-        ctx.stroke();
+          // Calculate section heights
+          const fullSectionHeight = gp2FullRows * fullBlockHeight;
+
+          // Determine layout based on auto and manual Half rows
+          let topHalfRows = 0;
+          let bottomHalfRows = 0;
+
+          if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+            // Both auto and manual: auto always at top
+            topHalfRows = gp2HalfAutoRows;
+            if (gp2HalfManualPosition === 'top') {
+              // Add manual to top
+              topHalfRows += gp2HalfManualRows;
+            } else {
+              // Manual at bottom
+              bottomHalfRows = gp2HalfManualRows;
+            }
+          } else if (gp2HalfAutoRows > 0) {
+            // Auto only: always at top
+            topHalfRows = gp2HalfAutoRows;
+          } else if (gp2HalfManualRows > 0) {
+            // Manual only: respect position
+            if (gp2HalfManualPosition === 'top') {
+              topHalfRows = gp2HalfManualRows;
+            } else {
+              bottomHalfRows = gp2HalfManualRows;
+            }
+          }
+
+          const topHalfHeight = topHalfRows * halfBlockHeight;
+          const bottomHalfHeight = bottomHalfRows * halfBlockHeight;
+
+          // Calculate Y positions
+          let currentY = wallY;
+          const topHalfY = topHalfRows > 0 ? currentY : null;
+          currentY += topHalfHeight;
+          const fullY = currentY;
+          currentY += fullSectionHeight;
+          const bottomHalfY = bottomHalfRows > 0 ? currentY : null;
+
+          // Draw top Half section if it exists
+          if (topHalfRows > 0) {
+            if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+              ctx.globalAlpha = 0.55;
+              ctx.drawImage(imageToUse, wallX, topHalfY, wallWidth, topHalfHeight);
+              ctx.globalAlpha = 1.0;
+            } else {
+              ctx.globalAlpha = 0.55;
+              ctx.fillStyle = '#444'; // Color for Half tiles
+              ctx.fillRect(wallX, topHalfY, wallWidth, topHalfHeight);
+              ctx.globalAlpha = 1.0;
+            }
+          }
+
+          // Draw GP2 Full section (middle)
+          if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+            ctx.globalAlpha = 0.55;
+            ctx.drawImage(imageToUse, wallX, fullY, wallWidth, fullSectionHeight);
+            ctx.globalAlpha = 1.0;
+          } else {
+            ctx.globalAlpha = 0.55;
+            ctx.fillStyle = '#555'; // Color for Full tiles
+            ctx.fillRect(wallX, fullY, wallWidth, fullSectionHeight);
+            ctx.globalAlpha = 1.0;
+          }
+
+          // Draw bottom Half section if it exists
+          if (bottomHalfRows > 0) {
+            if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+              ctx.globalAlpha = 0.55;
+              ctx.drawImage(imageToUse, wallX, bottomHalfY, wallWidth, bottomHalfHeight);
+              ctx.globalAlpha = 1.0;
+            } else {
+              ctx.globalAlpha = 0.55;
+              ctx.fillStyle = '#444'; // Color for Half tiles
+              ctx.fillRect(wallX, bottomHalfY, wallWidth, bottomHalfHeight);
+              ctx.globalAlpha = 1.0;
+            }
+          }
+
+          // Draw grid lines
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 2;
+
+          // Calculate total wall height
+          const totalWallHeight = topHalfHeight + fullSectionHeight + bottomHalfHeight;
+
+          // Vertical grid lines (full height)
+          for (let col = 0; col <= wallData.blocksHor; col++) {
+            const lineX = xOffset + col * blockWidth;
+            ctx.beginPath();
+            ctx.moveTo(lineX, wallY);
+            ctx.lineTo(lineX, wallY + totalWallHeight);
+            ctx.stroke();
+          }
+
+          // Horizontal grid lines for top Half section
+          if (topHalfRows > 0) {
+            for (let row = 0; row <= topHalfRows; row++) {
+              const lineY = topHalfY + row * halfBlockHeight;
+              ctx.beginPath();
+              ctx.moveTo(wallX, lineY);
+              ctx.lineTo(wallX + wallWidth, lineY);
+              ctx.stroke();
+            }
+          }
+
+          // Horizontal grid lines for GP2 Full section
+          for (let row = 0; row <= gp2FullRows; row++) {
+            const lineY = fullY + row * fullBlockHeight;
+            ctx.beginPath();
+            ctx.moveTo(wallX, lineY);
+            ctx.lineTo(wallX + wallWidth, lineY);
+            ctx.stroke();
+          }
+
+          // Horizontal grid lines for bottom Half section
+          if (bottomHalfRows > 0) {
+            for (let row = 0; row <= bottomHalfRows; row++) {
+              const lineY = bottomHalfY + row * halfBlockHeight;
+              ctx.beginPath();
+              ctx.moveTo(wallX, lineY);
+              ctx.lineTo(wallX + wallWidth, lineY);
+              ctx.stroke();
+            }
+          }
+        } else {
+          // Normal mode: single tile type
+          const wallWidth = wallData.blocksHor * blockWidth;
+          const wallHeight = wallData.blocksVer * blockHeight;
+
+          if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+            ctx.globalAlpha = 0.55;
+            ctx.drawImage(imageToUse, wallX, wallY, wallWidth, wallHeight);
+            ctx.globalAlpha = 1.0;
+          } else {
+            ctx.globalAlpha = 0.55;
+            ctx.fillStyle = '#444';
+            ctx.fillRect(wallX, wallY, wallWidth, wallHeight);
+            ctx.globalAlpha = 1.0;
+          }
+
+          // Draw grid lines
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 2;
+
+          // Vertical grid lines
+          for (let col = 0; col <= wallData.blocksHor; col++) {
+            const lineX = xOffset + col * blockWidth;
+            ctx.beginPath();
+            ctx.moveTo(lineX, wallY);
+            ctx.lineTo(lineX, wallY + wallHeight);
+            ctx.stroke();
+          }
+
+          // Horizontal grid lines
+          for (let row = 0; row <= wallData.blocksVer; row++) {
+            const lineY = wallY + row * blockHeight;
+            ctx.beginPath();
+            ctx.moveTo(wallX, lineY);
+            ctx.lineTo(wallX + wallWidth, lineY);
+            ctx.stroke();
+          }
+        }
       }
 
       // Draw wiring diagram if enabled
       if (window.showWiring) {
-        this.drawWiringDiagram(ctx, wallData, blockSize, xOffset, gridLinePadding + extraHeightTop);
+        this.drawWiringDiagram(ctx, wallData, blockWidth, blockHeight, xOffset, gridLinePadding + extraHeightTop);
       }
 
       // Draw power diagram if enabled
       if (window.showPower) {
-        this.drawPowerDiagram(ctx, wallData, blockSize, xOffset, gridLinePadding + extraHeightTop);
+        this.drawPowerDiagram(ctx, wallData, blockWidth, blockHeight, xOffset, gridLinePadding + extraHeightTop);
       }
 
       // Draw tile numbers if enabled (drawn after wiring diagrams so they appear on top)
       if (showNumbers) {
         for (let row = 0; row < wallData.blocksVer; row++) {
           for (let col = 0; col < wallData.blocksHor; col++) {
-            const posX = xOffset + col * blockSize;
-            const posY = gridLinePadding + extraHeightTop + row * blockSize;
+            const posX = xOffset + col * blockWidth;
+            const posY = gridLinePadding + extraHeightTop + row * blockHeight;
 
             // White text with black outline for visibility
             ctx.fillStyle = 'white';
             ctx.strokeStyle = 'black';
             ctx.lineWidth = 3;
-            ctx.font = `bold ${Math.max(12, blockSize / 4)}px Arial`;
+            ctx.font = `bold ${Math.max(12, Math.min(blockWidth, blockHeight) / 4)}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            const textX = posX + blockSize / 2;
-            const textY = posY + blockSize / 2;
+            const textX = posX + blockWidth / 2;
+            const textY = posY + blockHeight / 2;
             ctx.strokeText(tileNumber, textX, textY);
             ctx.fillText(tileNumber, textX, textY);
 
@@ -224,13 +513,13 @@ const CanvasRenderer = {
         }
       }
 
-      // Draw support structures
-      if (wallData.flownSupport) {
-        this.drawFlownSupports(ctx, wallData.blocksHor, blockSize, xOffset, supportHeight, zoomLevel);
+      // Draw support structures (skip when in mixed tile mode)
+      if (wallData.flownSupport && !mixedTileMode) {
+        this.drawFlownSupports(ctx, wallData.blocksHor, blockWidth, xOffset, supportHeight, zoomLevel);
       }
 
-      if (wallData.groundSupport) {
-        this.drawGroundBases(ctx, wallData.blocksHor, wallData.blocksVer, blockSize, xOffset, supportHeight, zoomLevel);
+      if (wallData.groundSupport && !mixedTileMode) {
+        this.drawGroundBases(ctx, wallData.blocksHor, wallData.blocksVer, blockWidth, blockHeight, xOffset, supportHeight, zoomLevel);
       }
 
       // Restore context
@@ -244,11 +533,12 @@ const CanvasRenderer = {
    * Draw wiring diagram showing data connections between tiles
    * @param {CanvasRenderingContext2D} ctx - Canvas context
    * @param {Object} wallData - Wall configuration data
-   * @param {number} blockSize - Size of each block in pixels
+   * @param {number} blockWidth - Width of each block in pixels
+   * @param {number} blockHeight - Height of each block in pixels
    * @param {number} xOffset - Horizontal offset for multi-screen
    * @param {number} extraHeightTop - Extra height at top for supports
    */
-  drawWiringDiagram(ctx, wallData, blockSize, xOffset, extraHeightTop) {
+  drawWiringDiagram(ctx, wallData, blockWidth, blockHeight, xOffset, extraHeightTop) {
     // Get product type to determine daisy chain limit
     const productType = document.getElementById('productType')?.value;
     const daisyChainLimits = {
@@ -256,9 +546,90 @@ const CanvasRenderer = {
       'BP2B1': 13,  // ROE Black Pearl 2 B1
       'BP2B2': 13,  // ROE Black Pearl 2 B2
       'BP2V2': 13,  // ROE Black Pearl 2V2
-      'theatrixx': 10
+      'theatrixx': 10,
+      'ROEGP26Full': 5,  // ROE Graphite 2.6 Full
+      'ROEGP26Half': 11  // ROE Graphite 2.6 Half
     };
     const chainLimit = daisyChainLimits[productType] || 10;
+
+    // For mixed GP2 Full + GP2 Half configurations, determine which rows are which type
+    const gp2HalfAutoRows = wallData.gp2HalfAutoRows || 0;
+    const gp2HalfManualRows = wallData.gp2HalfManualRows || 0;
+    const gp2HalfManualPosition = wallData.gp2HalfManualPosition || 'bottom';
+    const gp2FullVerticalBlocks = wallData.gp2FullVerticalBlocks || wallData.blocksVer;
+    const hasMixedGP2 = productType === 'ROEGP26Full' && (gp2HalfAutoRows > 0 || gp2HalfManualRows > 0);
+
+    // Function to determine tile type and chain limit based on row
+    const getTileTypeForRow = (row) => {
+      if (!hasMixedGP2) {
+        return { type: productType, chainLimit };
+      }
+
+      // Determine layout:
+      // Auto Half rows always at top
+      // Manual Half rows at user-specified position
+      // Full rows in the middle
+      let topHalfRows = 0;
+      let bottomHalfRows = 0;
+
+      if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows += gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      } else if (gp2HalfAutoRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+      } else if (gp2HalfManualRows > 0) {
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows = gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      }
+
+      const fullRowsStart = topHalfRows;
+      const fullRowsEnd = topHalfRows + gp2FullVerticalBlocks;
+
+      // Determine if current row is Half or Full
+      if (row < fullRowsStart) {
+        // Top Half section
+        return { type: 'ROEGP26Half', chainLimit: 11 };
+      } else if (row >= fullRowsEnd) {
+        // Bottom Half section
+        return { type: 'ROEGP26Half', chainLimit: 11 };
+      } else {
+        // Full section
+        return { type: 'ROEGP26Full', chainLimit: 5 };
+      }
+    };
+
+    // Calculate total number of rows for mixed GP2 configurations
+    let totalRows = wallData.blocksVer;
+    if (hasMixedGP2) {
+      let topHalfRows = 0;
+      let bottomHalfRows = 0;
+
+      if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows += gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      } else if (gp2HalfAutoRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+      } else if (gp2HalfManualRows > 0) {
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows = gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      }
+
+      totalRows = topHalfRows + gp2FullVerticalBlocks + bottomHalfRows;
+    }
 
     // Get wiring direction and start position
     const direction = window.wiringDirection || 'horizontal';
@@ -284,7 +655,7 @@ const CanvasRenderer = {
     ];
 
     // Calculate total tiles
-    const totalTiles = wallData.blocksHor * wallData.blocksVer;
+    const totalTiles = wallData.blocksHor * totalRows;
 
     // Set line style for wiring
     ctx.lineWidth = 4;
@@ -304,8 +675,8 @@ const CanvasRenderer = {
       // Horizontal wiring (snake left-right on each row)
       if (startPosition === 'bottom-left') {
         // Bottom-left: snake right/left, moving up
-        for (let row = wallData.blocksVer - 1; row >= 0; row--) {
-          const rowIndex = wallData.blocksVer - 1 - row; // 0, 1, 2, ...
+        for (let row = totalRows - 1; row >= 0; row--) {
+          const rowIndex = totalRows - 1 - row; // 0, 1, 2, ...
           if (rowIndex % 2 === 0) {
             // Even rows: go right
             for (let col = 0; col < wallData.blocksHor; col++) {
@@ -320,8 +691,8 @@ const CanvasRenderer = {
         }
       } else if (startPosition === 'bottom-right') {
         // Bottom-right: snake left/right, moving up
-        for (let row = wallData.blocksVer - 1; row >= 0; row--) {
-          const rowIndex = wallData.blocksVer - 1 - row;
+        for (let row = totalRows - 1; row >= 0; row--) {
+          const rowIndex = totalRows - 1 - row;
           if (rowIndex % 2 === 0) {
             // Even rows: go left
             for (let col = wallData.blocksHor - 1; col >= 0; col--) {
@@ -336,7 +707,7 @@ const CanvasRenderer = {
         }
       } else if (startPosition === 'top-left') {
         // Top-left: snake right/left, moving down
-        for (let row = 0; row < wallData.blocksVer; row++) {
+        for (let row = 0; row < totalRows; row++) {
           if (row % 2 === 0) {
             // Even rows: go right
             for (let col = 0; col < wallData.blocksHor; col++) {
@@ -351,7 +722,7 @@ const CanvasRenderer = {
         }
       } else if (startPosition === 'top-right') {
         // Top-right: snake left/right, moving down
-        for (let row = 0; row < wallData.blocksVer; row++) {
+        for (let row = 0; row < totalRows; row++) {
           if (row % 2 === 0) {
             // Even rows: go left
             for (let col = wallData.blocksHor - 1; col >= 0; col--) {
@@ -372,12 +743,12 @@ const CanvasRenderer = {
         for (let col = 0; col < wallData.blocksHor; col++) {
           if (col % 2 === 0) {
             // Even columns: go up
-            for (let row = wallData.blocksVer - 1; row >= 0; row--) {
+            for (let row = totalRows - 1; row >= 0; row--) {
               tiles.push({ row, col });
             }
           } else {
             // Odd columns: go down
-            for (let row = 0; row < wallData.blocksVer; row++) {
+            for (let row = 0; row < totalRows; row++) {
               tiles.push({ row, col });
             }
           }
@@ -388,12 +759,12 @@ const CanvasRenderer = {
           const colIndex = wallData.blocksHor - 1 - col;
           if (colIndex % 2 === 0) {
             // Even columns: go up
-            for (let row = wallData.blocksVer - 1; row >= 0; row--) {
+            for (let row = totalRows - 1; row >= 0; row--) {
               tiles.push({ row, col });
             }
           } else {
             // Odd columns: go down
-            for (let row = 0; row < wallData.blocksVer; row++) {
+            for (let row = 0; row < totalRows; row++) {
               tiles.push({ row, col });
             }
           }
@@ -403,12 +774,12 @@ const CanvasRenderer = {
         for (let col = 0; col < wallData.blocksHor; col++) {
           if (col % 2 === 0) {
             // Even columns: go down
-            for (let row = 0; row < wallData.blocksVer; row++) {
+            for (let row = 0; row < totalRows; row++) {
               tiles.push({ row, col });
             }
           } else {
             // Odd columns: go up
-            for (let row = wallData.blocksVer - 1; row >= 0; row--) {
+            for (let row = totalRows - 1; row >= 0; row--) {
               tiles.push({ row, col });
             }
           }
@@ -419,12 +790,12 @@ const CanvasRenderer = {
           const colIndex = wallData.blocksHor - 1 - col;
           if (colIndex % 2 === 0) {
             // Even columns: go down
-            for (let row = 0; row < wallData.blocksVer; row++) {
+            for (let row = 0; row < totalRows; row++) {
               tiles.push({ row, col });
             }
           } else {
             // Odd columns: go up
-            for (let row = wallData.blocksVer - 1; row >= 0; row--) {
+            for (let row = totalRows - 1; row >= 0; row--) {
               tiles.push({ row, col });
             }
           }
@@ -434,16 +805,118 @@ const CanvasRenderer = {
 
     // Draw wiring lines with outline effect for better visibility
     let chainPath = []; // Store path points for current chain
+    let currentChainType = null; // Track what type the current chain is
+    let currentChainLimit = chainLimit; // Track the limit for current chain
+
+    // For mixed GP2, we need to calculate Y positions based on actual row heights
+    const calculatePosY = (row) => {
+      if (!hasMixedGP2) {
+        return extraHeightTop + row * blockHeight + blockHeight / 2;
+      }
+
+      // Calculate accumulated height up to this row
+      let accumulatedHeight = extraHeightTop;
+      const fullBlockHeight = blockHeight; // 1000mm for GP2 Full
+      const halfBlockHeight = blockHeight / 2; // 500mm for GP2 Half
+
+      // Determine layout
+      let topHalfRows = 0;
+      let bottomHalfRows = 0;
+
+      if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows += gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      } else if (gp2HalfAutoRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+      } else if (gp2HalfManualRows > 0) {
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows = gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      }
+
+      const fullRowsStart = topHalfRows;
+      const fullRowsEnd = topHalfRows + gp2FullVerticalBlocks;
+
+      // Calculate height up to this row
+      if (row < fullRowsStart) {
+        // In top Half section
+        accumulatedHeight += row * halfBlockHeight + halfBlockHeight / 2;
+      } else if (row < fullRowsEnd) {
+        // In Full section
+        accumulatedHeight += topHalfRows * halfBlockHeight; // All top Half rows
+        accumulatedHeight += (row - fullRowsStart) * fullBlockHeight + fullBlockHeight / 2;
+      } else {
+        // In bottom Half section
+        accumulatedHeight += topHalfRows * halfBlockHeight; // All top Half rows
+        accumulatedHeight += gp2FullVerticalBlocks * fullBlockHeight; // All Full rows
+        accumulatedHeight += (row - fullRowsEnd) * halfBlockHeight + halfBlockHeight / 2;
+      }
+
+      return accumulatedHeight;
+    };
 
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i];
-      const posX = xOffset + tile.col * blockSize + blockSize / 2;
-      const posY = extraHeightTop + tile.row * blockSize + blockSize / 2;
+      const tileInfo = getTileTypeForRow(tile.row);
+      const posX = xOffset + tile.col * blockWidth + blockWidth / 2;
+      const posY = calculatePosY(tile.row);
 
-      if (tilesInCurrentChain === 0) {
+      // For GP2 mixed tiles, don't start new chain on type change - allow up to 5 tiles of any type
+      // Check if we need to start a new chain due to type change
+      const typeChanged = !hasMixedGP2 && currentChainType !== null && currentChainType !== tileInfo.type;
+
+      if (tilesInCurrentChain === 0 || typeChanged) {
+        // Finish previous chain if type changed
+        if (typeChanged && chainPath.length > 0) {
+          const chainColor = chainColors[(chainNumber - 1) % chainColors.length];
+
+          // Draw white outline first (thicker)
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = 8;
+          ctx.beginPath();
+          ctx.moveTo(chainPath[0].x, chainPath[0].y);
+          for (let j = 1; j < chainPath.length; j++) {
+            ctx.lineTo(chainPath[j].x, chainPath[j].y);
+          }
+          ctx.stroke();
+
+          // Draw black line on top
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(chainPath[0].x, chainPath[0].y);
+          for (let j = 1; j < chainPath.length; j++) {
+            ctx.lineTo(chainPath[j].x, chainPath[j].y);
+          }
+          ctx.stroke();
+
+          // Draw chain label
+          ctx.fillStyle = 'white';
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 3;
+          ctx.font = 'bold 20px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const labelText = chainNumber.toString();
+          ctx.strokeText(labelText, chainStartX, chainStartY);
+          ctx.fillText(labelText, chainStartX, chainStartY);
+
+          // Reset for new chain
+          tilesInCurrentChain = 0;
+        }
+
         // Start of a new chain
         chainNumber++;
         chainPath = [{ x: posX, y: posY }];
+        currentChainType = tileInfo.type;
+        // For mixed GP2, always use GP2 Full limit of 5 tiles total (any combination of Full/Half)
+        currentChainLimit = hasMixedGP2 ? 5 : tileInfo.chainLimit;
 
         // Save start position for label
         chainStartX = posX;
@@ -456,7 +929,7 @@ const CanvasRenderer = {
       }
 
       // If we've reached the chain limit or the last tile, finish this chain
-      if (tilesInCurrentChain === chainLimit || i === tiles.length - 1) {
+      if (tilesInCurrentChain === currentChainLimit || i === tiles.length - 1) {
         const chainColor = chainColors[(chainNumber - 1) % chainColors.length];
 
         // Draw white outline first (thicker)
@@ -469,8 +942,8 @@ const CanvasRenderer = {
         }
         ctx.stroke();
 
-        // Draw colored line on top (normal width)
-        ctx.strokeStyle = chainColor;
+        // Draw black line on top (instead of colored line)
+        ctx.strokeStyle = 'black';
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(chainPath[0].x, chainPath[0].y);
@@ -479,11 +952,21 @@ const CanvasRenderer = {
         }
         ctx.stroke();
 
-        // Draw port label at start of chain
+        // Draw circle at the end of the line (where it terminates)
+        const endPoint = chainPath[chainPath.length - 1];
+        ctx.fillStyle = chainColor;
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(endPoint.x, endPoint.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw port label at start of chain (with colored text)
         ctx.fillStyle = chainColor;
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 3;
-        ctx.font = `bold ${Math.max(14, blockSize / 3)}px Arial`;
+        ctx.font = `bold ${Math.max(14, Math.min(blockWidth, blockHeight) / 3)}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         const labelText = `Port ${chainNumber}`;
@@ -503,11 +986,12 @@ const CanvasRenderer = {
    * Draw power diagram showing power distribution with voltage-dependent tile limits
    * @param {CanvasRenderingContext2D} ctx - Canvas context
    * @param {Object} wallData - Wall configuration data
-   * @param {number} blockSize - Size of each block in pixels
+   * @param {number} blockWidth - Width of each block in pixels
+   * @param {number} blockHeight - Height of each block in pixels
    * @param {number} xOffset - Horizontal offset for multi-screen
    * @param {number} extraHeightTop - Extra height at top for supports
    */
-  drawPowerDiagram(ctx, wallData, blockSize, xOffset, extraHeightTop) {
+  drawPowerDiagram(ctx, wallData, blockWidth, blockHeight, xOffset, extraHeightTop) {
     // Get product type and voltage to determine power tile limit
     const productType = document.getElementById('productType')?.value;
     const powerDistroType = document.getElementById('powerDistroType')?.value;
@@ -519,10 +1003,83 @@ const CanvasRenderer = {
       'BP2B1': { 110: 11, 208: 32 },  // ROE Black Pearl 2 B1
       'BP2B2': { 110: 11, 208: 32 },  // ROE Black Pearl 2 B2
       'BP2V2': { 110: 11, 208: 32 },  // ROE Black Pearl 2V2
-      'theatrixx': { 110: 10, 208: 30 }
+      'theatrixx': { 110: 10, 208: 30 },
+      'ROEGP26Full': { 110: 5, 208: 15 },  // ROE GP2.6 Full
+      'ROEGP26Half': { 110: 10, 208: 30 }  // ROE GP2.6 Half (double the Full, since 2 Half = 1 Full power)
     };
 
     const chainLimit = powerTileLimits[productType]?.[voltage] || 10;
+
+    // For mixed GP2 Full + GP2 Half configurations
+    const gp2HalfAutoRows = wallData.gp2HalfAutoRows || 0;
+    const gp2HalfManualRows = wallData.gp2HalfManualRows || 0;
+    const gp2HalfManualPosition = wallData.gp2HalfManualPosition || 'bottom';
+    const gp2FullVerticalBlocks = wallData.gp2FullVerticalBlocks || wallData.blocksVer;
+    const hasMixedGP2 = productType === 'ROEGP26Full' && (gp2HalfAutoRows > 0 || gp2HalfManualRows > 0);
+
+    // Function to determine tile type and power limit based on row
+    const getTileTypeForRow = (row) => {
+      if (!hasMixedGP2) {
+        return { type: productType, chainLimit };
+      }
+
+      let topHalfRows = 0;
+      let bottomHalfRows = 0;
+
+      if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows += gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      } else if (gp2HalfAutoRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+      } else if (gp2HalfManualRows > 0) {
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows = gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      }
+
+      const fullRowsStart = topHalfRows;
+      const fullRowsEnd = topHalfRows + gp2FullVerticalBlocks;
+
+      if (row < fullRowsStart) {
+        return { type: 'ROEGP26Half', chainLimit: powerTileLimits['ROEGP26Half'][voltage] };
+      } else if (row >= fullRowsEnd) {
+        return { type: 'ROEGP26Half', chainLimit: powerTileLimits['ROEGP26Half'][voltage] };
+      } else {
+        return { type: 'ROEGP26Full', chainLimit: powerTileLimits['ROEGP26Full'][voltage] };
+      }
+    };
+
+    // Calculate total number of rows for mixed GP2 configurations
+    let totalRows = wallData.blocksVer;
+    if (hasMixedGP2) {
+      let topHalfRows = 0;
+      let bottomHalfRows = 0;
+
+      if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows += gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      } else if (gp2HalfAutoRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+      } else if (gp2HalfManualRows > 0) {
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows = gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      }
+
+      totalRows = topHalfRows + gp2FullVerticalBlocks + bottomHalfRows;
+    }
 
     // Get power wiring direction and start position
     const direction = window.powerDirection || 'horizontal';
@@ -548,7 +1105,7 @@ const CanvasRenderer = {
     ];
 
     // Calculate total tiles
-    const totalTiles = wallData.blocksHor * wallData.blocksVer;
+    const totalTiles = wallData.blocksHor * totalRows;
 
     // Set line style for power wiring (dashed to distinguish from data)
     ctx.lineWidth = 4;
@@ -569,8 +1126,8 @@ const CanvasRenderer = {
       // Horizontal wiring (snake left-right on each row)
       if (startPosition === 'bottom-left') {
         // Bottom-left: snake right/left, moving up
-        for (let row = wallData.blocksVer - 1; row >= 0; row--) {
-          const rowIndex = wallData.blocksVer - 1 - row; // 0, 1, 2, ...
+        for (let row = totalRows - 1; row >= 0; row--) {
+          const rowIndex = totalRows - 1 - row; // 0, 1, 2, ...
           if (rowIndex % 2 === 0) {
             // Even rows: go right
             for (let col = 0; col < wallData.blocksHor; col++) {
@@ -585,8 +1142,8 @@ const CanvasRenderer = {
         }
       } else if (startPosition === 'bottom-right') {
         // Bottom-right: snake left/right, moving up
-        for (let row = wallData.blocksVer - 1; row >= 0; row--) {
-          const rowIndex = wallData.blocksVer - 1 - row;
+        for (let row = totalRows - 1; row >= 0; row--) {
+          const rowIndex = totalRows - 1 - row;
           if (rowIndex % 2 === 0) {
             // Even rows: go left
             for (let col = wallData.blocksHor - 1; col >= 0; col--) {
@@ -601,7 +1158,7 @@ const CanvasRenderer = {
         }
       } else if (startPosition === 'top-left') {
         // Top-left: snake right/left, moving down
-        for (let row = 0; row < wallData.blocksVer; row++) {
+        for (let row = 0; row < totalRows; row++) {
           if (row % 2 === 0) {
             // Even rows: go right
             for (let col = 0; col < wallData.blocksHor; col++) {
@@ -616,7 +1173,7 @@ const CanvasRenderer = {
         }
       } else if (startPosition === 'top-right') {
         // Top-right: snake left/right, moving down
-        for (let row = 0; row < wallData.blocksVer; row++) {
+        for (let row = 0; row < totalRows; row++) {
           if (row % 2 === 0) {
             // Even rows: go left
             for (let col = wallData.blocksHor - 1; col >= 0; col--) {
@@ -637,12 +1194,12 @@ const CanvasRenderer = {
         for (let col = 0; col < wallData.blocksHor; col++) {
           if (col % 2 === 0) {
             // Even columns: go up
-            for (let row = wallData.blocksVer - 1; row >= 0; row--) {
+            for (let row = totalRows - 1; row >= 0; row--) {
               tiles.push({ row, col });
             }
           } else {
             // Odd columns: go down
-            for (let row = 0; row < wallData.blocksVer; row++) {
+            for (let row = 0; row < totalRows; row++) {
               tiles.push({ row, col });
             }
           }
@@ -653,12 +1210,12 @@ const CanvasRenderer = {
           const colIndex = wallData.blocksHor - 1 - col;
           if (colIndex % 2 === 0) {
             // Even columns: go up
-            for (let row = wallData.blocksVer - 1; row >= 0; row--) {
+            for (let row = totalRows - 1; row >= 0; row--) {
               tiles.push({ row, col });
             }
           } else {
             // Odd columns: go down
-            for (let row = 0; row < wallData.blocksVer; row++) {
+            for (let row = 0; row < totalRows; row++) {
               tiles.push({ row, col });
             }
           }
@@ -668,12 +1225,12 @@ const CanvasRenderer = {
         for (let col = 0; col < wallData.blocksHor; col++) {
           if (col % 2 === 0) {
             // Even columns: go down
-            for (let row = 0; row < wallData.blocksVer; row++) {
+            for (let row = 0; row < totalRows; row++) {
               tiles.push({ row, col });
             }
           } else {
             // Odd columns: go up
-            for (let row = wallData.blocksVer - 1; row >= 0; row--) {
+            for (let row = totalRows - 1; row >= 0; row--) {
               tiles.push({ row, col });
             }
           }
@@ -684,12 +1241,12 @@ const CanvasRenderer = {
           const colIndex = wallData.blocksHor - 1 - col;
           if (colIndex % 2 === 0) {
             // Even columns: go down
-            for (let row = 0; row < wallData.blocksVer; row++) {
+            for (let row = 0; row < totalRows; row++) {
               tiles.push({ row, col });
             }
           } else {
             // Odd columns: go up
-            for (let row = wallData.blocksVer - 1; row >= 0; row--) {
+            for (let row = totalRows - 1; row >= 0; row--) {
               tiles.push({ row, col });
             }
           }
@@ -699,16 +1256,113 @@ const CanvasRenderer = {
 
     // Draw power wiring lines with outline effect for better visibility
     let chainPath = []; // Store path points for current chain
+    let currentChainType = null;
+    let currentChainLimit = chainLimit;
+
+    // For mixed GP2, calculate Y positions based on actual row heights
+    const calculatePosY = (row) => {
+      if (!hasMixedGP2) {
+        return extraHeightTop + row * blockHeight + blockHeight / 2;
+      }
+
+      let accumulatedHeight = extraHeightTop;
+      const fullBlockHeight = blockHeight;
+      const halfBlockHeight = blockHeight / 2;
+
+      let topHalfRows = 0;
+      let bottomHalfRows = 0;
+
+      if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows += gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      } else if (gp2HalfAutoRows > 0) {
+        topHalfRows = gp2HalfAutoRows;
+      } else if (gp2HalfManualRows > 0) {
+        if (gp2HalfManualPosition === 'top') {
+          topHalfRows = gp2HalfManualRows;
+        } else {
+          bottomHalfRows = gp2HalfManualRows;
+        }
+      }
+
+      const fullRowsStart = topHalfRows;
+      const fullRowsEnd = topHalfRows + gp2FullVerticalBlocks;
+
+      if (row < fullRowsStart) {
+        accumulatedHeight += row * halfBlockHeight + halfBlockHeight / 2;
+      } else if (row < fullRowsEnd) {
+        accumulatedHeight += topHalfRows * halfBlockHeight;
+        accumulatedHeight += (row - fullRowsStart) * fullBlockHeight + fullBlockHeight / 2;
+      } else {
+        accumulatedHeight += topHalfRows * halfBlockHeight;
+        accumulatedHeight += gp2FullVerticalBlocks * fullBlockHeight;
+        accumulatedHeight += (row - fullRowsEnd) * halfBlockHeight + halfBlockHeight / 2;
+      }
+
+      return accumulatedHeight;
+    };
 
     for (let i = 0; i < tiles.length; i++) {
       const tile = tiles[i];
-      const posX = xOffset + tile.col * blockSize + blockSize / 2;
-      const posY = extraHeightTop + tile.row * blockSize + blockSize / 2;
+      const tileInfo = getTileTypeForRow(tile.row);
+      const posX = xOffset + tile.col * blockWidth + blockWidth / 2;
+      const posY = calculatePosY(tile.row);
 
-      if (tilesInCurrentChain === 0) {
+      // For GP2 mixed tiles, don't start new chain on type change - allow up to limit tiles of any type
+      const typeChanged = !hasMixedGP2 && currentChainType !== null && currentChainType !== tileInfo.type;
+
+      if (tilesInCurrentChain === 0 || typeChanged) {
+        // Finish previous chain if type changed
+        if (typeChanged && chainPath.length > 0) {
+          const chainColor = chainColors[(chainNumber - 1) % chainColors.length];
+
+          // Draw white outline first (thicker, dashed)
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = 8;
+          ctx.setLineDash([10, 5]);
+          ctx.beginPath();
+          ctx.moveTo(chainPath[0].x, chainPath[0].y);
+          for (let j = 1; j < chainPath.length; j++) {
+            ctx.lineTo(chainPath[j].x, chainPath[j].y);
+          }
+          ctx.stroke();
+
+          // Draw red dashed line on top
+          ctx.strokeStyle = 'red';
+          ctx.lineWidth = 4;
+          ctx.setLineDash([10, 5]);
+          ctx.beginPath();
+          ctx.moveTo(chainPath[0].x, chainPath[0].y);
+          for (let j = 1; j < chainPath.length; j++) {
+            ctx.lineTo(chainPath[j].x, chainPath[j].y);
+          }
+          ctx.stroke();
+
+          // Draw chain label
+          ctx.fillStyle = 'white';
+          ctx.strokeStyle = 'red';
+          ctx.lineWidth = 3;
+          ctx.font = 'bold 20px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const labelText = `P${chainNumber}`;
+          ctx.strokeText(labelText, chainStartX, chainStartY);
+          ctx.fillText(labelText, chainStartX, chainStartY);
+
+          // Reset for new chain
+          tilesInCurrentChain = 0;
+        }
+
         // Start of a new chain
         chainNumber++;
         chainPath = [{ x: posX, y: posY }];
+        currentChainType = tileInfo.type;
+        // For mixed GP2, always use GP2 Full limit of 5 tiles total (any combination of Full/Half)
+        currentChainLimit = hasMixedGP2 ? 5 : tileInfo.chainLimit;
 
         // Save start position for label
         chainStartX = posX;
@@ -721,7 +1375,7 @@ const CanvasRenderer = {
       }
 
       // If we've reached the chain limit or the last tile, finish this chain
-      if (tilesInCurrentChain === chainLimit || i === tiles.length - 1) {
+      if (tilesInCurrentChain === currentChainLimit || i === tiles.length - 1) {
         const chainColor = chainColors[(chainNumber - 1) % chainColors.length];
 
         // Draw white outline first (thicker, dashed)
@@ -751,7 +1405,7 @@ const CanvasRenderer = {
         ctx.fillStyle = chainColor;
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 3;
-        ctx.font = `bold ${Math.max(14, blockSize / 3)}px Arial`;
+        ctx.font = `bold ${Math.max(14, Math.min(blockWidth, blockHeight) / 3)}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         const labelText = `Pwr ${chainNumber}`;
@@ -779,7 +1433,7 @@ const CanvasRenderer = {
    * @param {number} supportHeight - Height of support structure
    * @param {number} zoomLevel - Current zoom level
    */
-  drawFlownSupports(ctx, horizontalBlocks, blockSize, xOffset, supportHeight, zoomLevel) {
+  drawFlownSupports(ctx, horizontalBlocks, blockWidth, xOffset, supportHeight, zoomLevel) {
     const headerOffset = this.config.headerOffsetMultiplier * zoomLevel;
     const flownSupportType = document.getElementById('flownSupportType')?.value || 'Single Header';
 
@@ -792,21 +1446,21 @@ const CanvasRenderer = {
         // Check if double header would extend past the wall
         if (i + 2 > horizontalBlocks) {
           // Use single header for the remaining odd tile
-          posX = i * blockSize;
+          posX = i * blockWidth;
           posY = headerOffset;
-          imageWidth = blockSize;
+          imageWidth = blockWidth;
           headerImage = this.images.singleHeader;
         } else {
-          posX = i * blockSize;
+          posX = i * blockWidth;
           posY = headerOffset;
-          imageWidth = 2 * blockSize;
+          imageWidth = 2 * blockWidth;
           headerImage = this.images.doubleHeader;
         }
       } else {
         // Single headers: every position
-        posX = i * blockSize;
+        posX = i * blockWidth;
         posY = headerOffset;
-        imageWidth = blockSize;
+        imageWidth = blockWidth;
         headerImage = this.images.singleHeader;
       }
 
@@ -826,12 +1480,13 @@ const CanvasRenderer = {
    * @param {CanvasRenderingContext2D} ctx - Canvas context
    * @param {number} horizontalBlocks - Number of horizontal blocks
    * @param {number} verticalBlocks - Number of vertical blocks
-   * @param {number} blockSize - Size of each block in pixels
+   * @param {number} blockWidth - Width of each block in pixels
+   * @param {number} blockHeight - Height of each block in pixels
    * @param {number} xOffset - Horizontal offset for multi-screen
    * @param {number} supportHeight - Height of support structure
    * @param {number} zoomLevel - Current zoom level
    */
-  drawGroundBases(ctx, horizontalBlocks, verticalBlocks, blockSize, xOffset, supportHeight, zoomLevel) {
+  drawGroundBases(ctx, horizontalBlocks, verticalBlocks, blockWidth, blockHeight, xOffset, supportHeight, zoomLevel) {
     const baseOffset = this.config.baseOffsetMultiplier * zoomLevel;
     const groundSupportType = document.getElementById('groundSupportType')?.value || 'Single Base';
 
@@ -844,21 +1499,21 @@ const CanvasRenderer = {
         // Check if double base would extend past the wall
         if (i + 2 > horizontalBlocks) {
           // Use single base for the remaining odd tile
-          posX = i * blockSize;
-          posY = (verticalBlocks * blockSize) - supportHeight + baseOffset;
-          imageWidth = blockSize;
+          posX = i * blockWidth;
+          posY = (verticalBlocks * blockHeight) - supportHeight + baseOffset;
+          imageWidth = blockWidth;
           baseImage = this.images.singleBase;
         } else {
-          posX = i * blockSize;
-          posY = (verticalBlocks * blockSize) - supportHeight + baseOffset;
-          imageWidth = 2 * blockSize;
+          posX = i * blockWidth;
+          posY = (verticalBlocks * blockHeight) - supportHeight + baseOffset;
+          imageWidth = 2 * blockWidth;
           baseImage = this.images.doubleBase;
         }
       } else {
         // Single bases: every position
-        posX = i * blockSize;
-        posY = (verticalBlocks * blockSize) - supportHeight + baseOffset;
-        imageWidth = blockSize;
+        posX = i * blockWidth;
+        posY = (verticalBlocks * blockHeight) - supportHeight + baseOffset;
+        imageWidth = blockWidth;
         baseImage = this.images.singleBase;
       }
 
@@ -878,45 +1533,140 @@ const CanvasRenderer = {
    * @param {string} productType - Type of LED product
    */
   displayWallDimensions(productType) {
+    console.log('displayWallDimensions called with productType:', productType);
+
     const dimensionsDiv = document.getElementById('wallDimensions');
-    if (!dimensionsDiv) return;
+    if (!dimensionsDiv) {
+      console.error('wallDimensions element not found!');
+      return;
+    }
 
     // Get configuration values
     const horizontalBlocks = parseInt(document.getElementById('blocksHor')?.value || 1, 10);
-    const verticalBlocks = parseInt(document.getElementById('blocksVer')?.value || 1, 10);
+
+    // Parse verticalBlocks as float to support fractional input (e.g., 4.5)
+    const verticalBlocksRaw = parseFloat(document.getElementById('blocksVer')?.value || 1);
+    let verticalBlocks = Math.floor(verticalBlocksRaw);
+
     const numScreens = parseInt(document.getElementById('numScreens')?.value || 1, 10);
 
-    // Get product-specific pixel size
-    let pixelsPerTile;
+    // Check for GP2 Half bottom rows (for GP2 Full only)
+    let gp2HalfBottomRow = false;
+    let gp2HalfRows = 0;
+    let gp2FullVerticalBlocks = verticalBlocks;
+
+    // Detect fractional input (e.g., 4.5 means 4 Full + 1 Half)
+    const hasFractionalInput = (verticalBlocksRaw % 1) !== 0;
+    let autoGp2HalfRows = 0;
+
+    if (hasFractionalInput && productType === 'ROEGP26Full') {
+      const fractionalPart = verticalBlocksRaw % 1;
+      autoGp2HalfRows = Math.round(fractionalPart * 2);
+    }
+
+    // Check if GP2 Half is enabled via fractional input
+    if (productType === 'ROEGP26Full' && hasFractionalInput && autoGp2HalfRows > 0) {
+      gp2HalfBottomRow = true;
+      gp2HalfRows = autoGp2HalfRows;
+      // Fractional input: additive mode (4.5 = 4 Full + 1 Half)
+      gp2FullVerticalBlocks = verticalBlocks;
+    }
+
+    console.log('Blocks:', { horizontalBlocks, verticalBlocks, numScreens, gp2HalfBottomRow, gp2HalfRows, gp2FullVerticalBlocks });
+
+    // Get product-specific pixel size and dimensions
+    let pixelsPerTileWidth;
+    let pixelsPerTileHeight;
     let depth;
+    let tileWidthFeet;
+    let tileHeightFeet;
 
     switch (productType) {
       case 'BP2B1':
       case 'BP2B2':
       case 'BP2V2':
-        pixelsPerTile = 176;
+        pixelsPerTileWidth = 176;
+        pixelsPerTileHeight = 176;
         depth = '44"';
+        tileWidthFeet = 1.64;
+        tileHeightFeet = 1.64;
         break;
       case 'theatrixx':
-        pixelsPerTile = 192;
+        pixelsPerTileWidth = 192;
+        pixelsPerTileHeight = 192;
         depth = '47"';
+        tileWidthFeet = 1.64;
+        tileHeightFeet = 1.64;
+        break;
+      case 'ROEGP26Full':
+        pixelsPerTileWidth = 192;
+        pixelsPerTileHeight = 384; // Full is 1000mm tall (2x height)
+        depth = '3.15"';
+        tileWidthFeet = 1.64;
+        tileHeightFeet = 3.28; // 1000mm = 3.28 feet
+        console.log('ROE GP2.6 Full selected - using 384px height and 3.28\' per tile');
+        break;
+      case 'ROEGP26Half':
+        pixelsPerTileWidth = 192;
+        pixelsPerTileHeight = 192;
+        depth = '3.15"';
+        tileWidthFeet = 1.64;
+        tileHeightFeet = 1.64;
         break;
       case 'absen':
       default:
-        pixelsPerTile = 200;
+        pixelsPerTileWidth = 200;
+        pixelsPerTileHeight = 200;
         depth = '35"';
+        tileWidthFeet = 1.64;
+        tileHeightFeet = 1.64;
         break;
     }
 
     // Calculate dimensions
-    const totalWidthPixels = (horizontalBlocks * pixelsPerTile * numScreens) + (this.config.screenSpacing * (numScreens - 1));
-    const totalHeightPixels = verticalBlocks * pixelsPerTile;
+    const totalWidthPixels = (horizontalBlocks * pixelsPerTileWidth * numScreens) + (this.config.screenSpacing * (numScreens - 1));
+    let totalHeightPixels;
+    let totalHeightFeet;
+
+    // Calculate height differently for GP2 Full with GP2 Half bottom rows
+    if (productType === 'ROEGP26Full' && gp2HalfBottomRow && gp2HalfRows > 0) {
+      // GP2 Full section: gp2FullVerticalBlocks × 384px (1000mm)
+      // GP2 Half section: gp2HalfRows × 192px (500mm)
+      totalHeightPixels = (gp2FullVerticalBlocks * 384) + (gp2HalfRows * 192);
+
+      // GP2 Full section: gp2FullVerticalBlocks × 3.28' (1000mm)
+      // GP2 Half section: gp2HalfRows × 1.64' (500mm)
+      totalHeightFeet = ((gp2FullVerticalBlocks * 3.28) + (gp2HalfRows * 1.64)).toFixed(2);
+    } else {
+      totalHeightPixels = verticalBlocks * pixelsPerTileHeight;
+      totalHeightFeet = (verticalBlocks * tileHeightFeet).toFixed(2);
+    }
+
     const totalPixels = (totalWidthPixels * totalHeightPixels).toLocaleString();
+    const totalWidthFeet = (horizontalBlocks * tileWidthFeet * numScreens).toFixed(2);
 
-    const totalWidthFeet = (horizontalBlocks * 1.64 * numScreens).toFixed(2);
-    const totalHeightFeet = (verticalBlocks * 1.64).toFixed(2);
+    // Calculate total tiles - show GP2 Full and GP2 Half separately when applicable
+    let totalTilesDisplay;
+    if (productType === 'ROEGP26Full' && gp2HalfBottomRow && gp2HalfRows > 0) {
+      const gp2FullTiles = horizontalBlocks * gp2FullVerticalBlocks * numScreens;
+      const gp2HalfTiles = horizontalBlocks * gp2HalfRows * numScreens;
+      const totalTiles = gp2FullTiles + gp2HalfTiles;
+      totalTilesDisplay = `${totalTiles} (${gp2FullTiles} GP2 Full + ${gp2HalfTiles} GP2 Half)`;
+    } else {
+      const totalTiles = horizontalBlocks * verticalBlocks * numScreens;
+      totalTilesDisplay = `${totalTiles}`;
+    }
 
-    const totalTiles = horizontalBlocks * verticalBlocks * numScreens;
+    console.log('Calculated dimensions:', {
+      totalWidthPixels,
+      totalHeightPixels,
+      totalWidthFeet,
+      totalHeightFeet,
+      tileHeightFeet,
+      gp2HalfBottomRow,
+      gp2HalfRows,
+      gp2FullVerticalBlocks
+    });
 
     // Update display
     dimensionsDiv.innerHTML = `
@@ -924,7 +1674,7 @@ const CanvasRenderer = {
         <strong>Wall Dimensions:</strong><br>
         ${totalWidthPixels} px (W) x ${totalHeightPixels} px (H)<br>
         ${totalWidthFeet}' (W) x ${totalHeightFeet}' (H) x ${depth} (D)<br>
-        Total Tiles: ${totalTiles}
+        Total Tiles: ${totalTilesDisplay}
       </div>
     `;
   }

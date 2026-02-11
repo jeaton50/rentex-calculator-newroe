@@ -59,6 +59,12 @@ const UI = {
       }
     }
 
+    // Update vertical blocks limit for GP2 Full (different limits for ground vs flown)
+    const productType = document.getElementById('productType')?.value;
+    if (productType && typeof updateVerticalBlocksLimit === 'function') {
+      updateVerticalBlocksLimit(productType);
+    }
+
     this.updateWall();
   },
 
@@ -87,6 +93,12 @@ const UI = {
       if (warningDiv) {
         warningDiv.style.display = 'none';
       }
+    }
+
+    // Update vertical blocks limit for GP2 Full (different limits for ground vs flown)
+    const productType = document.getElementById('productType')?.value;
+    if (productType && typeof updateVerticalBlocksLimit === 'function') {
+      updateVerticalBlocksLimit(productType);
     }
 
     this.updateWall();
@@ -135,6 +147,10 @@ const UI = {
       productVal = 11;  // vertical tile threshold for Absen
     } else if (product === 'BP2B1' || product === 'BP2B2' || product === 'BP2V2' || product === 'theatrixx') {
       productVal = 13;  // vertical tile threshold for ROE & Theatrixx
+    } else if (product === 'ROEGP26Full') {
+      productVal = 6;   // vertical tile threshold for ROE GP2.6 Full
+    } else if (product === 'ROEGP26Half') {
+      productVal = 12;  // vertical tile threshold for ROE GP2.6 Half
     } else {
       productVal = 12;  // fallback
     }
@@ -157,9 +173,16 @@ const UI = {
         return;
       }
 
-      // Convert height in feet to approximate tile count
-      // 500 mm tile => ~1.64042 ft tall
-      const tileHeightFeet = 1.64042;
+      // Convert height in feet to approximate tile count based on product type
+      let tileHeightFeet;
+      if (product === 'ROEGP26Full') {
+        tileHeightFeet = 3.28; // GP2 Full: 1000mm = 3.28 feet
+      } else if (product === 'ROEGP26Half') {
+        tileHeightFeet = 1.64; // GP2 Half: 500mm = 1.64 feet
+      } else {
+        tileHeightFeet = 1.64; // Default: 500mm = 1.64 feet (Black Pearl, Theatrixx, Absen)
+      }
+
       const blocksVerDim = Math.ceil(heightFeet / tileHeightFeet);
 
       // Apply the same logic as in tile mode
@@ -167,7 +190,7 @@ const UI = {
           blocksVerDim >= 9 && blocksVerDim <= 12 &&
           !flownSupportCheckbox?.checked) {
         dimensionWarningSpan.textContent = 'Will need to add schedule 40 pipe and double swivel cheeseboughs';
-      } else if (blocksVerDim >= productVal && !flownSupportCheckbox?.checked) {
+      } else if (blocksVerDim > productVal && !flownSupportCheckbox?.checked) {
         dimensionWarningSpan.textContent = '*** EXCEEDS LIMIT, MUST FLY***';
       } else {
         dimensionWarningSpan.textContent = '';
@@ -178,27 +201,83 @@ const UI = {
 
     } else {
       // User is entering tile counts
-      const blocksVer = parseInt(blocksVerInput.value, 10);
-      if (isNaN(blocksVer) || blocksVer < 1) {
-        // If invalid input, clear warnings
-        blockWarningSpan.textContent = '';
+      // Check if ROE Graphite Mix mode is enabled
+      const roeGraphiteMixEnabled = document.getElementById('roeGraphicMix')?.checked || false;
+
+      if (roeGraphiteMixEnabled) {
+        // ROE Graphite Mix mode: check both Half and Full tile vertical limits
+        const halfVertical = parseInt(document.getElementById('halfVertical')?.value || 0, 10);
+        const fullVertical = parseInt(document.getElementById('fullVertical')?.value || 0, 10);
+
+        const halfLimit = 12;  // ROE GP2.6 Half max stack
+        const fullLimit = 6;   // ROE GP2.6 Full max stack
+
+        const halfExceeds = halfVertical > halfLimit;
+        const fullExceeds = fullVertical > fullLimit;
+
+        if (!flownSupportCheckbox?.checked) {
+          if (halfExceeds && fullExceeds) {
+            blockWarningSpan.textContent = '*** EXCEEDS LIMIT (Half > 12, Full > 6), MUST FLY***';
+          } else if (halfExceeds) {
+            blockWarningSpan.textContent = '*** EXCEEDS LIMIT (Half > 12), MUST FLY***';
+          } else if (fullExceeds) {
+            blockWarningSpan.textContent = '*** EXCEEDS LIMIT (Full > 6), MUST FLY***';
+          } else {
+            blockWarningSpan.textContent = '';
+          }
+        } else {
+          blockWarningSpan.textContent = '';
+        }
+
         dimensionWarningSpan.textContent = '';
-        return;
-      }
-
-      // For ROE (BP2/BP2V2) and Theatrixx: if vertical tiles are 9..12 & flown support is not checked
-      if ((product === 'BP2B1' || product === 'BP2B2' || product === 'BP2V2' || product === 'theatrixx') &&
-          blocksVer >= 9 && blocksVer <= 12 &&
-          !flownSupportCheckbox?.checked) {
-        blockWarningSpan.textContent = 'Will need to add schedule 40 pipe and hardware.Check with LED team';
-      } else if (blocksVer >= productVal && !flownSupportCheckbox?.checked) {
-        blockWarningSpan.textContent = '*** EXCEEDS LIMIT, MUST FLY***';
       } else {
-        blockWarningSpan.textContent = '';
-      }
+        // Normal mode: single product type
+        // Parse as float to support fractional input (e.g., 4.5 for GP2 Full)
+        const blocksVerRaw = parseFloat(blocksVerInput.value);
+        const blocksVer = Math.floor(blocksVerRaw);
 
-      // Clear dimension warning since we're in tile mode
-      dimensionWarningSpan.textContent = '';
+        if (isNaN(blocksVer) || blocksVer < 1) {
+          // If invalid input, clear warnings
+          blockWarningSpan.textContent = '';
+          dimensionWarningSpan.textContent = '';
+          return;
+        }
+
+        // For GP2 Full, check for fractional input
+        let effectiveVerticalTiles = blocksVer;
+
+        if (product === 'ROEGP26Full') {
+          // Detect fractional input (e.g., 4.5)
+          const hasFractionalInput = (blocksVerRaw % 1) !== 0;
+
+          if (hasFractionalInput) {
+            // Fractional input: 0.5 → 1 Half row, 1.0 → 2 Half rows
+            const fractionalPart = blocksVerRaw % 1;
+            const gp2HalfRows = Math.round(fractionalPart * 2);
+
+            // Calculate total height and convert to equivalent Full tiles
+            // Full tiles: blocksVer × 3.28'
+            // Half tiles: gp2HalfRows × 1.64'
+            const totalHeightFeet = (blocksVer * 3.28) + (gp2HalfRows * 1.64);
+            // Convert total height back to equivalent Full tiles
+            effectiveVerticalTiles = totalHeightFeet / 3.28;
+          }
+        }
+
+        // For ROE (BP2/BP2V2) and Theatrixx: if vertical tiles are 9..12 & flown support is not checked
+        if ((product === 'BP2B1' || product === 'BP2B2' || product === 'BP2V2' || product === 'theatrixx') &&
+            blocksVer >= 9 && blocksVer <= 12 &&
+            !flownSupportCheckbox?.checked) {
+          blockWarningSpan.textContent = 'Will need to add schedule 40 pipe and hardware.Check with LED team';
+        } else if (effectiveVerticalTiles > productVal && !flownSupportCheckbox?.checked) {
+          blockWarningSpan.textContent = '*** EXCEEDS LIMIT, MUST FLY***';
+        } else {
+          blockWarningSpan.textContent = '';
+        }
+
+        // Clear dimension warning since we're in tile mode
+        dimensionWarningSpan.textContent = '';
+      }
     }
   },
 
