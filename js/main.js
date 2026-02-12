@@ -1759,27 +1759,36 @@ window.selectScreenSize = function(width, height) {
 window.updateBlocksBasedOnSelection = function() {
   const aspectRatioValue = document.getElementById('aspectRatio').value;
   const screenSizeValue = document.getElementById('screenSize').value;
+
+  // Determine tile dimensions based on product type (GP2 Full tiles are 1000mm tall)
+  const productType = document.getElementById('productType')?.value || 'absen';
+  const tileWidthFeet = 1.64;
+  const tileHeightFeet = (productType === 'ROEGP26Full') ? 3.28 : 1.64;
+
   if ((aspectRatioValue === "1:1" || aspectRatioValue === "16:9" || aspectRatioValue === "32:9" ||
     aspectRatioValue === "48:9" || aspectRatioValue === "4:3" || aspectRatioValue === "2:1" ||
     aspectRatioValue === "3:1") && screenSizeValue) {
     const [width, height] = screenSizeValue.split('x').map(Number);
     let blocksHor, blocksVer;
     if (screenSizeValue === "7x7") {
-      blocksHor = blocksVer = 5;
+      blocksHor = 5;
+      blocksVer = (productType === 'ROEGP26Full') ? 2 : 5;
     } else {
-      blocksHor = Math.round(width / 1.64);
-      blocksVer = Math.round(height / 1.64);
+      blocksHor = Math.round(width / tileWidthFeet);
+      blocksVer = Math.round(height / tileHeightFeet);
     }
 
     document.getElementById('blocksHor').value = blocksHor;
     document.getElementById('blocksVer').value = blocksVer;
     if(typeof updateHeightWarning === 'function') updateHeightWarning(height);
   } else if (aspectRatioValue) {
-    // Aspect ratio only
+    // Aspect ratio only (no specific size)
     const [width, height] = aspectRatioValue.split(':').map(Number);
     const baseWidth = 16;
     const blocksHor = baseWidth;
-    const blocksVer = Math.round((height / width) * baseWidth);
+    const wallWidthFeet = baseWidth * tileWidthFeet;
+    const wallHeightFeet = wallWidthFeet * (height / width);
+    const blocksVer = Math.round(wallHeightFeet / tileHeightFeet);
     document.getElementById('blocksHor').value = blocksHor;
     document.getElementById('blocksVer').value = blocksVer;
     if(typeof updateHeightWarning === 'function') updateHeightWarning(0);
