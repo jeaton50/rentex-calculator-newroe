@@ -835,16 +835,14 @@ window.generateAllEquipment = function () {
         screenTbody.appendChild(row);
         screenWeight += item.weight * item.quantity;
 
-        // Strip parenthetical info (e.g., "(5 active + 1 spare)") from names for the
-        // merge key so package items with different per-screen counts get combined properly
-        const baseName = item.name.replace(/\s*\([^)]*\)/g, '').trim();
-        const key = `${item.ecode}|${baseName}`;
+        // Use full equipment name (matching Excel export) for merge key
+        const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
         screenKeys.push(key);
 
         if (!combinedEquipment[key]) {
           combinedEquipment[key] = {
             ecode: item.ecode,
-            name: baseName,
+            name: item.name,
             quantity: 0,
             weight: item.weight
           };
@@ -991,11 +989,10 @@ window.generateAllEquipment = function () {
 
     // Add recalculated items to combined equipment
     for (const item of singleRoomData.recalcItems) {
-      const baseName = item.name.replace(/\s*\([^)]*\)/g, '').trim();
-      const key = `${item.ecode}|${baseName}`;
+      const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
       combinedEquipment[key] = {
         ecode: item.ecode,
-        name: baseName,
+        name: item.name,
         quantity: item.quantity,
         weight: item.weight
       };
