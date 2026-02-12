@@ -453,8 +453,9 @@ function updateBlocksFromAspectRatio() {
   if (blocksHorInput) blocksHorInput.value = blocks.horizontalBlocks;
   if (blocksVerInput) blocksVerInput.value = blocks.verticalBlocks;
 
-  // Update height warning if applicable
-  if (blocks.height > 18.4) {
+  // Update height warning if applicable (only for ground support)
+  const flownSupportCheckbox = document.getElementById('flownSupport');
+  if (blocks.height > 18.4 && !flownSupportCheckbox?.checked) {
     const warningElement = document.getElementById('blockVerticalWarning');
     if (warningElement) {
       warningElement.textContent = '***EXCEEDS LIMIT, MUST FLY***';

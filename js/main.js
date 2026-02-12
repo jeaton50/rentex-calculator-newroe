@@ -157,18 +157,19 @@ function updateHeightDimensionLimit(productType) {
 
   let maxHeightFeet = null;
   let productName = '';
+  const flownSupport = document.getElementById('flownSupport')?.checked;
 
   if (productType === 'ROEGP26Full') {
-    maxHeightFeet = 19.68; // GP2 Full: 6 tiles × 3.28' = 19.68 feet
+    maxHeightFeet = flownSupport ? 39.36 : 19.68; // GP2 Full: flown 12×3.28'=39.36', ground 6×3.28'=19.68'
     productName = 'GP2 Full';
   } else if (productType === 'absen') {
-    maxHeightFeet = 16.4; // Absen: 10 tiles × 1.64' = 16.4 feet
+    maxHeightFeet = flownSupport ? 32.8 : 16.4; // Absen: flown 20×1.64'=32.8', ground 10×1.64'=16.4'
     productName = 'Absen';
   } else if (productType === 'BP2B1' || productType === 'BP2B2' || productType === 'BP2V2') {
-    maxHeightFeet = 19.68; // Black Pearl: 12 tiles × 1.64' = 19.68 feet
+    maxHeightFeet = flownSupport ? 32.8 : 19.68; // Black Pearl: flown 20×1.64'=32.8', ground 12×1.64'=19.68'
     productName = 'Black Pearl';
   } else if (productType === 'theatrixx') {
-    maxHeightFeet = 19.68; // Theatrixx: 12 tiles × 1.64' = 19.68 feet
+    maxHeightFeet = flownSupport ? 32.8 : 19.68; // Theatrixx: flown 20×1.64'=32.8', ground 12×1.64'=19.68'
     productName = 'Theatrixx';
   }
 
@@ -1781,8 +1782,9 @@ window.generateScreenSizesFromTileQuantity = function() {
     return;
   }
 
-  // Get tile dimensions and limits based on product type
+  // Get tile dimensions and limits based on product type and support type
   let tileWidthFeet, tileHeightFeet, maxVertical;
+  const flownSupport = document.getElementById('flownSupport')?.checked;
 
   // Use constants or defaults if CONSTANTS is not defined
   const limits = (typeof CONSTANTS !== 'undefined' && CONSTANTS.MAX_VERTICAL_TILES) ? CONSTANTS.MAX_VERTICAL_TILES : {};
@@ -1790,16 +1792,16 @@ window.generateScreenSizesFromTileQuantity = function() {
   if (productType === 'ROEGP26Full') {
     tileWidthFeet = 1.64; // 500mm
     tileHeightFeet = 3.28; // 1000mm
-    maxVertical = limits.ROEGP26Full || 7;
+    maxVertical = flownSupport ? 12 : (limits.ROEGP26Full || 7);
   } else if (productType === 'ROEGP26Half') {
     tileWidthFeet = 1.64; // 500mm
     tileHeightFeet = 1.64; // 500mm
-    maxVertical = limits.ROEGP26Half || 13;
+    maxVertical = flownSupport ? 20 : (limits.ROEGP26Half || 13);
   } else {
     // Default for Absen, BP2, Theatrixx (all 500x500mm)
     tileWidthFeet = 1.64;
     tileHeightFeet = 1.64;
-    maxVertical = limits[productType] || 13;
+    maxVertical = flownSupport ? 20 : (limits[productType] || 13);
   }
 
   // Find all factor pairs (width × height = quantity)

@@ -59,10 +59,13 @@ const UI = {
       }
     }
 
-    // Update vertical blocks limit for GP2 Full (different limits for ground vs flown)
+    // Update vertical blocks and height dimension limits (different for ground vs flown)
     const productType = document.getElementById('productType')?.value;
     if (productType && typeof updateVerticalBlocksLimit === 'function') {
       updateVerticalBlocksLimit(productType);
+    }
+    if (productType && typeof updateHeightDimensionLimit === 'function') {
+      updateHeightDimensionLimit(productType);
     }
 
     this.updateWall();
@@ -95,10 +98,13 @@ const UI = {
       }
     }
 
-    // Update vertical blocks limit for GP2 Full (different limits for ground vs flown)
+    // Update vertical blocks and height dimension limits (different for ground vs flown)
     const productType = document.getElementById('productType')?.value;
     if (productType && typeof updateVerticalBlocksLimit === 'function') {
       updateVerticalBlocksLimit(productType);
+    }
+    if (productType && typeof updateHeightDimensionLimit === 'function') {
+      updateHeightDimensionLimit(productType);
     }
 
     this.updateWall();
