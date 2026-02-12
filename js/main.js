@@ -766,6 +766,9 @@ window.generateAllEquipment = function() {
     const screenTbody = screenTable.querySelector('tbody');
     let screenWeight = 0;
 
+    // Track this screen's keys in order for positional merge
+    const screenKeys = [];
+
     for (const item of screenEquipment) {
       if (item.quantity > 0) {
         const row = document.createElement('tr');
@@ -782,6 +785,8 @@ window.generateAllEquipment = function() {
         // merge key so package items with different per-screen counts get combined properly
         const baseName = item.name.replace(/\s*\([^)]*\)/g, '').trim();
         const key = `${item.ecode}|${baseName}`;
+        screenKeys.push(key);
+
         if (!combinedEquipment[key]) {
           combinedEquipment[key] = {
             ecode: item.ecode,
@@ -789,7 +794,17 @@ window.generateAllEquipment = function() {
             quantity: 0,
             weight: item.weight
           };
-          combinedEquipmentOrder.push(key);
+          // Insert new items at the correct position based on their neighbors
+          // in this screen's equipment list (not just appended at end)
+          let insertIdx = combinedEquipmentOrder.length; // default: append
+          for (let i = screenKeys.length - 2; i >= 0; i--) {
+            const prevPos = combinedEquipmentOrder.indexOf(screenKeys[i]);
+            if (prevPos !== -1) {
+              insertIdx = prevPos + 1;
+              break;
+            }
+          }
+          combinedEquipmentOrder.splice(insertIdx, 0, key);
         }
         combinedEquipment[key].quantity = +combinedEquipment[key].quantity + +item.quantity;
       }
