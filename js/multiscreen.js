@@ -21,6 +21,9 @@ class ScreenConfig {
     this.sourceSignals = 1;
     this.dummyTiles = false;
     this.dummyTileCount = 1;
+    this.gp2HalfEnabled = false;
+    this.gp2HalfCount = 1;
+    this.gp2HalfPosition = 'bottom';
   }
 }
 
@@ -369,6 +372,9 @@ const MultiScreenManager = {
    * Save current screen configuration to screenConfigurations array
    */
   saveCurrentScreenConfig() {
+    // Don't save during load operations — the UI is in a transitional state
+    if (window.isLoadingScreenConfig) return;
+
     if (window.activeScreenIndex >= 0 && window.activeScreenIndex < window.screenConfigurations.length) {
       const config = window.screenConfigurations[window.activeScreenIndex];
 
@@ -392,6 +398,15 @@ const MultiScreenManager = {
       config.powerDistroType = document.getElementById('powerDistroType')?.value || 'Auto';
       config.redundancy = document.getElementById('redundancy')?.value || 'None';
       config.sourceSignals = parseInt(document.getElementById('sourceSignals')?.value || 1, 10);
+
+      // Dummy tiles
+      config.dummyTiles = document.getElementById('dummyTilesCheckbox')?.checked || false;
+      config.dummyTileCount = parseInt(document.getElementById('dummyTileCount')?.value || 1, 10);
+
+      // GP2 Half settings
+      config.gp2HalfEnabled = document.getElementById('gp2HalfCheckbox')?.checked || false;
+      config.gp2HalfCount = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
+      config.gp2HalfPosition = document.getElementById('gp2HalfPosition')?.value || 'bottom';
     }
   },
 
@@ -400,60 +415,108 @@ const MultiScreenManager = {
    * @param {ScreenConfig} config - Configuration to load
    */
   loadScreenConfig(config) {
-    const productTypeEl = document.getElementById('productType');
-    const blocksHorEl = document.getElementById('blocksHor');
-    const blocksVerEl = document.getElementById('blocksVer');
-    const groundSupportEl = document.getElementById('groundSupport');
-    const flownSupportEl = document.getElementById('flownSupport');
-    const groundSupportOptionsEl = document.getElementById('groundSupportOptions');
-    const flownSupportOptionsEl = document.getElementById('flownSupportOptions');
-    const groundSupportTypeEl = document.getElementById('groundSupportType');
-    const flownSupportTypeEl = document.getElementById('flownSupportType');
-    const powerDistroTypeEl = document.getElementById('powerDistroType');
-    const redundancyEl = document.getElementById('redundancy');
-    const sourceSignalsEl = document.getElementById('sourceSignals');
+    // Set guard flag to prevent cascading saves from side-effects
+    // (product type change handler, support toggle handlers, generateWall override
+    //  all trigger saveCurrentScreenConfig — but during a load the UI is transitional)
+    window.isLoadingScreenConfig = true;
 
-    // Set product type first (without triggering change yet)
-    if (productTypeEl) productTypeEl.value = config.productType;
-    if (blocksHorEl) blocksHorEl.value = config.blocksHor;
-    if (blocksVerEl) blocksVerEl.value = config.blocksVer;
+    try {
+      const productTypeEl = document.getElementById('productType');
+      const blocksHorEl = document.getElementById('blocksHor');
+      const blocksVerEl = document.getElementById('blocksVer');
+      const groundSupportEl = document.getElementById('groundSupport');
+      const flownSupportEl = document.getElementById('flownSupport');
+      const groundSupportOptionsEl = document.getElementById('groundSupportOptions');
+      const flownSupportOptionsEl = document.getElementById('flownSupportOptions');
+      const groundSupportTypeEl = document.getElementById('groundSupportType');
+      const flownSupportTypeEl = document.getElementById('flownSupportType');
+      const powerDistroTypeEl = document.getElementById('powerDistroType');
+      const redundancyEl = document.getElementById('redundancy');
+      const sourceSignalsEl = document.getElementById('sourceSignals');
 
-    const wallTypeRadios = document.querySelectorAll('input[name="wallType"]');
-    for (const radio of wallTypeRadios) {
-      radio.checked = (radio.value === config.wallType);
+      // Set product type first (without triggering change yet)
+      if (productTypeEl) productTypeEl.value = config.productType;
+      if (blocksHorEl) blocksHorEl.value = config.blocksHor;
+      if (blocksVerEl) blocksVerEl.value = config.blocksVer;
+
+      const wallTypeRadios = document.querySelectorAll('input[name="wallType"]');
+      for (const radio of wallTypeRadios) {
+        radio.checked = (radio.value === config.wallType);
+      }
+
+      if (config.supportType === 'groundSupport') {
+        if (groundSupportEl) groundSupportEl.checked = true;
+        if (flownSupportEl) flownSupportEl.checked = false;
+        if (groundSupportOptionsEl) groundSupportOptionsEl.style.display = 'block';
+        if (flownSupportOptionsEl) flownSupportOptionsEl.style.display = 'none';
+        if (groundSupportTypeEl) groundSupportTypeEl.value = config.supportOption;
+      } else {
+        if (groundSupportEl) groundSupportEl.checked = false;
+        if (flownSupportEl) flownSupportEl.checked = true;
+        if (groundSupportOptionsEl) groundSupportOptionsEl.style.display = 'none';
+        if (flownSupportOptionsEl) flownSupportOptionsEl.style.display = 'block';
+        if (flownSupportTypeEl) flownSupportTypeEl.value = config.supportOption;
+      }
+
+      if (powerDistroTypeEl) powerDistroTypeEl.value = config.powerDistroType;
+      if (redundancyEl) redundancyEl.value = config.redundancy;
+      if (sourceSignalsEl) sourceSignalsEl.value = config.sourceSignals;
+
+      // Dispatch change event AFTER all values are set so product-specific UI
+      // updates correctly (dummy tiles, GP2 half, step/min, table colors, etc.)
+      if (productTypeEl) productTypeEl.dispatchEvent(new Event('change'));
+
+      // Re-apply ALL values after the change event, which resets many fields to defaults
+      // Support options
+      if (config.supportType === 'groundSupport') {
+        if (groundSupportEl) groundSupportEl.checked = true;
+        if (flownSupportEl) flownSupportEl.checked = false;
+        if (groundSupportOptionsEl) groundSupportOptionsEl.style.display = 'block';
+        if (flownSupportOptionsEl) flownSupportOptionsEl.style.display = 'none';
+        if (groundSupportTypeEl) groundSupportTypeEl.value = config.supportOption;
+      } else {
+        if (groundSupportEl) groundSupportEl.checked = false;
+        if (flownSupportEl) flownSupportEl.checked = true;
+        if (groundSupportOptionsEl) groundSupportOptionsEl.style.display = 'none';
+        if (flownSupportOptionsEl) flownSupportOptionsEl.style.display = 'block';
+        if (flownSupportTypeEl) flownSupportTypeEl.value = config.supportOption;
+      }
+      // Blocks (handler may round blocksVer based on product-specific limits)
+      if (blocksHorEl) blocksHorEl.value = config.blocksHor;
+      if (blocksVerEl) blocksVerEl.value = config.blocksVer;
+
+      // Dummy tiles
+      const dummyTilesCheckbox = document.getElementById('dummyTilesCheckbox');
+      const dummyTileCountInput = document.getElementById('dummyTileCount');
+      const dummyTileCountContainer = document.getElementById('dummyTileCountContainer');
+      if (dummyTilesCheckbox) {
+        dummyTilesCheckbox.checked = config.dummyTiles || false;
+        if (dummyTileCountContainer) {
+          dummyTileCountContainer.style.display = config.dummyTiles ? 'block' : 'none';
+        }
+      }
+      if (dummyTileCountInput) dummyTileCountInput.value = config.dummyTileCount || 1;
+
+      // GP2 Half settings
+      const gp2HalfCheckbox = document.getElementById('gp2HalfCheckbox');
+      const gp2HalfCountInput = document.getElementById('gp2HalfCount');
+      const gp2HalfPositionSelect = document.getElementById('gp2HalfPosition');
+      const gp2HalfCountContainer = document.getElementById('gp2HalfCountContainer');
+      if (gp2HalfCheckbox) {
+        gp2HalfCheckbox.checked = config.gp2HalfEnabled || false;
+        if (gp2HalfCountContainer) {
+          gp2HalfCountContainer.style.display = config.gp2HalfEnabled ? 'block' : 'none';
+        }
+      }
+      if (gp2HalfCountInput) gp2HalfCountInput.value = config.gp2HalfCount || 1;
+      if (gp2HalfPositionSelect) gp2HalfPositionSelect.value = config.gp2HalfPosition || 'bottom';
+
+      // Power distro type (re-apply in case change event reset it)
+      if (powerDistroTypeEl) powerDistroTypeEl.value = config.powerDistroType;
+    } finally {
+      // Always clear the guard flag, even if an error occurs
+      window.isLoadingScreenConfig = false;
     }
-
-    if (config.supportType === 'groundSupport') {
-      if (groundSupportEl) groundSupportEl.checked = true;
-      if (flownSupportEl) flownSupportEl.checked = false;
-      if (groundSupportOptionsEl) groundSupportOptionsEl.style.display = 'block';
-      if (flownSupportOptionsEl) flownSupportOptionsEl.style.display = 'none';
-      if (groundSupportTypeEl) groundSupportTypeEl.value = config.supportOption;
-    } else {
-      if (groundSupportEl) groundSupportEl.checked = false;
-      if (flownSupportEl) flownSupportEl.checked = true;
-      if (groundSupportOptionsEl) groundSupportOptionsEl.style.display = 'none';
-      if (flownSupportOptionsEl) flownSupportOptionsEl.style.display = 'block';
-      if (flownSupportTypeEl) flownSupportTypeEl.value = config.supportOption;
-    }
-
-    if (powerDistroTypeEl) powerDistroTypeEl.value = config.powerDistroType;
-    if (redundancyEl) redundancyEl.value = config.redundancy;
-    if (sourceSignalsEl) sourceSignalsEl.value = config.sourceSignals;
-
-    // Dispatch change event AFTER all values are set so product-specific UI
-    // updates correctly (dummy tiles, GP2 half, step/min, table colors, etc.)
-    if (productTypeEl) productTypeEl.dispatchEvent(new Event('change'));
-
-    // Re-apply support option after change event (the handler resets it to defaults)
-    if (config.supportType === 'groundSupport') {
-      if (groundSupportTypeEl) groundSupportTypeEl.value = config.supportOption;
-    } else {
-      if (flownSupportTypeEl) flownSupportTypeEl.value = config.supportOption;
-    }
-    // Re-apply blocks after change event (handler may round blocksVer)
-    if (blocksHorEl) blocksHorEl.value = config.blocksHor;
-    if (blocksVerEl) blocksVerEl.value = config.blocksVer;
   },
 
   /**
@@ -1126,6 +1189,9 @@ if (typeof window !== 'undefined') {
   if (typeof window.isCollectingEquipment === 'undefined') {
     window.isCollectingEquipment = false;
   }
+  if (typeof window.isLoadingScreenConfig === 'undefined') {
+    window.isLoadingScreenConfig = false;
+  }
   if (typeof window.multiScreenInitialized === 'undefined') {
     window.multiScreenInitialized = false;
   }
@@ -1182,7 +1248,12 @@ if (typeof window !== 'undefined') {
     window.activeScreenIndex = index;
     MultiScreenManager.loadScreenConfig(window.screenConfigurations[window.activeScreenIndex]);
     MultiScreenManager.updateScreenTabs();
-    if (typeof window.generateWall === 'function') {
+
+    // Call originalGenerateWall directly to render the wall without triggering
+    // another saveCurrentScreenConfig (loadScreenConfig already set the UI state).
+    if (typeof window.originalGenerateWall === 'function') {
+      window.originalGenerateWall();
+    } else if (typeof window.generateWall === 'function') {
       window.generateWall();
     }
   };
