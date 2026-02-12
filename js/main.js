@@ -778,11 +778,14 @@ window.generateAllEquipment = function() {
         screenTbody.appendChild(row);
         screenWeight += item.weight * item.quantity;
 
-        const key = `${item.ecode}|${item.name}`;
+        // Strip parenthetical info (e.g., "(5 active + 1 spare)") from names for the
+        // merge key so package items with different per-screen counts get combined properly
+        const baseName = item.name.replace(/\s*\([^)]*\)/g, '').trim();
+        const key = `${item.ecode}|${baseName}`;
         if (!combinedEquipment[key]) {
           combinedEquipment[key] = {
             ecode: item.ecode,
-            name: item.name,
+            name: baseName,
             quantity: 0,
             weight: item.weight
           };
