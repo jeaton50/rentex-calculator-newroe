@@ -590,6 +590,7 @@ window.generateAllEquipment = function() {
   tbody.innerHTML = '';
 
   const combinedEquipment = {};
+  const combinedEquipmentOrder = []; // Track insertion order for natural equipment ordering
 
   let screenEquipmentContainer = document.getElementById('screenEquipmentContainer');
   if (screenEquipmentContainer) {
@@ -785,6 +786,7 @@ window.generateAllEquipment = function() {
             quantity: 0,
             weight: item.weight
           };
+          combinedEquipmentOrder.push(key);
         }
         combinedEquipment[key].quantity = +combinedEquipment[key].quantity + +item.quantity;
       }
@@ -907,15 +909,10 @@ window.generateAllEquipment = function() {
   `;
 
   const combinedTbody = combinedTable.querySelector('tbody');
-  const consolidatedEquipment = Object.values(combinedEquipment);
 
-  // Sort equipment for consistent display
-  consolidatedEquipment.sort((a, b) => {
-    if (a.ecode !== b.ecode) {
-      return a.ecode.localeCompare(b.ecode);
-    }
-    return a.name.localeCompare(b.name);
-  });
+  // Use natural equipment order (tiles → processors → structural → cables → power distro)
+  // instead of alphabetical sort, matching the single-screen equipment table order
+  const consolidatedEquipment = combinedEquipmentOrder.map(key => combinedEquipment[key]);
 
   // Add combined equipment to table
   for (const item of consolidatedEquipment) {
