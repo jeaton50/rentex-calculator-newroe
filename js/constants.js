@@ -156,12 +156,12 @@ const EQUIPMENT = {
   PL25_BEAM50: { code: 'PL25BEAM50', name: 'Absen PL2.5 support beam, 500 mm', weight: 0, image: 'PL25BEAM50.png' },
 
   // ROE Black Pearl
-  BP2B1: { code: 'BP2B1', name: 'ROE Black Pearl 2 Version 1 LED tile batch 1 (BP2)', weight: 20.61 },
-  BP2B2: { code: 'BP2B2', name: 'ROE Black Pearl 2 Version 1 LED tile batch 2 (BP2)', weight: 20.61 },
-  BP2V2: { code: 'BP2V2', name: 'BP2V2 ROE Black Pearl 2 Version 2.1 LED tile (BP2V2)', weight: 20.61 },
-  BP2V2_CASE: { code: 'BP2V2CASE', name: 'Case, ROE Black Pearl version2, 8x (BP2V2)', weight: 161.12 },
-  BPBO_HEAD1: { code: 'BPBOHEAD1', name: 'ROE Black Pearl header, 1W, 0.5m', weight: 12 },
-  BPBO_HEAD2: { code: 'BPBOHEAD2', name: 'ROE Black Pearl header, 2W, 1m', weight: 19 },
+  BP2B1: { code: 'BP2B1', name: 'ROE Black Pearl 2 Version 1 LED tile batch 1 (BP2)', weight: 20.61, image: 'BP2B1.png' },
+  BP2B2: { code: 'BP2B2', name: 'ROE Black Pearl 2 Version 1 LED tile batch 2 (BP2)', weight: 20.61, image: 'BP2B2.png' },
+  BP2V2: { code: 'BP2V2', name: 'BP2V2 ROE Black Pearl 2 Version 2.1 LED tile (BP2V2)', weight: 20.61, image: 'BP2V2.png' },
+  BP2V2_CASE: { code: 'BP2V2CASE', name: 'Case, ROE Black Pearl version2, 8x (BP2V2)', weight: 161.12, image: 'BP2V2CASE.png' },
+  BPBO_HEAD1: { code: 'BPBOHEAD1', name: 'ROE Black Pearl header, 1W, 0.5m', weight: 12, image: 'BPBOHEAD1.png' },
+  BPBO_HEAD2: { code: 'BPBOHEAD2', name: 'ROE Black Pearl header, 2W, 1m', weight: 19, image: 'BPBOHEAD2.png' },
   BPBO_BB1: { code: 'BPBOBB1', name: 'ROE Black Pearl base bar, 1W, 0.5m', weight: 16, image: 'BPBOBB1.png' },
   BPBO_BB2: { code: 'BPBOBB2', name: 'ROE Black Pearl base bar, 2W, 1.0m', weight: 28, image: 'BPBOBB2.png' },
   BP25DREE: { code: 'BP25DGREE', name: 'ROE Black Pearl 5 Degree Bracket', weight: 0.25, image: 'BP25DGREE.png' },
