@@ -103,6 +103,11 @@ const Calculator = {
   calculateBlocksFromAspectRatio(aspectRatio, screenSize = null) {
     let horizontalBlocks, verticalBlocks;
 
+    // Determine tile height based on product type (GP2 Full tiles are 1000mm tall, others are 500mm)
+    const productType = document.getElementById('productType')?.value || 'absen';
+    const tileWidthFeet = 1.64;
+    const tileHeightFeet = (productType === 'ROEGP26Full') ? 3.28 : 1.64;
+
     // Handle specific screen sizes for certain aspect ratios
     const ratiosWithSizes = ["1:1", "16:9", "32:9", "48:9", "4:3", "2:1", "3:1"];
 
@@ -111,20 +116,24 @@ const Calculator = {
 
       // Special case for 7x7
       if (screenSize === "7x7") {
-        horizontalBlocks = verticalBlocks = 5;
+        horizontalBlocks = 5;
+        verticalBlocks = (productType === 'ROEGP26Full') ? 2 : 5;
       } else {
-        horizontalBlocks = Math.round(width / 1.64);
-        verticalBlocks = Math.round(height / 1.64);
+        horizontalBlocks = Math.round(width / tileWidthFeet);
+        verticalBlocks = Math.round(height / tileHeightFeet);
       }
 
       return { horizontalBlocks, verticalBlocks, height };
     }
 
-    // Calculate from aspect ratio
+    // Calculate from aspect ratio only (no specific size)
     const [width, height] = aspectRatio.split(':').map(Number);
     const baseWidth = 16;
     horizontalBlocks = baseWidth;
-    verticalBlocks = Math.round((height / width) * baseWidth);
+    // Convert aspect ratio to vertical tiles accounting for tile height
+    const wallWidthFeet = baseWidth * tileWidthFeet;
+    const wallHeightFeet = wallWidthFeet * (height / width);
+    verticalBlocks = Math.round(wallHeightFeet / tileHeightFeet);
 
     return { horizontalBlocks, verticalBlocks, height: 0 };
   },
