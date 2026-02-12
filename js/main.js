@@ -858,57 +858,137 @@ window.generateAllEquipment = function() {
   `;
   screenEquipmentContainer.appendChild(combinedHeader);
 
-  // Add combine buttons (Combine Distro and Combine Processing)
-  const combineButtonsContainer = document.createElement('div');
-  combineButtonsContainer.style.cssText = `
+  // Add room mode toggle (Individual Rooms / Single Room)
+  const modeToggleContainer = document.createElement('div');
+  modeToggleContainer.style.cssText = `
     margin-top: 15px;
     margin-bottom: 15px;
     display: flex;
-    gap: 15px;
+    gap: 0;
     align-items: center;
   `;
 
-  const combineDistroBtn = document.createElement('button');
-  combineDistroBtn.type = 'button';
-  combineDistroBtn.textContent = 'Combine Distro';
-  combineDistroBtn.style.cssText = `
+  const modeLabel = document.createElement('span');
+  modeLabel.textContent = 'Combine Mode: ';
+  modeLabel.style.cssText = 'font-weight: bold; margin-right: 10px; font-size: 14px;';
+  modeToggleContainer.appendChild(modeLabel);
+
+  const isIndividual = (window.screenCombineMode || 'individual') === 'individual';
+
+  const individualBtn = document.createElement('button');
+  individualBtn.type = 'button';
+  individualBtn.textContent = 'Individual Rooms';
+  individualBtn.title = 'Each room keeps its own independent processing, power distribution, and cable calculations. The combined total is a simple sum of all rooms.';
+  individualBtn.style.cssText = `
     padding: 8px 16px;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    border-radius: 4px;
+    background-color: ${isIndividual ? '#007bff' : '#e9ecef'};
+    color: ${isIndividual ? 'white' : '#333'};
+    border: 1px solid ${isIndividual ? '#007bff' : '#ccc'};
+    border-radius: 4px 0 0 4px;
     cursor: pointer;
     font-size: 14px;
+    font-weight: ${isIndividual ? 'bold' : 'normal'};
   `;
-  combineDistroBtn.onclick = () => {
-    if (typeof window.showCombineDistroDialog === 'function') {
-      window.showCombineDistroDialog();
+  individualBtn.onclick = () => {
+    if (window.screenCombineMode !== 'individual') {
+      window.screenCombineMode = 'individual';
+      window.generateAllEquipment();
     }
   };
 
-  const combineProcessingBtn = document.createElement('button');
-  combineProcessingBtn.type = 'button';
-  combineProcessingBtn.textContent = 'Combine Processing';
-  combineProcessingBtn.style.cssText = `
+  const singleRoomBtn = document.createElement('button');
+  singleRoomBtn.type = 'button';
+  singleRoomBtn.textContent = 'Single Room';
+  singleRoomBtn.title = 'Treat all screens as one combined wall/system. Recalculates processing, power distribution, and cables based on the combined total pixels and power draw.';
+  singleRoomBtn.style.cssText = `
     padding: 8px 16px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
+    background-color: ${!isIndividual ? '#007bff' : '#e9ecef'};
+    color: ${!isIndividual ? 'white' : '#333'};
+    border: 1px solid ${!isIndividual ? '#007bff' : '#ccc'};
+    border-radius: 0 4px 4px 0;
     cursor: pointer;
     font-size: 14px;
+    font-weight: ${!isIndividual ? 'bold' : 'normal'};
   `;
-  combineProcessingBtn.onclick = () => {
-    if (typeof window.showCombineProcessingDialog === 'function') {
-      window.showCombineProcessingDialog();
-    } else {
-      console.error('showCombineProcessingDialog is not a function!');
+  singleRoomBtn.onclick = () => {
+    if (window.screenCombineMode !== 'single') {
+      window.screenCombineMode = 'single';
+      window.generateAllEquipment();
     }
   };
 
-  combineButtonsContainer.appendChild(combineDistroBtn);
-  combineButtonsContainer.appendChild(combineProcessingBtn);
-  screenEquipmentContainer.appendChild(combineButtonsContainer);
+  modeToggleContainer.appendChild(individualBtn);
+  modeToggleContainer.appendChild(singleRoomBtn);
+  screenEquipmentContainer.appendChild(modeToggleContainer);
+
+  // If Single Room mode, recalculate processing/distro/cables for the combined system
+  if (window.screenCombineMode === 'single' && typeof window.calculateSingleRoomEquipment === 'function') {
+    const singleRoomData = window.calculateSingleRoomEquipment();
+
+    // Remove existing processing/distro/cable items from combined equipment
+    for (let i = combinedEquipmentOrder.length - 1; i >= 0; i--) {
+      const key = combinedEquipmentOrder[i];
+      const item = combinedEquipment[key];
+      if (item && MultiScreenManager.isSingleRoomRecalcItem(item.ecode)) {
+        delete combinedEquipment[key];
+        combinedEquipmentOrder.splice(i, 1);
+      }
+    }
+
+    // Add recalculated items to combined equipment
+    for (const item of singleRoomData.recalcItems) {
+      const baseName = item.name.replace(/\s*\([^)]*\)/g, '').trim();
+      const key = `${item.ecode}|${baseName}`;
+      combinedEquipment[key] = {
+        ecode: item.ecode,
+        name: baseName,
+        quantity: item.quantity,
+        weight: item.weight
+      };
+      combinedEquipmentOrder.push(key);
+    }
+
+    // Recalculate total weight
+    totalCombinedWeight = 0;
+    for (const key of combinedEquipmentOrder) {
+      const item = combinedEquipment[key];
+      if (item && item.quantity > 0) {
+        totalCombinedWeight += item.weight * item.quantity;
+      }
+    }
+
+    // Update power summary with recalculated values
+    combinedAmps = singleRoomData.power.amps;
+    combinedWatts = singleRoomData.power.watts;
+    const summaryContentDiv = document.getElementById('powerWeightSummary');
+    if (summaryContentDiv) {
+      summaryContentDiv.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div class="power-summary">
+            <h4 style="margin-top: 0;">Power Requirements <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
+            <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
+            <div><strong>Total Amperage:</strong> ${combinedAmps.toFixed(2)}A</div>
+            <div><strong>Total Power:</strong> ${combinedWatts.toFixed(2)}W</div>
+          </div>
+          <div class="weight-summary">
+            <h4 style="margin-top: 0;">Weight Summary <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
+            <div><strong>Total Equipment Weight:</strong> ${totalCombinedWeight.toFixed(2)} lbs</div>
+            <div><strong>Est. Shipping Weight:</strong> ${(totalCombinedWeight * 1.15).toFixed(2)} lbs</div>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // Add mode description text
+  const modeDescription = document.createElement('p');
+  modeDescription.style.cssText = 'font-size: 12px; color: #666; margin-top: 0; margin-bottom: 10px; font-style: italic;';
+  if (window.screenCombineMode === 'single') {
+    modeDescription.textContent = 'Single Room: All screens treated as one combined system. Processing, power distro, and cables are recalculated for the combined total.';
+  } else {
+    modeDescription.textContent = 'Individual Rooms: Each room\'s processing, power, distro, and cables are calculated independently. Combined total is a simple sum.';
+  }
+  screenEquipmentContainer.appendChild(modeDescription);
 
   // Create combined table
   const combinedTable = document.createElement('table');
@@ -934,7 +1014,7 @@ window.generateAllEquipment = function() {
 
   // Add combined equipment to table
   for (const item of consolidatedEquipment) {
-    if (item.quantity > 0) {
+    if (item && item.quantity > 0) {
       const row = document.createElement('tr');
       row.innerHTML = `
         <td>${item.ecode || ''}</td>

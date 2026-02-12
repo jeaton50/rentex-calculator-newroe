@@ -94,6 +94,181 @@ const MultiScreenManager = {
   },
 
   /**
+   * Check if equipment is cable related (data or power cables)
+   * @param {string} ecode - Equipment code
+   * @param {string} name - Equipment name
+   * @returns {boolean} True if cable equipment
+   */
+  isCableEquipment(ecode, name) {
+    const cableEcodes = [
+      'CAT5ES005', 'ECON010C6', 'ECON050C6', 'ECON100C6', 'ECON1M',
+      'TRUE125FT', 'T11M', 'EDT110M', 'TXT32ED6', 'TXT32T125'
+    ];
+    return cableEcodes.includes(ecode);
+  },
+
+  /**
+   * Check if an equipment ecode should be recalculated in Single Room mode
+   * (processing, power distro, and cables)
+   * @param {string} ecode - Equipment code
+   * @returns {boolean} True if this item should be recalculated
+   */
+  isSingleRoomRecalcItem(ecode) {
+    const recalcEcodes = new Set([
+      // Processing
+      'SX40', 'XD10', 'S8', 'MX40PRO',
+      // Power distribution
+      'CUBEDIST', 'TP1', 'L2130T1FB', 'SOCA6XTRU1', 'TXT32SOCA',
+      // Data cables
+      'CAT5ES005', 'ECON010C6', 'ECON050C6', 'ECON100C6', 'ECON1M',
+      // Power cables
+      'TRUE125FT', 'T11M', 'EDT110M', 'TXT32ED6', 'TXT32T125'
+    ]);
+    return recalcEcodes.has(ecode);
+  },
+
+  /**
+   * Calculate equipment for Single Room mode.
+   * Treats all screens as one combined wall/system and recalculates
+   * processing, power, distro, and cables based on combined totals.
+   * @returns {Object} Recalculated equipment data
+   */
+  calculateSingleRoomEquipment() {
+    let totalTiles = 0;
+    let totalSpares = 0;
+    let sumHorizontalBlocks = 0;
+    let maxVerticalBlocks = 0;
+    const productTypeTiles = {};
+
+    // Gather combined data from all screens
+    window.screenConfigurations.forEach(config => {
+      const tiles = config.blocksHor * config.blocksVer;
+      totalTiles += tiles;
+
+      // Calculate spares per screen
+      const sparePercentage = config.productType === 'theatrixx' ? 10 : 8;
+      const spareFactor = config.productType === 'theatrixx' ? 2 : 1.5;
+      let spares;
+      if (typeof Calculator !== 'undefined' && Calculator.calculateSpares) {
+        spares = Calculator.calculateSpares(tiles, sparePercentage, spareFactor);
+      } else if (typeof calcSpares === 'function') {
+        spares = calcSpares(tiles, sparePercentage, spareFactor);
+      } else {
+        spares = Math.ceil(tiles * (sparePercentage / 100));
+      }
+      totalSpares += spares;
+
+      if (!productTypeTiles[config.productType]) productTypeTiles[config.productType] = 0;
+      productTypeTiles[config.productType] += tiles;
+
+      // Sum horizontal blocks (side-by-side arrangement assumption)
+      sumHorizontalBlocks += config.blocksHor;
+      maxVerticalBlocks = Math.max(maxVerticalBlocks, config.blocksVer);
+    });
+
+    const totalTilesWithSpares = totalTiles + totalSpares;
+
+    // Use dominant product type (most tiles) for calculation parameters
+    const dominantProduct = Object.entries(productTypeTiles)
+      .sort((a, b) => b[1] - a[1])[0][0];
+
+    // Use first screen's settings for voltage, redundancy, etc.
+    const firstConfig = window.screenConfigurations[0];
+    const voltage = (firstConfig.powerDistroType == '110') ? 110 : 208;
+    const redundancyType = firstConfig.redundancy || 'None';
+    const sourceSignalCount = firstConfig.sourceSignals || 1;
+    const supportType = firstConfig.supportType === 'groundSupport' ? 'Ground' : 'Flyware';
+    const selectedDistroType = firstConfig.powerDistroType || 'Auto';
+    const companyLabel = document.getElementById('companyName')?.value || 'Rentex';
+
+    // Calculate processing for combined system
+    const processors = EquipmentCalculator.calculateProcessors({
+      productType: dominantProduct,
+      totalTiles: totalTiles,
+      horizontalBlocks: sumHorizontalBlocks,
+      verticalBlocks: maxVerticalBlocks,
+      redundancyType: redundancyType,
+      sourceSignalCount: sourceSignalCount,
+      supportType: supportType,
+      gp2HalfBottomRow: false,
+      gp2HalfRows: 0,
+      gp2FullVerticalBlocks: maxVerticalBlocks,
+    });
+
+    // Calculate power for combined system
+    const power = EquipmentCalculator.calculatePower(dominantProduct, totalTiles, voltage);
+
+    // Calculate distro for combined system
+    const distro = EquipmentCalculator.calculatePowerDistribution({
+      productType: dominantProduct,
+      totalTiles: totalTiles,
+      voltage: voltage,
+      selectedDistroType: selectedDistroType,
+      companyLabel: companyLabel,
+      gp2HalfBottomRow: false,
+      gp2HalfRows: 0,
+      horizontalBlocks: sumHorizontalBlocks,
+    });
+
+    // Calculate cables for combined system
+    const cables = EquipmentCalculator.calculateCables({
+      productType: dominantProduct,
+      totalTiles: totalTiles,
+      totalTilesWithSpares: totalTilesWithSpares,
+      distributionUnitCount: processors.distributionUnitCount,
+      sx40Count: processors.SX40,
+      xd10Count: processors.XD10,
+      processorCountWithCascade: processors.processorCountWithCascade,
+      horizontalBlocks: sumHorizontalBlocks,
+      verticalBlocks: maxVerticalBlocks,
+      redundancyType: redundancyType,
+      voltage: voltage,
+      gp2HalfBottomRow: false,
+      gp2HalfRows: 0,
+    });
+
+    // Build recalculated equipment items array
+    // (only items that differ from the individual-rooms sum)
+    const recalcItems = [];
+
+    // Processing items
+    if (processors.SX40 > 0) recalcItems.push({ ecode: 'SX40', name: 'Brompton Tessera SX40 **Kit includes an XD10**', weight: 17, quantity: processors.SX40 });
+    if (processors.XD10 > 0) recalcItems.push({ ecode: 'XD10', name: 'Brompton Tessera XD 10G data distribution unit', weight: 8.16, quantity: processors.XD10 });
+    if (processors.S8 > 0) recalcItems.push({ ecode: 'S8', name: 'Brompton Tessera S8', weight: 17, quantity: processors.S8 });
+
+    // Cable items
+    if (cables.CAT5ES005 > 0) recalcItems.push({ ecode: 'CAT5ES005', name: "CAT5e ethernet cable 5'", weight: 1, quantity: cables.CAT5ES005 });
+    if (cables.ECON010C6 > 0) recalcItems.push({ ecode: 'ECON010C6', name: "Ethercon (CAT6) 10'", weight: 1, quantity: cables.ECON010C6 });
+    if (cables.ECON050C6 > 0) recalcItems.push({ ecode: 'ECON050C6', name: "Ethercon (CAT6) 50'", weight: 3, quantity: cables.ECON050C6 });
+    if (cables.ECON100C6 > 0) recalcItems.push({ ecode: 'ECON100C6', name: "Ethercon (CAT6) 100'", weight: 6, quantity: cables.ECON100C6 });
+    if (cables.ECON1M > 0) recalcItems.push({ ecode: 'ECON1M', name: 'Ethercon to Ethercon 1m', weight: 0.25, quantity: cables.ECON1M });
+    if (cables.TRUE125FT > 0) recalcItems.push({ ecode: 'TRUE125FT', name: "True1 to True1 cable, 25'", weight: 4, quantity: cables.TRUE125FT });
+    if (cables.EDT110M > 0 && (typeof normalizeVoltage === 'function' ? normalizeVoltage(voltage) : voltage) === 120) {
+      recalcItems.push({ ecode: 'EDT110M', name: 'Edison to True1 power cable, 10 meter', weight: 3.2, quantity: cables.EDT110M });
+    }
+    if (cables.T11M > 0) recalcItems.push({ ecode: 'T11M', name: "True1 power cable 1M (3')", weight: 0.44, quantity: cables.T11M });
+
+    // Power distribution items
+    if (distro.CUBEDIST > 0) recalcItems.push({ ecode: 'CUBEDIST', name: 'Indu Electric 200A Cube Distro', weight: 177, quantity: distro.CUBEDIST });
+    if (distro.TP1 > 0) recalcItems.push({ ecode: 'TP1', name: 'Indu Electric 400A Power Distro w/ (4) 208v Soca', weight: 197, quantity: distro.TP1 });
+    if (distro.L2130T1FB > 0) recalcItems.push({ ecode: 'L2130T1FB', name: 'L2130 floor box to 3x True1 with pass through', weight: 7.5, quantity: distro.L2130T1FB });
+    if (distro.SOCA6XTRU1 > 0) recalcItems.push({ ecode: 'SOCA6XTRU1', name: '19 Pin Socapex to 6x True1 Power Cable', weight: 5, quantity: distro.SOCA6XTRU1 });
+    if (distro.TXT32SOCA > 0) recalcItems.push({ ecode: 'TXT32SOCA', name: 'Theatrixx Nomad XVT3 to Socapex', weight: 22, quantity: distro.TXT32SOCA });
+
+    return {
+      totalTiles,
+      totalTilesWithSpares,
+      dominantProduct,
+      voltage,
+      processors,
+      power,
+      distro,
+      cables,
+      recalcItems
+    };
+  },
+
+  /**
    * Add multi-screen CSS styles to the page
    */
   addMultiScreenStyles() {
@@ -1026,8 +1201,16 @@ if (typeof window !== 'undefined') {
   window.isPowerDistroEquipment = (ecode, name) => MultiScreenManager.isPowerDistroEquipment(ecode, name);
   window.isProcessingEquipment = (ecode, name) => MultiScreenManager.isProcessingEquipment(ecode, name);
   window.isDummyTileEquipment = (ecode, name) => MultiScreenManager.isDummyTileEquipment(ecode, name);
+  window.isCableEquipment = (ecode, name) => MultiScreenManager.isCableEquipment(ecode, name);
+  window.isSingleRoomRecalcItem = (ecode) => MultiScreenManager.isSingleRoomRecalcItem(ecode);
+  window.calculateSingleRoomEquipment = () => MultiScreenManager.calculateSingleRoomEquipment();
   window.updateScreenEquipmentVisibility = (section) => MultiScreenManager.updateScreenEquipmentVisibility(section);
   window.updateCombinedEquipment = () => MultiScreenManager.updateCombinedEquipment();
+
+  // Initialize screen combine mode
+  if (typeof window.screenCombineMode === 'undefined') {
+    window.screenCombineMode = 'individual';
+  }
 }
 
 // Export for module systems
