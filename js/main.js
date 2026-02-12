@@ -63,6 +63,9 @@ function updateVerticalBlocksLimit(productType) {
   const blocksVerInput = document.getElementById('blocksVer');
   if (!blocksVerInput) return;
 
+  // Skip capping during screen config loads — the caller will restore the correct values
+  if (window.isLoadingScreenConfig) return;
+
   // Remove any existing listener to prevent duplicates
   if (blocksVerInput._limitListener) {
     blocksVerInput.removeEventListener('input', blocksVerInput._limitListener);
@@ -144,10 +147,10 @@ function updateVerticalBlocksLimit(productType) {
 // Function to enforce height dimension limits for specific products
 function updateHeightDimensionLimit(productType) {
   const heightFeetInput = document.getElementById('heightFeet');
-  if (!heightFeetInput) {
-    console.log('updateHeightDimensionLimit: heightFeet input not found');
-    return;
-  }
+  if (!heightFeetInput) return;
+
+  // Skip capping during screen config loads — the caller will restore the correct values
+  if (window.isLoadingScreenConfig) return;
 
   // Remove any existing listener to prevent duplicates
   if (heightFeetInput._limitListener) {

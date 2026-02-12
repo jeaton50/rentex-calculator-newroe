@@ -1130,14 +1130,14 @@ function initMultiScreenSystem() {
 
   // Override generateWall to save current config
   window.originalGenerateWall = window.generateWall;
-  window.generateWall = function() {
+  window.generateWall = function () {
     MultiScreenManager.saveCurrentScreenConfig();
     window.originalGenerateWall.apply(this, arguments);
   };
 
   // Save and override addEquipmentRow
   window.originalAddEquipmentRow = window.addEquipmentRow;
-  window.addEquipmentRow = function(ecode, name, weight, quantity, tbody) {
+  window.addEquipmentRow = function (ecode, name, weight, quantity, tbody) {
     if (window.isCollectingEquipment) {
       if (quantity > 0) {
         window.equipmentCollector.push({
@@ -1207,7 +1207,7 @@ if (typeof window !== 'undefined') {
   window.toggleMultiScreenManagement = toggleMultiScreenManagement;
 
   // Export add/remove/switch functions
-  window.addScreenConfiguration = function() {
+  window.addScreenConfiguration = function () {
     // Save current screen before creating new one
     MultiScreenManager.saveCurrentScreenConfig();
     const currentConfig = window.screenConfigurations[window.activeScreenIndex];
@@ -1215,9 +1215,11 @@ if (typeof window !== 'undefined') {
     const newId = window.screenConfigurations.length + 1;
     const newConfig = new ScreenConfig(newId);
 
-    // Inherit product type from current screen
+    // Inherit product type AND support type from current screen
     if (currentConfig) {
       newConfig.productType = currentConfig.productType;
+      newConfig.supportType = currentConfig.supportType;
+      newConfig.supportOption = currentConfig.supportOption;
     }
 
     window.screenConfigurations.push(newConfig);
@@ -1225,7 +1227,7 @@ if (typeof window !== 'undefined') {
     window.switchToScreen(newId - 1);
   };
 
-  window.removeActiveScreen = function() {
+  window.removeActiveScreen = function () {
     if (window.screenConfigurations.length > 1) {
       window.screenConfigurations.splice(window.activeScreenIndex, 1);
       window.screenConfigurations.forEach((config, idx) => {
@@ -1240,7 +1242,7 @@ if (typeof window !== 'undefined') {
     }
   };
 
-  window.switchToScreen = function(index) {
+  window.switchToScreen = function (index) {
     index = parseInt(index);
     if (index < 0 || index >= window.screenConfigurations.length) return;
 
@@ -1248,6 +1250,16 @@ if (typeof window !== 'undefined') {
     window.activeScreenIndex = index;
     MultiScreenManager.loadScreenConfig(window.screenConfigurations[window.activeScreenIndex]);
     MultiScreenManager.updateScreenTabs();
+
+    // Re-apply tile/height limits for the loaded screen's support type
+    // (skipped during loadScreenConfig due to isLoadingScreenConfig guard)
+    const loadedProductType = document.getElementById('productType')?.value;
+    if (loadedProductType && typeof updateVerticalBlocksLimit === 'function') {
+      updateVerticalBlocksLimit(loadedProductType);
+    }
+    if (loadedProductType && typeof updateHeightDimensionLimit === 'function') {
+      updateHeightDimensionLimit(loadedProductType);
+    }
 
     // Call originalGenerateWall directly to render the wall without triggering
     // another saveCurrentScreenConfig (loadScreenConfig already set the UI state).
