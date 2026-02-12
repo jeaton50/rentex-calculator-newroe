@@ -1763,7 +1763,22 @@ window.updateBlocksBasedOnSelection = function() {
   // Determine tile dimensions based on product type (GP2 Full tiles are 1000mm tall)
   const productType = document.getElementById('productType')?.value || 'absen';
   const tileWidthFeet = 1.64;
-  const tileHeightFeet = (productType === 'ROEGP26Full') ? 3.28 : 1.64;
+  const isGP2Full = (productType === 'ROEGP26Full');
+
+  // Helper: find best GP2 Full + Half mix for a target height in feet
+  function bestGP2FullMix(targetFeet) {
+    const fullH = 3.28, halfH = 1.64;
+    const fullOnly = Math.round(targetFeet / fullH);
+    const fullOnlyActual = fullOnly * fullH;
+    const halfUnits = Math.round(targetFeet / halfH);
+    const mixFull = Math.floor(halfUnits / 2);
+    const mixHalf = halfUnits % 2;
+    const mixActual = mixFull * fullH + mixHalf * halfH;
+    if (Math.abs(mixActual - targetFeet) < Math.abs(fullOnlyActual - targetFeet)) {
+      return mixFull + (mixHalf * 0.5);
+    }
+    return fullOnly;
+  }
 
   if ((aspectRatioValue === "1:1" || aspectRatioValue === "16:9" || aspectRatioValue === "32:9" ||
     aspectRatioValue === "48:9" || aspectRatioValue === "4:3" || aspectRatioValue === "2:1" ||
@@ -1772,10 +1787,10 @@ window.updateBlocksBasedOnSelection = function() {
     let blocksHor, blocksVer;
     if (screenSizeValue === "7x7") {
       blocksHor = 5;
-      blocksVer = (productType === 'ROEGP26Full') ? 2 : 5;
+      blocksVer = isGP2Full ? bestGP2FullMix(7) : 5;
     } else {
       blocksHor = Math.round(width / tileWidthFeet);
-      blocksVer = Math.round(height / tileHeightFeet);
+      blocksVer = isGP2Full ? bestGP2FullMix(height) : Math.round(height / 1.64);
     }
 
     document.getElementById('blocksHor').value = blocksHor;
@@ -1788,7 +1803,7 @@ window.updateBlocksBasedOnSelection = function() {
     const blocksHor = baseWidth;
     const wallWidthFeet = baseWidth * tileWidthFeet;
     const wallHeightFeet = wallWidthFeet * (height / width);
-    const blocksVer = Math.round(wallHeightFeet / tileHeightFeet);
+    const blocksVer = isGP2Full ? bestGP2FullMix(wallHeightFeet) : Math.round(wallHeightFeet / 1.64);
     document.getElementById('blocksHor').value = blocksHor;
     document.getElementById('blocksVer').value = blocksVer;
     if(typeof updateHeightWarning === 'function') updateHeightWarning(0);

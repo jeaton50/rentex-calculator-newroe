@@ -117,10 +117,12 @@ const Calculator = {
       // Special case for 7x7
       if (screenSize === "7x7") {
         horizontalBlocks = 5;
-        verticalBlocks = (productType === 'ROEGP26Full') ? 2 : 5;
+        verticalBlocks = (productType === 'ROEGP26Full') ? this.bestGP2FullMix(7) : 5;
       } else {
         horizontalBlocks = Math.round(width / tileWidthFeet);
-        verticalBlocks = Math.round(height / tileHeightFeet);
+        verticalBlocks = (productType === 'ROEGP26Full')
+          ? this.bestGP2FullMix(height)
+          : Math.round(height / tileHeightFeet);
       }
 
       return { horizontalBlocks, verticalBlocks, height };
@@ -130,12 +132,40 @@ const Calculator = {
     const [width, height] = aspectRatio.split(':').map(Number);
     const baseWidth = 16;
     horizontalBlocks = baseWidth;
-    // Convert aspect ratio to vertical tiles accounting for tile height
     const wallWidthFeet = baseWidth * tileWidthFeet;
     const wallHeightFeet = wallWidthFeet * (height / width);
-    verticalBlocks = Math.round(wallHeightFeet / tileHeightFeet);
+    verticalBlocks = (productType === 'ROEGP26Full')
+      ? this.bestGP2FullMix(wallHeightFeet)
+      : Math.round(wallHeightFeet / tileHeightFeet);
 
     return { horizontalBlocks, verticalBlocks, height: 0 };
+  },
+
+  /**
+   * Find the best mix of GP2 Full + Half rows to match a target height in feet.
+   * Returns a fractional blocksVer value (e.g., 3.5 = 3 Full + 1 Half row).
+   * @param {number} targetFeet - Target wall height in feet
+   * @returns {number} Optimal blocksVer value (may include .5 for a Half row)
+   */
+  bestGP2FullMix(targetFeet) {
+    const fullHeight = 3.28;  // GP2 Full tile height in feet
+    const halfHeight = 1.64;  // GP2 Half tile height in feet
+
+    // Option 1: Full rows only
+    const fullOnly = Math.round(targetFeet / fullHeight);
+    const fullOnlyActual = fullOnly * fullHeight;
+
+    // Option 2: Best mix of Full + Half (find closest using half-tile granularity)
+    const halfUnits = Math.round(targetFeet / halfHeight);
+    const mixFullRows = Math.floor(halfUnits / 2);
+    const mixHalfRows = halfUnits % 2;  // 0 or 1
+    const mixActual = mixFullRows * fullHeight + mixHalfRows * halfHeight;
+
+    // Pick whichever is closer to target
+    if (Math.abs(mixActual - targetFeet) < Math.abs(fullOnlyActual - targetFeet)) {
+      return mixFullRows + (mixHalfRows * 0.5);
+    }
+    return fullOnly;
   },
 
   /**
