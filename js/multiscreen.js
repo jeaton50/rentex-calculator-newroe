@@ -505,110 +505,79 @@ const MultiScreenManager = {
    */
   calculateCombinedDistro() {
     let totalTiles = 0;
-    let combinedPowerRequirements = {
-      voltage110: false,
-      voltage208: false,
-      totalAmps110: 0,
-      totalAmps208: 0,
-      totalWatts: 0
-    };
-
-    const productTypes = new Set();
+    let totalSpares = 0;
+    let sumHorizontalBlocks = 0;
+    let maxVerticalBlocks = 0;
+    let combinedGp2HalfRows = 0;
+    const productTypeTiles = {};
 
     // Calculate totals from all screens
     window.screenConfigurations.forEach((config) => {
       const screenTiles = config.blocksHor * config.blocksVer;
       totalTiles += screenTiles;
-      productTypes.add(config.productType);
 
-      // Calculate power requirements based on product type
-      let voltage = (config.powerDistroType == '110') ? 110 : 208;
-      let amps110 = 0, amps208 = 0, watts = 0;
-
-      if (config.productType === 'absen') {
-        amps110 = screenTiles * 0.59;
-        amps208 = screenTiles * 0.312;
-        watts = screenTiles * 192;
-      } else if (['BP2B1', 'BP2B2', 'BP2V2'].includes(config.productType)) {
-        amps110 = (screenTiles * 95) / 110;
-        amps208 = (screenTiles * 95) / 208;
-        watts = screenTiles * 190;
-      } else if (config.productType === 'theatrixx') {
-        amps110 = screenTiles * 1.63636;
-        amps208 = (screenTiles * 865.38461) / 1000;
-        watts = screenTiles * 190;
-      }
-
-      // Add to totals based on configured voltage
-      if (voltage === 110) {
-        combinedPowerRequirements.voltage110 = true;
-        combinedPowerRequirements.totalAmps110 += amps110;
+      const sparePercentage = config.productType === 'theatrixx' ? 10 : 8;
+      const spareFactor = config.productType === 'theatrixx' ? 2 : 1.5;
+      let spares;
+      if (typeof Calculator !== 'undefined' && Calculator.calculateSpares) {
+        spares = Calculator.calculateSpares(screenTiles, sparePercentage, spareFactor);
+      } else if (typeof calcSpares === 'function') {
+        spares = calcSpares(screenTiles, sparePercentage, spareFactor);
       } else {
-        combinedPowerRequirements.voltage208 = true;
-        combinedPowerRequirements.totalAmps208 += amps208;
+        spares = Math.ceil(screenTiles * (sparePercentage / 100));
       }
-      combinedPowerRequirements.totalWatts += watts;
+      totalSpares += spares;
+
+      if (!productTypeTiles[config.productType]) productTypeTiles[config.productType] = 0;
+      productTypeTiles[config.productType] += screenTiles;
+
+      sumHorizontalBlocks += config.blocksHor;
+      maxVerticalBlocks = Math.max(maxVerticalBlocks, config.blocksVer);
+
+      if (config.productType === 'ROEGP26Full' && config.gp2HalfEnabled && config.gp2HalfCount > 0) {
+        combinedGp2HalfRows = Math.max(combinedGp2HalfRows, config.gp2HalfCount);
+      }
     });
 
-    // Calculate distribution requirements
-    let CUBEDIST = 0, TP1 = 0, L2130T1FB = 0, SOCA6XTRU1 = 0, TXT32SOCA = 0;
+    const dominantProduct = Object.entries(productTypeTiles)
+      .sort((a, b) => b[1] - a[1])[0][0];
 
-    // For 208V calculations
-    if (combinedPowerRequirements.voltage208) {
-      let totalAmps208 = combinedPowerRequirements.totalAmps208;
+    const firstConfig = window.screenConfigurations[0];
+    const voltage = (firstConfig.powerDistroType == '110') ? 110 : 208;
+    const selectedDistroType = firstConfig.powerDistroType || 'Auto';
+    const companyLabel = document.getElementById('companyName')?.value || 'Rentex';
+    const hasGp2Half = dominantProduct === 'ROEGP26Full' && combinedGp2HalfRows > 0;
 
-      if (totalAmps208 <= 200) {
-        CUBEDIST = 1;
-        L2130T1FB = Math.ceil(totalTiles / 16 / 3);
-      } else {
-        TP1 = Math.ceil(totalAmps208 / 400);
-        SOCA6XTRU1 = Math.ceil(totalTiles / 16 / 6);
+    // Use the proper EquipmentCalculator for power and distro
+    const power = EquipmentCalculator.calculatePower(dominantProduct, totalTiles, voltage, {
+      gp2HalfBottomRow: hasGp2Half,
+      gp2HalfRows: combinedGp2HalfRows,
+      horizontalBlocks: sumHorizontalBlocks,
+    });
 
-        if (productTypes.has('theatrixx')) {
-          TXT32SOCA = SOCA6XTRU1;
-          SOCA6XTRU1 = 0;
-        }
-      }
-    }
-
-    // For 110V calculations
-    let EDT110M = 0;
-    if (combinedPowerRequirements.voltage110) {
-      let divisor = 8; // Default for Absen
-      if (productTypes.has('BP2B1') || productTypes.has('BP2B2') || productTypes.has('BP2V2')) {
-        divisor = 11;
-      } else if (productTypes.has('theatrixx')) {
-        // Use Calculator module if available
-        let totalSpares;
-        if (typeof Calculator !== 'undefined' && Calculator.calculateSpares) {
-          totalSpares = Calculator.calculateSpares(totalTiles, 10, 2);
-        } else if (typeof calcSpares === 'function') {
-          totalSpares = calcSpares(totalTiles, 10, 2);
-        } else {
-          totalSpares = Math.ceil(totalTiles * 0.1);
-        }
-        let totalBlocksWithSpares = totalTiles + totalSpares;
-        let O25 = Math.ceil(totalBlocksWithSpares / 2.409);
-        EDT110M = Math.ceil((O25 / 8.302) * 2);
-      } else {
-        let O32 = Math.ceil(totalTiles / divisor);
-        EDT110M = Math.ceil(O32 + (O32 * 0.05));
-      }
-
-      if (!productTypes.has('theatrixx')) {
-        let O32 = Math.ceil(totalTiles / divisor);
-        EDT110M = Math.ceil(O32 + (O32 * 0.05));
-      }
-    }
+    const distro = EquipmentCalculator.calculatePowerDistribution({
+      productType: dominantProduct,
+      totalTiles: totalTiles,
+      voltage: voltage,
+      selectedDistroType: selectedDistroType,
+      companyLabel: companyLabel,
+      gp2HalfBottomRow: hasGp2Half,
+      gp2HalfRows: combinedGp2HalfRows,
+      horizontalBlocks: sumHorizontalBlocks,
+    });
 
     return {
-      CUBEDIST,
-      TP1,
-      L2130T1FB,
-      SOCA6XTRU1,
-      TXT32SOCA,
-      EDT110M,
-      powerRequirements: combinedPowerRequirements
+      CUBEDIST: distro.CUBEDIST,
+      TP1: distro.TP1,
+      L2130T1FB: distro.L2130T1FB,
+      SOCA6XTRU1: distro.SOCA6XTRU1,
+      TXT32SOCA: distro.TXT32SOCA,
+      EDT110M: 0,
+      powerRequirements: {
+        voltage: voltage,
+        totalAmps: power.amps,
+        totalWatts: power.watts,
+      }
     };
   },
 
@@ -635,14 +604,9 @@ const MultiScreenManager = {
 
     let distroHTML = '<h3>Combined Power Distribution Requirements</h3>';
     distroHTML += '<div style="margin-bottom: 15px;">';
-    distroHTML += `<p><strong>Total Power:</strong> ${distroReqs.powerRequirements.totalWatts}W</p>`;
-
-    if (distroReqs.powerRequirements.voltage208) {
-      distroHTML += `<p><strong>208V Total Amperage:</strong> ${distroReqs.powerRequirements.totalAmps208.toFixed(2)}A</p>`;
-    }
-    if (distroReqs.powerRequirements.voltage110) {
-      distroHTML += `<p><strong>110V Total Amperage:</strong> ${distroReqs.powerRequirements.totalAmps110.toFixed(2)}A</p>`;
-    }
+    distroHTML += `<p><strong>Total Power:</strong> ${distroReqs.powerRequirements.totalWatts.toFixed(2)}W</p>`;
+    distroHTML += `<p><strong>Voltage:</strong> ${distroReqs.powerRequirements.voltage}V</p>`;
+    distroHTML += `<p><strong>Total Amperage:</strong> ${distroReqs.powerRequirements.totalAmps.toFixed(2)}A</p>`;
 
     distroHTML += '</div>';
     distroHTML += '<h4>Recommended Distribution Equipment:</h4>';
@@ -793,47 +757,79 @@ const MultiScreenManager = {
    */
   calculateCombinedProcessing() {
     let totalTiles = 0;
-    let totalDataPorts = 0;
+    let totalPixelWidth = 0;
+    let maxPixelHeight = 0;
+    let sumHorizontalBlocks = 0;
+    let maxVerticalBlocks = 0;
+    let combinedGp2HalfRows = 0;
     const productTypes = new Set();
-    const processorRequirements = {
-      SX40: 0,
-      XD10: 0,
-      S8: 0,
-      MX40PRO: 0
-    };
+    const productTypeTiles = {};
 
-    // Calculate totals from all screens
+    // Calculate totals from all screens with proper pixel dimensions
     window.screenConfigurations.forEach((config) => {
       const screenTiles = config.blocksHor * config.blocksVer;
       totalTiles += screenTiles;
       productTypes.add(config.productType);
 
-      // Calculate data ports needed based on product type
-      let daisyChainLimit = 10; // Default for Absen and Theatrixx
-      if (['BP2B1', 'BP2B2', 'BP2V2'].includes(config.productType)) {
-        daisyChainLimit = 13;
+      if (!productTypeTiles[config.productType]) productTypeTiles[config.productType] = 0;
+      productTypeTiles[config.productType] += screenTiles;
+
+      sumHorizontalBlocks += config.blocksHor;
+      maxVerticalBlocks = Math.max(maxVerticalBlocks, config.blocksVer);
+
+      // Calculate actual pixel dimensions per-screen
+      const ppt = EquipmentCalculator.getPixelsPerTile(config.productType);
+      let screenPixelWidth = config.blocksHor * ppt.width;
+      let screenPixelHeight = config.blocksVer * ppt.height;
+
+      // Account for GP2 Half rows
+      if (config.productType === 'ROEGP26Full' && config.gp2HalfEnabled && config.gp2HalfCount > 0) {
+        const gp2HalfPpt = EquipmentCalculator.getPixelsPerTile('ROEGP26Half');
+        screenPixelHeight = config.blocksVer * 384 + config.gp2HalfCount * gp2HalfPpt.height;
+        combinedGp2HalfRows = Math.max(combinedGp2HalfRows, config.gp2HalfCount);
       }
-      const screenDataPorts = Math.ceil(screenTiles / daisyChainLimit);
-      totalDataPorts += screenDataPorts;
+
+      totalPixelWidth += screenPixelWidth;
+      maxPixelHeight = Math.max(maxPixelHeight, screenPixelHeight);
     });
 
-    // Determine processor requirements based on total data ports
-    // SX40 can handle up to 16 outputs
-    // S8 can handle up to 8 outputs
-    if (totalDataPorts <= 8) {
-      processorRequirements.S8 = 1;
-    } else if (totalDataPorts <= 16) {
-      processorRequirements.SX40 = 1;
-    } else {
-      // Need multiple processors
-      processorRequirements.SX40 = Math.ceil(totalDataPorts / 16);
-    }
+    // Use dominant product type for calculation parameters
+    const dominantProduct = Object.entries(productTypeTiles)
+      .sort((a, b) => b[1] - a[1])[0][0];
+
+    const firstConfig = window.screenConfigurations[0];
+    const redundancyType = firstConfig.redundancy || 'None';
+    const sourceSignalCount = firstConfig.sourceSignals || 1;
+    const supportType = firstConfig.supportType === 'groundSupport' ? 'Ground' : 'Flyware';
+    const hasGp2Half = dominantProduct === 'ROEGP26Full' && combinedGp2HalfRows > 0;
+
+    // Use the full EquipmentCalculator with proper pixel-based processor selection
+    const processors = EquipmentCalculator.calculateProcessors({
+      productType: dominantProduct,
+      totalTiles: totalTiles,
+      horizontalBlocks: sumHorizontalBlocks,
+      verticalBlocks: maxVerticalBlocks,
+      overridePixelWidth: totalPixelWidth,
+      overridePixelHeight: maxPixelHeight,
+      redundancyType: redundancyType,
+      sourceSignalCount: sourceSignalCount,
+      supportType: supportType,
+      gp2HalfBottomRow: hasGp2Half,
+      gp2HalfRows: combinedGp2HalfRows,
+      gp2FullVerticalBlocks: maxVerticalBlocks,
+    });
 
     return {
       totalTiles,
-      totalDataPorts,
+      totalPixelWidth,
+      maxPixelHeight,
       productTypes: Array.from(productTypes),
-      processors: processorRequirements
+      processors: {
+        SX40: processors.SX40,
+        XD10: processors.XD10,
+        S8: processors.S8,
+        MX40PRO: processors.MX40PRO || 0,
+      }
     };
   },
 
@@ -863,7 +859,8 @@ const MultiScreenManager = {
     let processingHTML = '<h3>Combined Processing Requirements</h3>';
     processingHTML += '<div style="margin-bottom: 15px;">';
     processingHTML += `<p><strong>Total Tiles:</strong> ${processingReqs.totalTiles}</p>`;
-    processingHTML += `<p><strong>Total Data Ports Needed:</strong> ${processingReqs.totalDataPorts}</p>`;
+    processingHTML += `<p><strong>Total Pixel Width:</strong> ${processingReqs.totalPixelWidth}px</p>`;
+    processingHTML += `<p><strong>Max Pixel Height:</strong> ${processingReqs.maxPixelHeight}px</p>`;
     processingHTML += `<p><strong>Product Types:</strong> ${processingReqs.productTypes.join(', ')}</p>`;
     processingHTML += '</div>';
 
