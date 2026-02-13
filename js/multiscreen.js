@@ -132,21 +132,26 @@ const MultiScreenManager = {
 
   /**
    * Calculate equipment for Single Room mode.
-   * Treats all screens as one combined wall/system and recalculates
-   * processing, power, distro, and cables based on combined totals.
+   * Sums the total pixels and total power from all screens,
+   * then recalculates processing and power distribution based on those totals.
    * @returns {Object} Recalculated equipment data
    */
   calculateSingleRoomEquipment() {
     let totalTiles = 0;
     let totalSpares = 0;
-    let sumHorizontalBlocks = 0;
-    let maxVerticalBlocks = 0;
-    let totalPixelWidth = 0;
-    let maxPixelHeight = 0;
-    let combinedGp2HalfRows = 0;
+    let totalTilesWithSpares = 0;
     const productTypeTiles = {};
 
-    // Gather combined data from all screens, computing actual pixel dimensions per-screen
+    // Sum per-screen processing, cables, and distro by collecting each screen's equipment
+    const summedEquipment = {};
+
+    // Read global settings from DOM (same as displayEquipment does)
+    const redundancyType = document.getElementById('redundancy')?.value || 'None';
+    const sourceSignalCount = parseInt(document.getElementById('sourceSignals')?.value || 1, 10);
+    const selectedDistroType = document.getElementById('powerDistroType')?.value || 'Auto';
+    const companyLabel = document.getElementById('companyName')?.value || 'Rentex';
+
+    // Gather combined data and per-screen equipment
     window.screenConfigurations.forEach(config => {
       const tiles = config.blocksHor * config.blocksVer;
       totalTiles += tiles;
@@ -163,122 +168,70 @@ const MultiScreenManager = {
         spares = Math.ceil(tiles * (sparePercentage / 100));
       }
       totalSpares += spares;
+      totalTilesWithSpares += tiles + spares;
 
       if (!productTypeTiles[config.productType]) productTypeTiles[config.productType] = 0;
       productTypeTiles[config.productType] += tiles;
 
-      // Sum horizontal blocks (side-by-side arrangement assumption)
-      sumHorizontalBlocks += config.blocksHor;
-      maxVerticalBlocks = Math.max(maxVerticalBlocks, config.blocksVer);
-
-      // Calculate actual pixel dimensions per-screen using each screen's own product type
-      const ppt = EquipmentCalculator.getPixelsPerTile(config.productType);
-      let screenPixelWidth = config.blocksHor * ppt.width;
-      let screenPixelHeight = config.blocksVer * ppt.height;
-
-      // Account for GP2 Half rows on this screen
-      if (config.productType === 'ROEGP26Full' && config.gp2HalfEnabled && config.gp2HalfCount > 0) {
-        const gp2HalfPpt = EquipmentCalculator.getPixelsPerTile('ROEGP26Half');
-        screenPixelHeight = config.blocksVer * 384 + config.gp2HalfCount * gp2HalfPpt.height;
-        combinedGp2HalfRows = Math.max(combinedGp2HalfRows, config.gp2HalfCount);
-      }
-
-      totalPixelWidth += screenPixelWidth;
-      maxPixelHeight = Math.max(maxPixelHeight, screenPixelHeight);
+      // Get this screen's individual equipment via getEquipmentForScreen
+      const screenEquipment = ExportManager.getEquipmentForScreen(config);
+      screenEquipment.forEach(item => {
+        if (item.quantity > 0 && this.isSingleRoomRecalcItem(item.ecode)) {
+          const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
+          if (!summedEquipment[key]) {
+            summedEquipment[key] = {
+              ecode: item.ecode,
+              name: item.name,
+              weight: item.weight || 0,
+              quantity: 0
+            };
+          }
+          summedEquipment[key].quantity += (typeof item.quantity === 'number' ? item.quantity : Number(item.quantity));
+        }
+      });
     });
 
-    const totalTilesWithSpares = totalTiles + totalSpares;
-
-    // Use dominant product type (most tiles) for calculation parameters
+    // Use dominant product type (most tiles) for power calculation
     const dominantProduct = Object.entries(productTypeTiles)
       .sort((a, b) => b[1] - a[1])[0][0];
 
-    // Use first screen's settings for voltage, redundancy, etc.
+    // Use first screen's settings for voltage
     const firstConfig = window.screenConfigurations[0];
     const voltage = (firstConfig.powerDistroType == '110') ? 110 : 208;
-    const redundancyType = firstConfig.redundancy || 'None';
-    const sourceSignalCount = firstConfig.sourceSignals || 1;
-    const supportType = firstConfig.supportType === 'groundSupport' ? 'Ground' : 'Flyware';
-    const selectedDistroType = firstConfig.powerDistroType || 'Auto';
-    const companyLabel = document.getElementById('companyName')?.value || 'Rentex';
 
-    // Determine if any screen uses GP2 Half rows
-    const hasGp2Half = dominantProduct === 'ROEGP26Full' && combinedGp2HalfRows > 0;
+    // Calculate total power based on total tiles
+    const power = EquipmentCalculator.calculatePower(dominantProduct, totalTiles, voltage);
 
-    // Calculate processing for combined system using actual total pixel dimensions
-    const processors = EquipmentCalculator.calculateProcessors({
-      productType: dominantProduct,
-      totalTiles: totalTiles,
-      horizontalBlocks: sumHorizontalBlocks,
-      verticalBlocks: maxVerticalBlocks,
-      overridePixelWidth: totalPixelWidth,
-      overridePixelHeight: maxPixelHeight,
-      redundancyType: redundancyType,
-      sourceSignalCount: sourceSignalCount,
-      supportType: supportType,
-      gp2HalfBottomRow: hasGp2Half,
-      gp2HalfRows: combinedGp2HalfRows,
-      gp2FullVerticalBlocks: maxVerticalBlocks,
-    });
-
-    // Calculate power for combined system
-    const power = EquipmentCalculator.calculatePower(dominantProduct, totalTiles, voltage, {
-      gp2HalfBottomRow: hasGp2Half,
-      gp2HalfRows: combinedGp2HalfRows,
-      horizontalBlocks: sumHorizontalBlocks,
-    });
-
-    // Calculate distro for combined system
+    // Calculate unified power distro based on total combined power/tiles
     const distro = EquipmentCalculator.calculatePowerDistribution({
       productType: dominantProduct,
       totalTiles: totalTiles,
       voltage: voltage,
       selectedDistroType: selectedDistroType,
       companyLabel: companyLabel,
-      gp2HalfBottomRow: hasGp2Half,
-      gp2HalfRows: combinedGp2HalfRows,
-      horizontalBlocks: sumHorizontalBlocks,
+      gp2HalfBottomRow: false,
+      gp2HalfRows: 0,
+      horizontalBlocks: 0,
     });
 
-    // Calculate cables for combined system
-    const cables = EquipmentCalculator.calculateCables({
-      productType: dominantProduct,
-      totalTiles: totalTiles,
-      totalTilesWithSpares: totalTilesWithSpares,
-      distributionUnitCount: processors.distributionUnitCount,
-      sx40Count: processors.SX40,
-      xd10Count: processors.XD10,
-      processorCountWithCascade: processors.processorCountWithCascade,
-      horizontalBlocks: sumHorizontalBlocks,
-      verticalBlocks: maxVerticalBlocks,
-      redundancyType: redundancyType,
-      voltage: voltage,
-      gp2HalfBottomRow: hasGp2Half,
-      gp2HalfRows: combinedGp2HalfRows,
-    });
-
-    // Build recalculated equipment items array
-    // (only items that differ from the individual-rooms sum)
+    // Build recalculated equipment items array from summed per-screen values
     const recalcItems = [];
 
-    // Processing items
-    if (processors.SX40 > 0) recalcItems.push({ ecode: 'SX40', name: 'Brompton Tessera SX40 **Kit includes an XD10**', weight: 17, quantity: processors.SX40 });
-    if (processors.XD10 > 0) recalcItems.push({ ecode: 'XD10', name: 'Brompton Tessera XD 10G data distribution unit', weight: 8.16, quantity: processors.XD10 });
-    if (processors.S8 > 0) recalcItems.push({ ecode: 'S8', name: 'Brompton Tessera S8', weight: 17, quantity: processors.S8 });
+    // Add summed processing and cable items (from per-screen calculations)
+    Object.values(summedEquipment).forEach(item => {
+      // Skip distro items - we'll use the unified distro calculation instead
+      const distroEcodes = new Set(['CUBEDIST', 'TP1', 'L2130T1FB', 'SOCA6XTRU1', 'TXT32SOCA']);
+      if (!distroEcodes.has(item.ecode) && item.quantity > 0) {
+        recalcItems.push({
+          ecode: item.ecode,
+          name: item.name,
+          weight: item.weight,
+          quantity: item.quantity
+        });
+      }
+    });
 
-    // Cable items
-    if (cables.CAT5ES005 > 0) recalcItems.push({ ecode: 'CAT5ES005', name: "CAT5e ethernet cable 5'", weight: 1, quantity: cables.CAT5ES005 });
-    if (cables.ECON010C6 > 0) recalcItems.push({ ecode: 'ECON010C6', name: "Ethercon (CAT6) 10'", weight: 1, quantity: cables.ECON010C6 });
-    if (cables.ECON050C6 > 0) recalcItems.push({ ecode: 'ECON050C6', name: "Ethercon (CAT6) 50'", weight: 3, quantity: cables.ECON050C6 });
-    if (cables.ECON100C6 > 0) recalcItems.push({ ecode: 'ECON100C6', name: "Ethercon (CAT6) 100'", weight: 6, quantity: cables.ECON100C6 });
-    if (cables.ECON1M > 0) recalcItems.push({ ecode: 'ECON1M', name: 'Ethercon to Ethercon 1m', weight: 0.25, quantity: cables.ECON1M });
-    if (cables.TRUE125FT > 0) recalcItems.push({ ecode: 'TRUE125FT', name: "True1 to True1 cable, 25'", weight: 4, quantity: cables.TRUE125FT });
-    if (cables.EDT110M > 0 && (typeof normalizeVoltage === 'function' ? normalizeVoltage(voltage) : voltage) === 120) {
-      recalcItems.push({ ecode: 'EDT110M', name: 'Edison to True1 power cable, 10 meter', weight: 3.2, quantity: cables.EDT110M });
-    }
-    if (cables.T11M > 0) recalcItems.push({ ecode: 'T11M', name: "True1 power cable 1M (3')", weight: 0.44, quantity: cables.T11M });
-
-    // Power distribution items
+    // Add unified power distribution items (recalculated from total power)
     if (distro.CUBEDIST > 0) recalcItems.push({ ecode: 'CUBEDIST', name: 'Indu Electric 200A Cube Distro', weight: 177, quantity: distro.CUBEDIST });
     if (distro.TP1 > 0) recalcItems.push({ ecode: 'TP1', name: 'Indu Electric 400A Power Distro w/ (4) 208v Soca', weight: 197, quantity: distro.TP1 });
     if (distro.L2130T1FB > 0) recalcItems.push({ ecode: 'L2130T1FB', name: 'L2130 floor box to 3x True1 with pass through', weight: 7.5, quantity: distro.L2130T1FB });
@@ -290,10 +243,10 @@ const MultiScreenManager = {
       totalTilesWithSpares,
       dominantProduct,
       voltage,
-      processors,
+      processors: null,
       power,
       distro,
-      cables,
+      cables: null,
       recalcItems
     };
   },
@@ -1154,14 +1107,14 @@ function initMultiScreenSystem() {
 
   // Override generateWall to save current config
   window.originalGenerateWall = window.generateWall;
-  window.generateWall = function() {
+  window.generateWall = function () {
     MultiScreenManager.saveCurrentScreenConfig();
     window.originalGenerateWall.apply(this, arguments);
   };
 
   // Save and override addEquipmentRow
   window.originalAddEquipmentRow = window.addEquipmentRow;
-  window.addEquipmentRow = function(ecode, name, weight, quantity, tbody) {
+  window.addEquipmentRow = function (ecode, name, weight, quantity, tbody) {
     if (window.isCollectingEquipment) {
       if (quantity > 0) {
         window.equipmentCollector.push({
@@ -1231,7 +1184,7 @@ if (typeof window !== 'undefined') {
   window.toggleMultiScreenManagement = toggleMultiScreenManagement;
 
   // Export add/remove/switch functions
-  window.addScreenConfiguration = function() {
+  window.addScreenConfiguration = function () {
     // Save current screen before creating new one
     MultiScreenManager.saveCurrentScreenConfig();
     const currentConfig = window.screenConfigurations[window.activeScreenIndex];
@@ -1239,9 +1192,11 @@ if (typeof window !== 'undefined') {
     const newId = window.screenConfigurations.length + 1;
     const newConfig = new ScreenConfig(newId);
 
-    // Inherit product type from current screen
+    // Inherit product type AND support type from current screen
     if (currentConfig) {
       newConfig.productType = currentConfig.productType;
+      newConfig.supportType = currentConfig.supportType;
+      newConfig.supportOption = currentConfig.supportOption;
     }
 
     window.screenConfigurations.push(newConfig);
@@ -1249,7 +1204,7 @@ if (typeof window !== 'undefined') {
     window.switchToScreen(newId - 1);
   };
 
-  window.removeActiveScreen = function() {
+  window.removeActiveScreen = function () {
     if (window.screenConfigurations.length > 1) {
       window.screenConfigurations.splice(window.activeScreenIndex, 1);
       window.screenConfigurations.forEach((config, idx) => {
@@ -1264,7 +1219,7 @@ if (typeof window !== 'undefined') {
     }
   };
 
-  window.switchToScreen = function(index) {
+  window.switchToScreen = function (index) {
     index = parseInt(index);
     if (index < 0 || index >= window.screenConfigurations.length) return;
 
@@ -1272,6 +1227,16 @@ if (typeof window !== 'undefined') {
     window.activeScreenIndex = index;
     MultiScreenManager.loadScreenConfig(window.screenConfigurations[window.activeScreenIndex]);
     MultiScreenManager.updateScreenTabs();
+
+    // Re-apply tile/height limits for the loaded screen's support type
+    // (skipped during loadScreenConfig due to isLoadingScreenConfig guard)
+    const loadedProductType = document.getElementById('productType')?.value;
+    if (loadedProductType && typeof updateVerticalBlocksLimit === 'function') {
+      updateVerticalBlocksLimit(loadedProductType);
+    }
+    if (loadedProductType && typeof updateHeightDimensionLimit === 'function') {
+      updateHeightDimensionLimit(loadedProductType);
+    }
 
     // Call originalGenerateWall directly to render the wall without triggering
     // another saveCurrentScreenConfig (loadScreenConfig already set the UI state).
