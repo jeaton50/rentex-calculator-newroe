@@ -867,8 +867,8 @@ window.generateAllEquipment = function() {
         </div>
         <div class="pixel-summary">
           <h4 style="margin-top: 0;">Total Pixels</h4>
-          <div><strong>Horizontal:</strong> ${totalPixelsHorizontal.toLocaleString()} px</div>
-          <div><strong>Vertical:</strong> ${totalPixelsVertical.toLocaleString()} px</div>
+          <div><strong>Horizontal:</strong> ${(totalPixelsHorizontal || 0).toLocaleString()} px</div>
+          <div><strong>Vertical:</strong> ${(totalPixelsVertical || 0).toLocaleString()} px</div>
         </div>
         <div class="weight-summary">
           <h4 style="margin-top: 0;">Weight Summary</h4>
@@ -995,8 +995,8 @@ window.generateAllEquipment = function() {
     // Update recalculated values from single room data
     combinedAmps = singleRoomData.power.amps;
     combinedWatts = singleRoomData.power.watts;
-    totalPixelsHorizontal = singleRoomData.totalPixelWidth;
-    totalPixelsVertical = singleRoomData.maxPixelHeight;
+    totalPixelsHorizontal = singleRoomData.totalPixelWidth || totalPixelsHorizontal;
+    totalPixelsVertical = singleRoomData.maxPixelHeight || totalPixelsVertical;
 
     const summaryContentDiv = document.getElementById('powerWeightSummary');
     if (summaryContentDiv) {
@@ -1010,8 +1010,8 @@ window.generateAllEquipment = function() {
           </div>
           <div class="pixel-summary">
             <h4 style="margin-top: 0;">Total Pixels <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
-            <div><strong>Horizontal:</strong> ${totalPixelsHorizontal.toLocaleString()} px</div>
-            <div><strong>Vertical:</strong> ${totalPixelsVertical.toLocaleString()} px</div>
+            <div><strong>Horizontal:</strong> ${(totalPixelsHorizontal || 0).toLocaleString()} px</div>
+            <div><strong>Vertical:</strong> ${(totalPixelsVertical || 0).toLocaleString()} px</div>
           </div>
           <div class="weight-summary">
             <h4 style="margin-top: 0;">Weight Summary <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
@@ -1048,19 +1048,19 @@ window.generateAllEquipment = function() {
     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
       <div>
         <h4 style="margin: 0 0 5px 0;">Total Pixels${singleRoomLabel}</h4>
-        <div><strong>Horizontal:</strong> ${totalPixelsHorizontal.toLocaleString()} px</div>
-        <div><strong>Vertical:</strong> ${totalPixelsVertical.toLocaleString()} px</div>
+        <div><strong>Horizontal:</strong> ${(totalPixelsHorizontal || 0).toLocaleString()} px</div>
+        <div><strong>Vertical:</strong> ${(totalPixelsVertical || 0).toLocaleString()} px</div>
       </div>
       <div>
         <h4 style="margin: 0 0 5px 0;">Total Power${singleRoomLabel}</h4>
-        <div><strong>Amperage:</strong> ${combinedAmps.toFixed(2)}A</div>
-        <div><strong>Watts:</strong> ${combinedWatts.toFixed(2)}W</div>
+        <div><strong>Amperage:</strong> ${(combinedAmps || 0).toFixed(2)}A</div>
+        <div><strong>Watts:</strong> ${(combinedWatts || 0).toFixed(2)}W</div>
         <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
       </div>
       <div>
         <h4 style="margin: 0 0 5px 0;">Total Weight</h4>
-        <div><strong>Equipment:</strong> ${totalCombinedWeight.toFixed(2)} lbs</div>
-        <div><strong>Est. Shipping:</strong> ${(totalCombinedWeight * 1.15).toFixed(2)} lbs</div>
+        <div><strong>Equipment:</strong> ${(totalCombinedWeight || 0).toFixed(2)} lbs</div>
+        <div><strong>Est. Shipping:</strong> ${((totalCombinedWeight || 0) * 1.15).toFixed(2)} lbs</div>
       </div>
     </div>
   `;
@@ -1159,7 +1159,8 @@ window.displayEstShippingWeight = function(weight) {
 window.displayTotalPixels = function(pixels) {
   const totalPixelsDiv = document.getElementById('totalPixels');
   if (!totalPixelsDiv) return;
-  totalPixelsDiv.innerHTML = `<strong>Total Pixels:</strong><br>${pixels.toLocaleString()} px`;
+  const px = pixels || 0;
+  totalPixelsDiv.innerHTML = `<strong>Total Pixels:</strong><br>${px.toLocaleString()} px`;
 };
 
 window.displayTotalPower = function(voltage, amps, watts) {
