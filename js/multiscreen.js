@@ -294,7 +294,9 @@ const MultiScreenManager = {
       power,
       distro,
       cables,
-      recalcItems
+      recalcItems,
+      totalPixelWidth,
+      maxPixelHeight
     };
   },
 
