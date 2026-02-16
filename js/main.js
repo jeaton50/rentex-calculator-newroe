@@ -751,6 +751,8 @@ window.generateAllEquipment = function () {
   let combinedVoltage = [];
   let combinedAmps = 0;
   let combinedWatts = 0;
+  let totalPixelsHorizontal = 0;
+  let totalPixelsVertical = 0;
 
   // Loop through each screen and generate its equipment
   window.screenConfigurations.forEach((config, index) => {
@@ -776,6 +778,18 @@ window.generateAllEquipment = function () {
     } else if (productType === "theatrixx") {
       amps = (voltage == 110) ? totalBlocks * 1.63636 : (totalBlocks * 865.38461) / 1000;
       watts = totalBlocks * 190;
+    } else if (productType === "ROEGP26Full") {
+      let fullWatts = totalBlocks * 320;
+      let halfWatts = 0;
+      if (config.gp2HalfEnabled && config.gp2HalfCount > 0) {
+        const gp2HalfTiles = config.blocksHor * config.gp2HalfCount;
+        halfWatts = gp2HalfTiles * 160;
+      }
+      watts = fullWatts + halfWatts;
+      amps = voltage ? watts / voltage : 0;
+    } else if (productType === "ROEGP26Half") {
+      watts = totalBlocks * 160;
+      amps = voltage ? watts / voltage : 0;
     } else {
       amps = 0;
       watts = 0;
@@ -787,12 +801,27 @@ window.generateAllEquipment = function () {
     combinedAmps += amps;
     combinedWatts += watts;
 
+    // Calculate pixel dimensions for this screen
+    const ppt = EquipmentCalculator.getPixelsPerTile(productType);
+    let screenPixelsH = config.blocksHor * ppt.width;
+    let screenPixelsV = config.blocksVer * ppt.height;
+
+    // Account for GP2 Half rows on this screen
+    if (productType === 'ROEGP26Full' && config.gp2HalfEnabled && config.gp2HalfCount > 0) {
+      const gp2HalfPpt = EquipmentCalculator.getPixelsPerTile('ROEGP26Half');
+      screenPixelsV = config.blocksVer * 384 + config.gp2HalfCount * gp2HalfPpt.height;
+    }
+
+    totalPixelsHorizontal += screenPixelsH;
+    totalPixelsVertical += screenPixelsV;
+
     screenSection.innerHTML = `
       <h3>Screen ${config.id} Equipment</h3>
       <div class="screen-power-summary" style="margin-bottom: 15px; padding: 8px; background-color: #f0f0f0; border-radius: 5px;">
         <div><strong>Product Type:</strong> ${productType}</div>
         <div><strong>Dimensions:</strong> ${config.blocksHor} x ${config.blocksVer} tiles</div>
         <div><strong>Size:</strong> ${(config.blocksHor * 1.64).toFixed(2)}' x ${(config.blocksVer * 1.64).toFixed(2)}'</div>
+        <div><strong>Pixels:</strong> ${screenPixelsH} x ${screenPixelsV}</div>
         <div><strong>Voltage:</strong> ${voltage}V</div>
         <div><strong>Amperage:</strong> ${amps.toFixed(2)}A</div>
         <div><strong>Power:</strong> ${watts.toFixed(2)}W</div>
@@ -880,12 +909,17 @@ window.generateAllEquipment = function () {
   const summaryContentDiv = document.getElementById('powerWeightSummary');
   if (summaryContentDiv) {
     summaryContentDiv.innerHTML = `
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
         <div class="power-summary">
           <h4 style="margin-top: 0;">Power Requirements</h4>
           <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
           <div><strong>Total Amperage:</strong> ${combinedAmps.toFixed(2)}A</div>
           <div><strong>Total Power:</strong> ${combinedWatts.toFixed(2)}W</div>
+        </div>
+        <div class="pixel-summary">
+          <h4 style="margin-top: 0;">Total Pixels</h4>
+          <div><strong>Horizontal:</strong> ${totalPixelsHorizontal.toLocaleString()} px</div>
+          <div><strong>Vertical:</strong> ${totalPixelsVertical.toLocaleString()} px</div>
         </div>
         <div class="weight-summary">
           <h4 style="margin-top: 0;">Weight Summary</h4>
@@ -1014,12 +1048,17 @@ window.generateAllEquipment = function () {
     const summaryContentDiv = document.getElementById('powerWeightSummary');
     if (summaryContentDiv) {
       summaryContentDiv.innerHTML = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
           <div class="power-summary">
             <h4 style="margin-top: 0;">Power Requirements <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
             <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
             <div><strong>Total Amperage:</strong> ${combinedAmps.toFixed(2)}A</div>
             <div><strong>Total Power:</strong> ${combinedWatts.toFixed(2)}W</div>
+          </div>
+          <div class="pixel-summary">
+            <h4 style="margin-top: 0;">Total Pixels <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
+            <div><strong>Horizontal:</strong> ${totalPixelsHorizontal.toLocaleString()} px</div>
+            <div><strong>Vertical:</strong> ${totalPixelsVertical.toLocaleString()} px</div>
           </div>
           <div class="weight-summary">
             <h4 style="margin-top: 0;">Weight Summary <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
