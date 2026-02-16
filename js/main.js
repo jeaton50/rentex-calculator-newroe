@@ -1042,9 +1042,12 @@ window.generateAllEquipment = function () {
       }
     }
 
-    // Update power summary with recalculated values
+    // Update recalculated values from single room data
     combinedAmps = singleRoomData.power.amps;
     combinedWatts = singleRoomData.power.watts;
+    totalPixelsHorizontal = singleRoomData.totalPixelWidth;
+    totalPixelsVertical = singleRoomData.maxPixelHeight;
+
     const summaryContentDiv = document.getElementById('powerWeightSummary');
     if (summaryContentDiv) {
       summaryContentDiv.innerHTML = `
@@ -1079,6 +1082,39 @@ window.generateAllEquipment = function () {
     modeDescription.textContent = 'Individual Rooms: Each room\'s processing, power, distro, and cables are calculated independently. Combined total is a simple sum.';
   }
   screenEquipmentContainer.appendChild(modeDescription);
+
+  // Add combined totals info block (pixels, power, weight)
+  const combinedTotalsBlock = document.createElement('div');
+  combinedTotalsBlock.style.cssText = `
+    padding: 12px 15px;
+    background-color: #eaf4ff;
+    border: 1px solid #b8d9f5;
+    border-radius: 5px;
+    margin-bottom: 15px;
+  `;
+  const singleRoomLabel = window.screenCombineMode === 'single'
+    ? ' <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span>' : '';
+  combinedTotalsBlock.innerHTML = `
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+      <div>
+        <h4 style="margin: 0 0 5px 0;">Total Pixels${singleRoomLabel}</h4>
+        <div><strong>Horizontal:</strong> ${totalPixelsHorizontal.toLocaleString()} px</div>
+        <div><strong>Vertical:</strong> ${totalPixelsVertical.toLocaleString()} px</div>
+      </div>
+      <div>
+        <h4 style="margin: 0 0 5px 0;">Total Power${singleRoomLabel}</h4>
+        <div><strong>Amperage:</strong> ${combinedAmps.toFixed(2)}A</div>
+        <div><strong>Watts:</strong> ${combinedWatts.toFixed(2)}W</div>
+        <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
+      </div>
+      <div>
+        <h4 style="margin: 0 0 5px 0;">Total Weight</h4>
+        <div><strong>Equipment:</strong> ${totalCombinedWeight.toFixed(2)} lbs</div>
+        <div><strong>Est. Shipping:</strong> ${(totalCombinedWeight * 1.15).toFixed(2)} lbs</div>
+      </div>
+    </div>
+  `;
+  screenEquipmentContainer.appendChild(combinedTotalsBlock);
 
   // Create combined table
   const combinedTable = document.createElement('table');
