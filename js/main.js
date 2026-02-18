@@ -801,15 +801,15 @@ window.generateAllEquipment = function () {
     combinedAmps += amps;
     combinedWatts += watts;
 
-    // Calculate pixel dimensions for this screen
-    const ppt = EquipmentCalculator.getPixelsPerTile(productType);
-    let screenPixelsH = config.blocksHor * ppt.width;
-    let screenPixelsV = config.blocksVer * ppt.height;
+    // Calculate pixel dimensions for this screen using known pixel-per-tile values
+    const pixelLookup = { absen: [200,200], theatrixx: [192,192], ROEGP26Full: [192,384], ROEGP26Half: [192,192], BP2B1: [176,176], BP2B2: [176,176], BP2V2: [176,176] };
+    const pxTile = pixelLookup[productType] || [176, 176];
+    let screenPixelsH = config.blocksHor * pxTile[0];
+    let screenPixelsV = config.blocksVer * pxTile[1];
 
     // Account for GP2 Half rows on this screen
     if (productType === 'ROEGP26Full' && config.gp2HalfEnabled && config.gp2HalfCount > 0) {
-      const gp2HalfPpt = EquipmentCalculator.getPixelsPerTile('ROEGP26Half');
-      screenPixelsV = config.blocksVer * 384 + config.gp2HalfCount * gp2HalfPpt.height;
+      screenPixelsV = config.blocksVer * 384 + config.gp2HalfCount * 192;
     }
 
     totalPixelsHorizontal += screenPixelsH;
