@@ -152,7 +152,11 @@ const ExportManager = {
 
         // Add combined equipment totals section
         data.push(['', '', '', '', '', sortOrder++]); // Empty row
-        data.push(['', '', '', '', '===== COMBINED EQUIPMENT TOTALS =====', sortOrder++]);
+        const isSingleRoom = window.screenCombineMode === 'single';
+        const combinedLabel = isSingleRoom
+          ? '===== COMBINED EQUIPMENT TOTALS (SINGLE ROOM) ====='
+          : '===== COMBINED EQUIPMENT TOTALS =====';
+        data.push(['', '', '', '', combinedLabel, sortOrder++]);
 
         // Create map to combine quantities
         const combinedEquipment = {};
@@ -176,6 +180,36 @@ const ExportManager = {
             }
           });
         });
+
+        // If Single Room mode, recalculate processing/distro/cables
+        if (isSingleRoom && typeof window.calculateSingleRoomEquipment === 'function' &&
+            typeof MultiScreenManager !== 'undefined') {
+          const singleRoomData = window.calculateSingleRoomEquipment();
+
+          // Remove items that will be recalculated
+          Object.keys(combinedEquipment).forEach(key => {
+            const item = combinedEquipment[key];
+            if (item && MultiScreenManager.isSingleRoomRecalcItem(item.ecode)) {
+              delete combinedEquipment[key];
+            }
+          });
+
+          // Add recalculated items
+          let maxOrder = 0;
+          Object.values(combinedEquipment).forEach(item => {
+            if (item.order > maxOrder && item.order < 999999) maxOrder = item.order;
+          });
+          for (const item of singleRoomData.recalcItems) {
+            const baseName = item.name.replace(/\s*\([^)]*\)/g, '').trim();
+            const key = `${item.ecode}|${baseName}`;
+            combinedEquipment[key] = {
+              ecode: item.ecode,
+              name: baseName,
+              quantity: item.quantity,
+              order: key in equipmentOrderMap ? equipmentOrderMap[key] : ++maxOrder
+            };
+          }
+        }
 
         // Validate quantities are numbers
         Object.values(combinedEquipment).forEach(item => {
@@ -343,6 +377,33 @@ const ExportManager = {
           }
         });
       });
+
+      // If Single Room mode, recalculate processing/distro/cables
+      if (window.screenCombineMode === 'single' && typeof window.calculateSingleRoomEquipment === 'function' &&
+          typeof MultiScreenManager !== 'undefined') {
+        const singleRoomData = window.calculateSingleRoomEquipment();
+
+        // Remove items that will be recalculated
+        Object.keys(combinedEquipment).forEach(key => {
+          const item = combinedEquipment[key];
+          if (item && MultiScreenManager.isSingleRoomRecalcItem(item.ecode)) {
+            delete combinedEquipment[key];
+          }
+        });
+
+        // Add recalculated items
+        for (const item of singleRoomData.recalcItems) {
+          const baseName = item.name.replace(/\s*\([^)]*\)/g, '').trim();
+          const key = `${item.ecode}|${baseName}`;
+          combinedEquipment[key] = {
+            ecode: item.ecode,
+            name: baseName,
+            quantity: item.quantity,
+            weight: Number(item.weight) || 0
+          };
+        }
+      }
+
       return Object.values(combinedEquipment).filter(item => item.quantity > 0);
     } else {
       // Read from current equipment table
