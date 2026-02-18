@@ -183,13 +183,13 @@ const ExportManager = {
 
         // If Single Room mode, recalculate processing/distro/cables
         if (isSingleRoom && typeof window.calculateSingleRoomEquipment === 'function' &&
-            typeof MultiScreenManager !== 'undefined') {
+            window.MultiScreenManager) {
           const singleRoomData = window.calculateSingleRoomEquipment();
 
           // Remove items that will be recalculated
           Object.keys(combinedEquipment).forEach(key => {
             const item = combinedEquipment[key];
-            if (item && MultiScreenManager.isSingleRoomRecalcItem(item.ecode)) {
+            if (item && window.MultiScreenManager.isSingleRoomRecalcItem(item.ecode)) {
               delete combinedEquipment[key];
             }
           });
@@ -380,13 +380,13 @@ const ExportManager = {
 
       // If Single Room mode, recalculate processing/distro/cables
       if (window.screenCombineMode === 'single' && typeof window.calculateSingleRoomEquipment === 'function' &&
-          typeof MultiScreenManager !== 'undefined') {
+          window.MultiScreenManager) {
         const singleRoomData = window.calculateSingleRoomEquipment();
 
         // Remove items that will be recalculated
         Object.keys(combinedEquipment).forEach(key => {
           const item = combinedEquipment[key];
-          if (item && MultiScreenManager.isSingleRoomRecalcItem(item.ecode)) {
+          if (item && window.MultiScreenManager.isSingleRoomRecalcItem(item.ecode)) {
             delete combinedEquipment[key];
           }
         });
