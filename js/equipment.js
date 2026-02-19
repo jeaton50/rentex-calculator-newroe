@@ -653,11 +653,10 @@ const EquipmentCalculator = {
     if (productType === "ROEGP26Full" && gp2HalfBottomRow && gp2HalfRows > 0) {
       const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows;
 
-      // GP2 Half: Use package-based spare calculation (same as equipment display)
-      // Always add at least 1 spare case (12 tiles per case)
+      // GP2 Half: Use package-based spare calculation (round up to next full case)
       const packageSize = 12;
       const halfActiveCases = Math.ceil(gp2HalfTilesNeeded / packageSize);
-      const halfTotalCases = halfActiveCases + 1; // Guarantee at least 1 spare case
+      const halfTotalCases = halfActiveCases;
       const gp2HalfWithSpares = halfTotalCases * packageSize;
 
       totalTilesWithSparesIncludingHalf = totalTilesWithSpares + gp2HalfWithSpares;
@@ -1265,10 +1264,10 @@ function addROEGP26Equipment(config, tbody) {
       console.log('Adding GP2 Half equipment - rows:', gp2HalfRows, 'horizontalBlocks:', horizontalBlocks);
       const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows;
 
-      // GP2 Half: Always add at least 1 spare case
+      // GP2 Half: Round up to next full case
       const packageSize = 12;
       const halfActiveCases = Math.ceil(gp2HalfTilesNeeded / packageSize);
-      const halfTotalCases = halfActiveCases + 1; // Guarantee at least 1 spare case
+      const halfTotalCases = halfActiveCases;
       const gp2HalfWithSpare = halfTotalCases * packageSize;
       const gp2HalfSpareTiles = gp2HalfWithSpare - gp2HalfTilesNeeded;
       const halfSpareCases = halfTotalCases - halfActiveCases;
