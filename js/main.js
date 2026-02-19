@@ -450,14 +450,13 @@ function generateWall() {
     const halfTiles = halfHorizontal * halfVertical;
     const fullTiles = fullHorizontal * fullVertical;
 
-    // Calculate spares for each type (always add at least 1 spare case if tiles exist)
+    // Calculate spares for each type (round up to next full case)
     // GP2 Half: packages of 12
     const halfPackageSize = 12;
     let halfTilesWithSpares = 0;
     let halfSpares = 0;
     if (halfTiles > 0) {
-      const halfActiveCases = Math.ceil(halfTiles / halfPackageSize);
-      const halfTotalCases = halfActiveCases + 1; // Guarantee at least 1 spare case
+      const halfTotalCases = Math.ceil(halfTiles / halfPackageSize);
       halfTilesWithSpares = halfTotalCases * halfPackageSize;
       halfSpares = halfTilesWithSpares - halfTiles;
     }
@@ -467,8 +466,7 @@ function generateWall() {
     let fullTilesWithSpares = 0;
     let fullSpares = 0;
     if (fullTiles > 0) {
-      const fullActiveCases = Math.ceil(fullTiles / fullPackageSize);
-      const fullTotalCases = fullActiveCases + 1; // Guarantee at least 1 spare case
+      const fullTotalCases = Math.ceil(fullTiles / fullPackageSize);
       fullTilesWithSpares = fullTotalCases * fullPackageSize;
       fullSpares = fullTilesWithSpares - fullTiles;
     }
@@ -497,20 +495,18 @@ function generateWall() {
     const actualVerticalBlocks = (productType === 'ROEGP26Full' && gp2HalfBottomRow) ? gp2FullVerticalBlocks : blocksVer;
     totalBlocks = blocksHor * actualVerticalBlocks;
 
-    // GP2 products use package-based spare calculation (always add at least 1 spare case)
+    // GP2 products use package-based spare calculation (round up to next full case)
     if (productType === 'ROEGP26Full') {
-      // GP2 Full: packages of 6, always add at least 1 spare case
+      // GP2 Full: packages of 6
       const packageSize = 6;
-      const activeCases = Math.ceil(totalBlocks / packageSize);
-      const totalCases = activeCases + 1; // Guarantee at least 1 spare case
+      const totalCases = Math.ceil(totalBlocks / packageSize);
       const roundedTotal = totalCases * packageSize;
       totalSpares = roundedTotal - totalBlocks;
       totalBlocksWithSpares = roundedTotal;
     } else if (productType === 'ROEGP26Half') {
-      // GP2 Half: packages of 12, always add at least 1 spare case
+      // GP2 Half: packages of 12
       const packageSize = 12;
-      const activeCases = Math.ceil(totalBlocks / packageSize);
-      const totalCases = activeCases + 1; // Guarantee at least 1 spare case
+      const totalCases = Math.ceil(totalBlocks / packageSize);
       const roundedTotal = totalCases * packageSize;
       totalSpares = roundedTotal - totalBlocks;
       totalBlocksWithSpares = roundedTotal;
