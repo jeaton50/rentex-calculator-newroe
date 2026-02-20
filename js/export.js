@@ -398,13 +398,13 @@ const ExportManager = {
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
 
-        // Pixel-level "Levels" adjustment — makes thin gray lines crisp and dark.
-        // Remaps pixel values:  ≤ inputMin → black,  ≥ inputMax → white,
-        // everything between is stretched across the full 0-255 range.
+        // Gentle levels adjustment — boost contrast on faint lines without
+        // crushing mid-tones.  inputMin 40 keeps darks natural (not solid black),
+        // inputMax 240 pushes near-white backgrounds to clean white.
         const imageData = ctx.getImageData(0, 0, TARGET, TARGET);
         const px = imageData.data;
-        const inputMin = 120;  // Grays darker than this → pushed toward black
-        const inputMax = 220;  // Grays lighter than this → pushed toward white
+        const inputMin = 40;   // Only the very darkest grays get pushed blacker
+        const inputMax = 240;  // Near-white pushed to pure white
         const range = inputMax - inputMin;
         for (let i = 0; i < px.length; i += 4) {
           for (let c = 0; c < 3; c++) {
