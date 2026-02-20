@@ -110,11 +110,23 @@ const ExportManager = {
                             window.screenConfigurations &&
                             window.screenConfigurations.length > 1;
 
+    // Save current screen config so active screen data is included
+    if (multipleScreens && window.MultiScreenManager) {
+      window.MultiScreenManager.saveCurrentScreenConfig();
+    }
+
+    // Helper: build a stable merge key (strips parenthetical suffixes, null-safe)
+    const makeMergeKey = (ecode, name) => {
+      const e = (ecode || '').trim();
+      const n = (name || '').replace(/\s*\([^)]*\)/g, '').trim();
+      return `${e}|${n}`;
+    };
+
     // Build order map from first screen
     if (multipleScreens && window.screenConfigurations.length > 0) {
       const firstScreenEquipment = this.getEquipmentForScreen(window.screenConfigurations[0]);
       firstScreenEquipment.forEach(item => {
-        const key = `${item.ecode}|${item.name}`;
+        const key = makeMergeKey(item.ecode, item.name);
         if (!(key in equipmentOrderMap)) {
           equipmentOrderMap[key] = orderIndex++;
         }
@@ -163,11 +175,13 @@ const ExportManager = {
           screenEquipment.forEach(item => {
             const qty = Number(item.quantity);
             if (qty > 0) {
-              const key = `${item.ecode.trim()}|${item.name.trim()}`;
+              const key = makeMergeKey(item.ecode, item.name);
               if (!combinedEquipment[key]) {
+                // Use the base name (parenthetical text stripped) for display
+                const baseName = (item.name || '').replace(/\s*\([^)]*\)/g, '').trim();
                 combinedEquipment[key] = {
-                  ecode: item.ecode,
-                  name: item.name,
+                  ecode: item.ecode || '',
+                  name: baseName,
                   quantity: 0,
                   order: key in equipmentOrderMap ? equipmentOrderMap[key] : 999999
                 };
@@ -207,8 +221,8 @@ const ExportManager = {
         });
 
       } catch (error) {
-        console.error('Error in multiple screen export:', error);
-        alert('There was an error exporting multiple screen equipment. Falling back to single screen export.');
+        console.error('Error in multiple screen export:', error.message || error, '\nStack:', error.stack || '(no stack)');
+        alert('There was an error exporting multiple screen equipment. Falling back to single screen export.\n\nError: ' + (error.message || error));
 
         // Fallback to single screen export
         this.exportSingleScreen(table, data, sortOrder);
