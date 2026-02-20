@@ -342,7 +342,9 @@ const ExportManager = {
   },
 
   /**
-   * Load an image and return it as a base64 data URL
+   * Load an image and return it as a base64 data URL, normalized to a
+   * consistent square thumbnail for PDF insertion.
+   * Scales to fit (aspect-ratio preserved), centered on a white background.
    * @param {string} src - Image file path
    * @returns {Promise<string|null>} Base64 data URL or null if load fails
    */
@@ -352,12 +354,29 @@ const ExportManager = {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = function () {
+        // Render at 3× the PDF cell size (60pt) for crisp output at print resolution
+        const TARGET = 180; // 60pt × 3 = 180px → ~216 dpi at 72pt/inch PDF
         const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
+        canvas.width = TARGET;
+        canvas.height = TARGET;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
+
+        // White background (so transparent PNGs don't look odd)
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, TARGET, TARGET);
+
+        // Scale to fit within TARGET×TARGET, preserving aspect ratio, centered
+        const scale = Math.min(TARGET / img.naturalWidth, TARGET / img.naturalHeight);
+        const drawW = img.naturalWidth * scale;
+        const drawH = img.naturalHeight * scale;
+        const offsetX = (TARGET - drawW) / 2;
+        const offsetY = (TARGET - drawH) / 2;
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+
+        resolve(canvas.toDataURL('image/jpeg', 0.92));
       };
       img.onerror = function () {
         resolve(null);
@@ -529,7 +548,7 @@ const ExportManager = {
 
       // Logo
       if (logoData) {
-        doc.addImage(logoData, 'PNG', margin, yPos, 120, 38);
+        doc.addImage(logoData, 'JPEG', margin, yPos, 120, 38);
       }
 
       // Order info on the right
@@ -645,7 +664,7 @@ const ExportManager = {
               if (imgData) {
                 const cellX = data.cell.x + rowPadding;
                 const cellY = data.cell.y + rowPadding;
-                doc.addImage(imgData, 'PNG', cellX, cellY, imgCellSize, imgCellSize);
+                doc.addImage(imgData, 'JPEG', cellX, cellY, imgCellSize, imgCellSize);
               }
             } catch (e) {
               console.warn('Could not draw image for row', data.row.index, e);
