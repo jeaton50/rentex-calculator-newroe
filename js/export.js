@@ -325,16 +325,18 @@ const ExportManager = {
   },
 
   /**
-   * Build a map from equipment code to image file path
-   * Uses the EQUIPMENT constants which store image filenames
-   * @returns {Object} Map of ecode -> image path
+   * Build a map from equipment code to image base path (without extension).
+   * The loader will try SVG first, then fall back to PNG.
+   * @returns {Object} Map of ecode -> base path (e.g. 'static/images/equipment/PL25BB1')
    */
   buildImageMap() {
     const imageMap = {};
     if (typeof EQUIPMENT !== 'undefined') {
       Object.values(EQUIPMENT).forEach(item => {
         if (item.image) {
-          imageMap[item.code] = 'static/images/equipment/' + item.image;
+          // Strip extension to get base path — loader will try .svg then .png
+          const baseName = item.image.replace(/\.\w+$/, '');
+          imageMap[item.code] = 'static/images/equipment/' + baseName;
         }
       });
     }
@@ -342,26 +344,46 @@ const ExportManager = {
   },
 
   /**
+   * Load an equipment image, trying SVG first (for crisp vector line art)
+   * then falling back to PNG. Returns a base64 data URL.
+   * SVGs render at 600px (10× cell = ~600dpi), PNGs at 180px (3× cell = ~216dpi).
+   * @param {string} basePath - Base path without extension
+   * @returns {Promise<string|null>} Base64 data URL or null if both fail
+   */
+  loadEquipmentImage(basePath) {
+    if (!basePath) return Promise.resolve(null);
+
+    // Try SVG first (vector — razor-sharp for line drawings)
+    return this.loadImageAsBase64(basePath + '.svg', true).then(result => {
+      if (result) return result;
+      // Fall back to PNG
+      return this.loadImageAsBase64(basePath + '.png', false);
+    });
+  },
+
+  /**
    * Load an image and return it as a base64 data URL, normalized to a
    * consistent square thumbnail for PDF insertion.
    * Scales to fit (aspect-ratio preserved), centered on a white background.
    * @param {string} src - Image file path
+   * @param {boolean} isSvg - If true, render at higher resolution for vector crispness
    * @returns {Promise<string|null>} Base64 data URL or null if load fails
    */
-  loadImageAsBase64(src) {
+  loadImageAsBase64(src, isSvg = false) {
     return new Promise((resolve) => {
       if (!src) { resolve(null); return; }
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = function () {
-        // Render at 3× the PDF cell size (60pt) for crisp output at print resolution
-        const TARGET = 180; // 60pt × 3 = 180px → ~216 dpi at 72pt/inch PDF
+        // SVG line art: 10× cell (600px → ~600dpi) for perfectly crisp lines
+        // PNG photos:   3× cell (180px → ~216dpi) for good quality photos
+        const TARGET = isSvg ? 600 : 180;
         const canvas = document.createElement('canvas');
         canvas.width = TARGET;
         canvas.height = TARGET;
         const ctx = canvas.getContext('2d');
 
-        // White background (so transparent PNGs don't look odd)
+        // White background (so transparent images don't look odd)
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, TARGET, TARGET);
 
@@ -376,7 +398,12 @@ const ExportManager = {
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
 
-        resolve(canvas.toDataURL('image/jpeg', 0.92));
+        // SVG line art benefits from PNG (lossless edges); photos use JPEG
+        if (isSvg) {
+          resolve(canvas.toDataURL('image/png'));
+        } else {
+          resolve(canvas.toDataURL('image/jpeg', 0.92));
+        }
       };
       img.onerror = function () {
         resolve(null);
@@ -529,16 +556,16 @@ const ExportManager = {
       // Preload all equipment images
       const uniqueEcodes = [...new Set(equipmentItems.map(item => item.ecode))];
       await Promise.all(uniqueEcodes.map(async (ecode) => {
-        const imagePath = imageMap[ecode];
-        if (imagePath) {
-          imageCache[ecode] = await this.loadImageAsBase64(imagePath);
+        const basePath = imageMap[ecode];
+        if (basePath) {
+          imageCache[ecode] = await this.loadEquipmentImage(basePath);
         }
       }));
 
       // Load Rentex logo
       let logoData = null;
       try {
-        logoData = await this.loadImageAsBase64('static/images/rentexLogo.png');
+        logoData = await this.loadImageAsBase64('static/images/rentexLogo.png', false);
       } catch (e) {
         console.warn('Could not load Rentex logo for PDF');
       }
@@ -664,7 +691,9 @@ const ExportManager = {
               if (imgData) {
                 const cellX = data.cell.x + rowPadding;
                 const cellY = data.cell.y + rowPadding;
-                doc.addImage(imgData, 'JPEG', cellX, cellY, imgCellSize, imgCellSize);
+                // Auto-detect format from data URL prefix
+                const fmt = imgData.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+                doc.addImage(imgData, fmt, cellX, cellY, imgCellSize, imgCellSize);
               }
             } catch (e) {
               console.warn('Could not draw image for row', data.row.index, e);
