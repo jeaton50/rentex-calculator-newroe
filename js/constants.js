@@ -169,6 +169,14 @@ const EQUIPMENT = {
   BPGPREAR1: { code: 'BPGPREAR1', name: 'ROE Black Pearl rear truss', weight: 1, image: 'BPGPREAR1.png' },
   BPGPBRIDGE: { code: 'BPGPBRIDGE', name: 'ROE Black Pearl rear bridge clamp', weight: 1, image: 'BPGPBRIDGE.png' },
 
+  // ROE GP2.6
+  GP2_6FULL_PKG: { code: '6GP2FULL', name: 'ROE GP2.6 Full 6x tile package', weight: 0, image: '6GP2FULL.png' },
+  ROEGP26FULL: { code: 'ROEGP26FULL', name: 'ROE GP2.6 Full LED tile 500x1000mm', weight: 19.84, image: 'ROEGP26FULL.png' },
+  GP2_HEAD1: { code: 'GP2HEAD1', name: 'ROE Graphite GP hanging bar, 1W, clamp and shackle', weight: 12, image: 'GP2HEAD1.png' },
+  GP2_HEAD2: { code: 'GP2HEAD2', name: 'ROE Graphite GP hanging bar, 2W, clamp and shackle', weight: 19, image: 'GP2HEAD2.png' },
+  GP2_BASE1: { code: 'GP2BASE1', name: 'ROE Graphite GP base bar, 1W', weight: 16, image: 'GP2BASE1.png' },
+  GP2_BASE2: { code: 'GP2BASE2', name: 'ROE Graphite GP base bar, 2W, V1.5', weight: 28, image: 'GP2BASE2.png' },
+
   // Theatrixx
   TX_NOMAD26: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm', weight: 24, image: 'TXNOMAD26.png' },
   CATXLED: { code: 'CATXLED', name: 'Case, Theatrixx Nomad tile 10x', weight: 187, image: 'CATXLED.png' },
@@ -204,8 +212,10 @@ const EQUIPMENT = {
   EDT110M: { code: 'EDT110M', name: "Edison to True1 power cable, 10 meter", weight: 3.2, image: 'EDT110M.png' },
   T11M: { code: 'T11M', name: "True1 power cable 1M (3')", weight: 0.44, image: 'T11M.png' },
 
-  // Misc
-  SANDBAG25: { code: 'SANDBAG25', name: 'Sand Bag 25 lbs.', weight: 25, image: 'SANDBAG25.png' }
+  // Misc / Hardware
+  SANDBAG25: { code: 'SANDBAG25', name: 'Sand Bag 25 lbs.', weight: 25, image: 'SANDBAG25.png' },
+  LED4FTS40: { code: 'LED4FTS40', name: 'Schedule 40 1.5" non-threaded pipe 4\'', weight: 3.5, image: 'LED4FTS40.png' },
+  PIPECPL15: { code: '15PIPECPL', name: '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', weight: 1.5, image: '15PIPECPL.png' }
 };
 
 // Export for use in other modules
