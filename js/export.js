@@ -192,36 +192,6 @@ const ExportManager = {
           });
         });
 
-        // If Single Room mode, recalculate processing/distro/cables
-        if (isSingleRoom && typeof window.calculateSingleRoomEquipment === 'function' &&
-            window.MultiScreenManager) {
-          const singleRoomData = window.calculateSingleRoomEquipment();
-
-          // Remove items that will be recalculated
-          Object.keys(combinedEquipment).forEach(key => {
-            const item = combinedEquipment[key];
-            if (item && window.MultiScreenManager.isSingleRoomRecalcItem(item.ecode)) {
-              delete combinedEquipment[key];
-            }
-          });
-
-          // Add recalculated items
-          let maxOrder = 0;
-          Object.values(combinedEquipment).forEach(item => {
-            if (item.order > maxOrder && item.order < 999999) maxOrder = item.order;
-          });
-          for (const item of singleRoomData.recalcItems) {
-            const baseName = item.name.replace(/\s*\([^)]*\)/g, '').trim();
-            const key = `${item.ecode}|${baseName}`;
-            combinedEquipment[key] = {
-              ecode: item.ecode,
-              name: baseName,
-              quantity: item.quantity,
-              order: key in equipmentOrderMap ? equipmentOrderMap[key] : ++maxOrder
-            };
-          }
-        }
-
         // Validate quantities are numbers
         Object.values(combinedEquipment).forEach(item => {
           if (typeof item.quantity !== 'number' || isNaN(item.quantity)) {
