@@ -221,8 +221,10 @@ const ExportManager = {
         });
 
       } catch (error) {
-        console.error('Error in multiple screen export:', error.message || error, '\nStack:', error.stack || '(no stack)');
-        alert('There was an error exporting multiple screen equipment. Falling back to single screen export.\n\nError: ' + (error.message || error));
+        const errorMsg = error.message || String(error);
+        const errorStack = error.stack || '(no stack)';
+        console.error('Error in multiple screen export:', errorMsg, '\nStack:', errorStack);
+        alert('There was an error exporting multiple screen equipment. Falling back to single screen export.\n\nError: ' + errorMsg + '\n\nStack trace:\n' + errorStack);
 
         // Fallback to single screen export
         this.exportSingleScreen(table, data, sortOrder);
