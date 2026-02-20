@@ -398,23 +398,6 @@ const ExportManager = {
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
 
-        // Gentle levels adjustment — boost contrast on faint lines without
-        // crushing mid-tones.  inputMin 40 keeps darks natural (not solid black),
-        // inputMax 240 pushes near-white backgrounds to clean white.
-        const imageData = ctx.getImageData(0, 0, TARGET, TARGET);
-        const px = imageData.data;
-        const inputMin = 40;   // Only the very darkest grays get pushed blacker
-        const inputMax = 240;  // Near-white pushed to pure white
-        const range = inputMax - inputMin;
-        for (let i = 0; i < px.length; i += 4) {
-          for (let c = 0; c < 3; c++) {
-            let v = px[i + c];
-            v = ((v - inputMin) / range) * 255;
-            px[i + c] = v < 0 ? 0 : v > 255 ? 255 : v;
-          }
-        }
-        ctx.putImageData(imageData, 0, 0);
-
         // PNG for line art (lossless, sharp edges); JPEG for photos
         if (isSvg) {
           resolve(canvas.toDataURL('image/png'));
