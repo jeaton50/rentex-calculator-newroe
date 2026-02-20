@@ -29,10 +29,10 @@
   <script src="js/equipment.js?v=1771200000"></script>
   <script src="js/calculator.js?v=1771200000"></script>
   <script src="js/ui.js?v=1768313500"></script>
-  <script src="js/multiscreen.js?v=1771200000"></script>
+  <script src="js/multiscreen.js?v=1770200000"></script>
 
   <!-- Export library - Defer as it's only used on demand -->
-  <script defer src="js/export.js?v=1771200000"></script>
+  <script defer src="js/export.js?v=1770200000"></script>
 
   <!-- Non-critical external libraries - Load async -->
   <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" media="print" onload="this.media='all'">
@@ -68,6 +68,7 @@
     <!-- Action Buttons -->
     <div id="headerButtons" style="display: flex; gap: 8px; margin-left: 20px;">
       <button type="button" onclick="captureEntireScreen()">Email</button>
+      <button type="button" onclick="exportToExcel()" style="background-color: #217346; color: white; font-weight: bold;">Export Excel</button>
       <button type="button" onclick="exportEquipmentPDF()" style="background-color: #28a745; color: white; font-weight: bold;">Export PDF</button>
       <button type="button" onclick="zoomIn()">Zoom In</button>
       <button type="button" onclick="zoomOut()">Zoom Out</button>
@@ -639,7 +640,7 @@
     });
   </script>
 
-  <script src="js/main.js?v=1771200000"></script>
+  <script src="js/main.js?v=1770200000"></script>
 </body>
 </html>
 

@@ -106,9 +106,9 @@ const ExportManager = {
 
     // Check if in multiple screen mode
     const multipleScreens = window.multiScreenInitialized &&
-                            document.getElementById('multipleScreenManagementCheckbox')?.checked &&
-                            window.screenConfigurations &&
-                            window.screenConfigurations.length > 1;
+      document.getElementById('multipleScreenManagementCheckbox')?.checked &&
+      window.screenConfigurations &&
+      window.screenConfigurations.length > 1;
 
     // Save current screen config so active screen data is included
     if (multipleScreens && window.MultiScreenManager) {
@@ -149,8 +149,8 @@ const ExportManager = {
               const ecodes = item.ecode || '';
               const equipmentName = item.name || '';
               const qtyOrdered = typeof item.quantity === 'number' ?
-                                 item.quantity.toString() :
-                                 Number(item.quantity).toString();
+                item.quantity.toString() :
+                Number(item.quantity).toString();
 
               data.push([ecodes, ecodes, ecodes, qtyOrdered, equipmentName, sortOrder++]);
             }
@@ -164,7 +164,8 @@ const ExportManager = {
 
         // Add combined equipment totals section
         data.push(['', '', '', '', '', sortOrder++]); // Empty row
-        data.push(['', '', '', '', '===== COMBINED EQUIPMENT TOTALS =====', sortOrder++]);
+        const modeLabel = window.screenCombineMode === 'single' ? 'SINGLE ROOM' : 'INDIVIDUAL ROOMS';
+        data.push(['', '', '', '', `===== COMBINED EQUIPMENT TOTALS (${modeLabel}) =====`, sortOrder++]);
 
         // Create map to combine quantities
         const combinedEquipment = {};
@@ -191,6 +192,36 @@ const ExportManager = {
           });
         });
 
+        // If Single Room mode, recalculate processing/distro/cables
+        if (isSingleRoom && typeof window.calculateSingleRoomEquipment === 'function' &&
+            window.MultiScreenManager) {
+          const singleRoomData = window.calculateSingleRoomEquipment();
+
+          // Remove items that will be recalculated
+          Object.keys(combinedEquipment).forEach(key => {
+            const item = combinedEquipment[key];
+            if (item && window.MultiScreenManager.isSingleRoomRecalcItem(item.ecode)) {
+              delete combinedEquipment[key];
+            }
+          });
+
+          // Add recalculated items
+          let maxOrder = 0;
+          Object.values(combinedEquipment).forEach(item => {
+            if (item.order > maxOrder && item.order < 999999) maxOrder = item.order;
+          });
+          for (const item of singleRoomData.recalcItems) {
+            const baseName = item.name.replace(/\s*\([^)]*\)/g, '').trim();
+            const key = `${item.ecode}|${baseName}`;
+            combinedEquipment[key] = {
+              ecode: item.ecode,
+              name: baseName,
+              quantity: item.quantity,
+              order: key in equipmentOrderMap ? equipmentOrderMap[key] : ++maxOrder
+            };
+          }
+        }
+
         // Validate quantities are numbers
         Object.values(combinedEquipment).forEach(item => {
           if (typeof item.quantity !== 'number' || isNaN(item.quantity)) {
@@ -198,6 +229,39 @@ const ExportManager = {
             item.quantity = 0;
           }
         });
+
+        // If Single Room mode, replace processing/distro/cables with recalculated values
+        const isSingleRoom = window.screenCombineMode === 'single';
+        if (isSingleRoom && typeof window.calculateSingleRoomEquipment === 'function') {
+          const singleRoomData = window.calculateSingleRoomEquipment();
+
+          // Remove existing processing/distro/cable items from combined equipment
+          const recalcEcodes = new Set([
+            'SX40', 'XD10', 'S8', 'MX40PRO',
+            'CUBEDIST', 'TP1', 'L2130T1FB', 'SOCA6XTRU1', 'TXT32SOCA',
+            'CAT5ES005', 'ECON010C6', 'ECON050C6', 'ECON100C6', 'ECON1M',
+            'TRUE125FT', 'T11M', 'EDT110M', 'TXT32ED6', 'TXT32T125'
+          ]);
+
+          Object.keys(combinedEquipment).forEach(key => {
+            if (recalcEcodes.has(combinedEquipment[key].ecode)) {
+              delete combinedEquipment[key];
+            }
+          });
+
+          // Add recalculated items
+          singleRoomData.recalcItems.forEach(item => {
+            if (item.quantity > 0) {
+              const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
+              combinedEquipment[key] = {
+                ecode: item.ecode,
+                name: item.name,
+                quantity: item.quantity,
+                order: key in equipmentOrderMap ? equipmentOrderMap[key] : 999999
+              };
+            }
+          });
+        }
 
         // Sort combined equipment by original order
         const consolidatedEquipment = Object.values(combinedEquipment);
@@ -208,8 +272,8 @@ const ExportManager = {
           const ecodes = item.ecode || '';
           const equipmentName = item.name || '';
           const qtyOrdered = typeof item.quantity === 'number' ?
-                             item.quantity.toString() :
-                             Number(item.quantity).toString();
+            item.quantity.toString() :
+            Number(item.quantity).toString();
 
           // Skip invalid quantities
           if (item.quantity <= 0 || isNaN(item.quantity)) {
@@ -315,7 +379,7 @@ const ExportManager = {
       if (!src) { resolve(null); return; }
       const img = new Image();
       img.crossOrigin = 'anonymous';
-      img.onload = function() {
+      img.onload = function () {
         const canvas = document.createElement('canvas');
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
@@ -323,7 +387,7 @@ const ExportManager = {
         ctx.drawImage(img, 0, 0);
         resolve(canvas.toDataURL('image/png'));
       };
-      img.onerror = function() {
+      img.onerror = function () {
         resolve(null);
       };
       img.src = src;
@@ -337,9 +401,9 @@ const ExportManager = {
    */
   getCurrentEquipmentData() {
     const multipleScreens = window.multiScreenInitialized &&
-                            document.getElementById('multipleScreenManagementCheckbox')?.checked &&
-                            window.screenConfigurations &&
-                            window.screenConfigurations.length > 1;
+      document.getElementById('multipleScreenManagementCheckbox')?.checked &&
+      window.screenConfigurations &&
+      window.screenConfigurations.length > 1;
 
     if (multipleScreens) {
       // Combine equipment from all screens
@@ -357,6 +421,33 @@ const ExportManager = {
           }
         });
       });
+
+      // If Single Room mode, recalculate processing/distro/cables
+      if (window.screenCombineMode === 'single' && typeof window.calculateSingleRoomEquipment === 'function' &&
+          window.MultiScreenManager) {
+        const singleRoomData = window.calculateSingleRoomEquipment();
+
+        // Remove items that will be recalculated
+        Object.keys(combinedEquipment).forEach(key => {
+          const item = combinedEquipment[key];
+          if (item && window.MultiScreenManager.isSingleRoomRecalcItem(item.ecode)) {
+            delete combinedEquipment[key];
+          }
+        });
+
+        // Add recalculated items
+        for (const item of singleRoomData.recalcItems) {
+          const baseName = item.name.replace(/\s*\([^)]*\)/g, '').trim();
+          const key = `${item.ecode}|${baseName}`;
+          combinedEquipment[key] = {
+            ecode: item.ecode,
+            name: baseName,
+            quantity: item.quantity,
+            weight: Number(item.weight) || 0
+          };
+        }
+      }
+
       return Object.values(combinedEquipment).filter(item => item.quantity > 0);
     } else {
       // Read from current equipment table
@@ -475,8 +566,8 @@ const ExportManager = {
       const location = document.getElementById('location')?.value || '';
       const productTypeSelect = document.getElementById('productType');
       const productTypeName = productTypeSelect ?
-                              productTypeSelect.options[productTypeSelect.selectedIndex].text :
-                              '';
+        productTypeSelect.options[productTypeSelect.selectedIndex].text :
+        '';
 
       doc.setFontSize(10);
       doc.setTextColor(100);
@@ -755,65 +846,65 @@ const ExportManager = {
         });
       }
     })
-    .then((canvas) => {
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          alert('Failed to create image blob.');
-          return;
-        }
-
-        // For iOS: download, for others: copy to clipboard
-        if (isIOS()) {
-          fallbackDownload(blob);
-        } else {
-          try {
-            const clipboardItem = new ClipboardItem({ [blob.type]: blob });
-            await navigator.clipboard.write([clipboardItem]);
-            alert('Screenshot Captured, please paste in email');
-          } catch (clipboardError) {
-            console.error('Clipboard copy error:', clipboardError);
-            fallbackDownload(blob);
+      .then((canvas) => {
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            alert('Failed to create image blob.');
+            return;
           }
-        }
 
-        // Prepare email with quote information
-        const blocksHor = parseInt(document.getElementById('blocksHor')?.value || 0, 10);
-        const blocksVer = parseInt(document.getElementById('blocksVer')?.value || 0, 10);
-        const totalTiles = blocksHor * blocksVer;
-        const orderNumber = document.getElementById('orderNumber')?.value || 'Unknown';
-        const location = document.getElementById('location')?.value || 'Not provided';
-        const orderDate = document.getElementById('orderDate')?.value || 'Not provided';
-        const productTypeSelect = document.getElementById('productType');
-        const productTypeName = productTypeSelect ?
-                                productTypeSelect.options[productTypeSelect.selectedIndex].text :
-                                'Unknown';
+          // For iOS: download, for others: copy to clipboard
+          if (isIOS()) {
+            fallbackDownload(blob);
+          } else {
+            try {
+              const clipboardItem = new ClipboardItem({ [blob.type]: blob });
+              await navigator.clipboard.write([clipboardItem]);
+              alert('Screenshot Captured, please paste in email');
+            } catch (clipboardError) {
+              console.error('Clipboard copy error:', clipboardError);
+              fallbackDownload(blob);
+            }
+          }
 
-        const emailSubject = `LED Quote Approval - Order# ${orderNumber}`;
-        const emailBody = encodeURIComponent(
-          'Dates: ' + orderDate + '\n\n' +
-          'Location: ' + location + '\n\n' +
-          'LED Walls\n\n' +
-          'Make/Model: ' + productTypeName + '\n\n' +
-          'Can they use any other make/model: \n\n' +
-          '# tiles: ' + totalTiles + '\n\n' +
-          'x tiles wide: ' + blocksHor + '\n\n' +
-          'y tiles tall: ' + blocksVer
-        );
+          // Prepare email with quote information
+          const blocksHor = parseInt(document.getElementById('blocksHor')?.value || 0, 10);
+          const blocksVer = parseInt(document.getElementById('blocksVer')?.value || 0, 10);
+          const totalTiles = blocksHor * blocksVer;
+          const orderNumber = document.getElementById('orderNumber')?.value || 'Unknown';
+          const location = document.getElementById('location')?.value || 'Not provided';
+          const orderDate = document.getElementById('orderDate')?.value || 'Not provided';
+          const productTypeSelect = document.getElementById('productType');
+          const productTypeName = productTypeSelect ?
+            productTypeSelect.options[productTypeSelect.selectedIndex].text :
+            'Unknown';
 
-        // Open email client
-        window.location.href = `mailto:LEDPanel@rentex.com?subject=${emailSubject}&body=${emailBody}`;
+          const emailSubject = `LED Quote Approval - Order# ${orderNumber}`;
+          const emailBody = encodeURIComponent(
+            'Dates: ' + orderDate + '\n\n' +
+            'Location: ' + location + '\n\n' +
+            'LED Walls\n\n' +
+            'Make/Model: ' + productTypeName + '\n\n' +
+            'Can they use any other make/model: \n\n' +
+            '# tiles: ' + totalTiles + '\n\n' +
+            'x tiles wide: ' + blocksHor + '\n\n' +
+            'y tiles tall: ' + blocksVer
+          );
 
-        // Restore original zoom level
+          // Open email client
+          window.location.href = `mailto:LEDPanel@rentex.com?subject=${emailSubject}&body=${emailBody}`;
+
+          // Restore original zoom level
+          htmlElement.style.zoom = originalZoom || '90%';
+        });
+      })
+      .catch((error) => {
+        console.error('Canvas capture error:', error);
+        alert('Screenshot capture failed. Check console for details.');
+
+        // Restore original zoom level even on error
         htmlElement.style.zoom = originalZoom || '90%';
       });
-    })
-    .catch((error) => {
-      console.error('Canvas capture error:', error);
-      alert('Screenshot capture failed. Check console for details.');
-
-      // Restore original zoom level even on error
-      htmlElement.style.zoom = originalZoom || '90%';
-    });
   }
 };
 
