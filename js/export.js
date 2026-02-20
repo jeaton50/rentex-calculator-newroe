@@ -396,7 +396,12 @@ const ExportManager = {
 
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
+
+        // Boost contrast so thin gray line drawings render bold, not washed out
+        // contrast(2.0) darkens lines; brightness(0.9) prevents total washout
+        ctx.filter = 'contrast(2.0) brightness(0.9)';
         ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+        ctx.filter = 'none'; // Reset for any subsequent draws
 
         // SVG line art benefits from PNG (lossless edges); photos use JPEG
         if (isSvg) {
