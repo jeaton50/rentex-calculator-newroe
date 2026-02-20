@@ -375,9 +375,9 @@ const ExportManager = {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = function () {
-        // SVG line art: 10× cell (600px → ~600dpi) for perfectly crisp lines
-        // PNG photos:   3× cell (180px → ~216dpi) for good quality photos
-        const TARGET = isSvg ? 600 : 180;
+        // Higher resolution = more detail preserved when downscaling
+        // SVG: 10× cell (600px); PNG: 5× cell (300px ≈ 300dpi)
+        const TARGET = isSvg ? 600 : 300;
         const canvas = document.createElement('canvas');
         canvas.width = TARGET;
         canvas.height = TARGET;
@@ -396,18 +396,30 @@ const ExportManager = {
 
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-
-        // Boost contrast so thin gray line drawings render bold, not washed out
-        // contrast(2.0) darkens lines; brightness(0.9) prevents total washout
-        ctx.filter = 'contrast(2.0) brightness(0.9)';
         ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
-        ctx.filter = 'none'; // Reset for any subsequent draws
 
-        // SVG line art benefits from PNG (lossless edges); photos use JPEG
+        // Pixel-level "Levels" adjustment — makes thin gray lines crisp and dark.
+        // Remaps pixel values:  ≤ inputMin → black,  ≥ inputMax → white,
+        // everything between is stretched across the full 0-255 range.
+        const imageData = ctx.getImageData(0, 0, TARGET, TARGET);
+        const px = imageData.data;
+        const inputMin = 120;  // Grays darker than this → pushed toward black
+        const inputMax = 220;  // Grays lighter than this → pushed toward white
+        const range = inputMax - inputMin;
+        for (let i = 0; i < px.length; i += 4) {
+          for (let c = 0; c < 3; c++) {
+            let v = px[i + c];
+            v = ((v - inputMin) / range) * 255;
+            px[i + c] = v < 0 ? 0 : v > 255 ? 255 : v;
+          }
+        }
+        ctx.putImageData(imageData, 0, 0);
+
+        // PNG for line art (lossless, sharp edges); JPEG for photos
         if (isSvg) {
           resolve(canvas.toDataURL('image/png'));
         } else {
-          resolve(canvas.toDataURL('image/jpeg', 0.92));
+          resolve(canvas.toDataURL('image/png'));
         }
       };
       img.onerror = function () {
