@@ -176,6 +176,12 @@ const EQUIPMENT = {
   TX_BASE2W: { code: 'TXBASE2W', name: 'Theatrixx Nomad Exact stacking base, 2 wide', weight: 12, image: 'TXBASE2W.png' },
   TX_DBL_HEAD: { code: 'TXDBLHEAD', name: 'Theatrixx Nomad double header', weight: 12, image: 'TXDBLHEAD.png' },
   TX_SNGL_HEAD: { code: 'TXSNGLHEAD', name: 'Theatrixx Nomad single header', weight: 8, image: 'TXSNGLHEAD.png' },
+  TX_SKIFRAME: { code: 'TXSKIFRAME', name: 'Theatrixx Nomad Exact ski frame (T base)', weight: 12, image: 'TXSKIFRAME.png' },
+  TX_STAKEXT: { code: 'TXSTAKEXT', name: 'Theatrixx Nomad Exact ski stacking extension', weight: 10, image: 'TXSTAKEXT.png' },
+  TX_LADDER: { code: 'TXLADDER', name: 'Theatrixx Nomad Exact ladder frame', weight: 13, image: 'TXLADDER.png' },
+  TX_BRACKETS: { code: 'TXBRACKETS', name: 'Theatrixx Nomad Exact bracket-straight', weight: 0.25, image: 'TXBRACKETS.png' },
+  TX_VERTSPRT: { code: 'TXVERTSPRT', name: 'Theatrixx Nomad Exact vertical support', weight: 12, image: 'TXVERTSPRT.png' },
+  TX_SKIFTSNG: { code: 'TXSKIFTSNG', name: 'Theatrixx Nomad Exact single foot', weight: 1, image: 'TXSKIFTSNG.png' },
 
   // Processors
   SX40: { code: 'SX40', name: 'Brompton Tessera SX40 **Kit includes an XD10**', weight: 17, image: 'SX40.png' },
