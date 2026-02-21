@@ -362,6 +362,35 @@ const ExportManager = {
   },
 
   /**
+   * Load logo image preserving its actual aspect ratio.
+   * Returns { dataUrl, naturalWidth, naturalHeight } or null.
+   */
+  loadLogoImage(src) {
+    return new Promise((resolve) => {
+      if (!src) { resolve(null); return; }
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function () {
+        const SCALE = 2; // 2× for crispness
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth * SCALE;
+        canvas.height = img.naturalHeight * SCALE;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve({
+          dataUrl: canvas.toDataURL('image/png'),
+          naturalWidth: img.naturalWidth,
+          naturalHeight: img.naturalHeight
+        });
+      };
+      img.onerror = function () { resolve(null); };
+      img.src = src;
+    });
+  },
+
+  /**
    * Load an image and return it as a base64 data URL, normalized to a
    * consistent square thumbnail for PDF insertion.
    * Scales to fit (aspect-ratio preserved), centered on a white background.
@@ -562,10 +591,16 @@ const ExportManager = {
         }
       }));
 
-      // Load Rentex logo
+      // Load Rentex logo preserving actual aspect ratio
       let logoData = null;
+      let logoNaturalW = 0, logoNaturalH = 0;
       try {
-        logoData = await this.loadImageAsBase64('static/images/rentexLogo.png', false);
+        const logoResult = await this.loadLogoImage('static/images/rentexLogo.png');
+        if (logoResult) {
+          logoData = logoResult.dataUrl;
+          logoNaturalW = logoResult.naturalWidth;
+          logoNaturalH = logoResult.naturalHeight;
+        }
       } catch (e) {
         console.warn('Could not load Rentex logo for PDF');
       }
@@ -573,9 +608,13 @@ const ExportManager = {
       // --- Draw PDF Header ---
       let yPos = margin;
 
-      // Logo
+      // Logo — fit within 140×50 pt, preserving aspect ratio
       if (logoData) {
-        doc.addImage(logoData, 'JPEG', margin, yPos, 120, 38);
+        const maxLogoW = 140, maxLogoH = 50;
+        const logoScale = Math.min(maxLogoW / logoNaturalW, maxLogoH / logoNaturalH);
+        const logoW = logoNaturalW * logoScale;
+        const logoH = logoNaturalH * logoScale;
+        doc.addImage(logoData, 'PNG', margin, yPos, logoW, logoH);
       }
 
       // Order info on the right
@@ -689,8 +728,13 @@ const ExportManager = {
               if (!item) return;
               const imgData = imageCache[item.ecode];
               if (imgData) {
-                const cellX = data.cell.x + rowPadding;
-                const cellY = data.cell.y + rowPadding;
+                // Center image within actual cell dimensions (handles rows taller than minimum)
+                const cellW = data.cell.width;
+                const cellH = data.cell.height;
+                const imgOffsetX = (cellW - imgCellSize) / 2;
+                const imgOffsetY = (cellH - imgCellSize) / 2;
+                const cellX = data.cell.x + imgOffsetX;
+                const cellY = data.cell.y + imgOffsetY;
                 // Auto-detect format from data URL prefix
                 const fmt = imgData.startsWith('data:image/png') ? 'PNG' : 'JPEG';
                 doc.addImage(imgData, fmt, cellX, cellY, imgCellSize, imgCellSize);
