@@ -89,11 +89,11 @@ if (productType === 'ROEGP26Full') {
 }
 
 // Function to enforce height dimension limits for specific products
+// Function to enforce height dimension limits for specific products
 function updateHeightDimensionLimit(productType) {
   const heightFeetInput = document.getElementById('heightFeet');
   if (!heightFeetInput) return;
   
-
   // Remove any existing listener to prevent duplicates
   if (heightFeetInput._limitListener) {
     heightFeetInput.removeEventListener('input', heightFeetInput._limitListener);
@@ -118,6 +118,40 @@ function updateHeightDimensionLimit(productType) {
 
   if (maxHeightFeet !== null) {
     heightFeetInput.setAttribute('max', maxHeightFeet.toString());
+
+    // Add input listener to enforce range
+    const listener = function() {
+      const value = parseFloat(this.value);
+      if (isNaN(value) || value < 0) {
+        this.value = '0';
+      } else if (value > maxHeightFeet) {
+        // Show warning popup only for Absen (GP2 Full uses text warning in UI)
+        if (productType === 'absen') {
+          alert('Warning: ' + productName + ' walls are limited to ' + maxHeightFeet + ' feet high maximum.');
+        }
+        this.value = maxHeightFeet.toString();
+      }
+    };
+
+    heightFeetInput._limitListener = listener;
+    heightFeetInput.addEventListener('input', listener);
+    
+    // <--- THE EXTRA '}' THAT WAS HERE HAS BEEN REMOVED --->
+
+    // If current value exceeds limit, cap it and show warning
+    const currentValue = parseFloat(heightFeetInput.value);
+    if (currentValue > maxHeightFeet) {
+      if (productType === 'absen') {
+        alert('Warning: ' + productName + ' walls are limited to ' + maxHeightFeet + ' feet high maximum. Height has been capped.');
+      }
+      heightFeetInput.value = maxHeightFeet.toString();
+      heightFeetInput.dispatchEvent(new Event('input'));
+    }
+  } else { 
+    // Remove max limit for other products
+    heightFeetInput.removeAttribute('max');
+  }
+}
 
     // Add input listener to enforce range
     const listener = function() {
