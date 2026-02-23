@@ -66,8 +66,12 @@ if (productType === 'ROEGP26Full') {
 
   if (maxTiles !== null) {
     blocksVerInput.setAttribute('max', maxTiles.toString());
-    const listener = function() {
-      const value = parseInt(this.value, 10);
+    // Set step for fractional ROE GP2.6 Full input
+    blocksVerInput.setAttribute('step', productType === 'ROEGP26Full' ? '0.5' : '1');
+
+    // Add input listener to enforce range
+    const listener = function () {
+      const value = parseFloat(this.value);
       if (isNaN(value) || value < 1) {
         this.value = '1';
       } else if (value > maxTiles) {
@@ -79,7 +83,10 @@ if (productType === 'ROEGP26Full') {
     blocksVerInput.addEventListener('input', listener);
 
     // If current value exceeds limit, cap it and show warning
-   if (parseInt(blocksVerInput.value, 10) > maxTiles) {
+    if (parseFloat(blocksVerInput.value) > maxTiles) {
+      if (productType === 'absen') {
+        alert('Warning: ' + productName + ' walls are limited to ' + maxTiles + ' tiles high maximum. Height has been capped.');
+      }
       blocksVerInput.value = maxTiles.toString();
       blocksVerInput.dispatchEvent(new Event('input'));
     }
@@ -232,6 +239,16 @@ function updateWall() {
 function generateWall() {
   const productType = document.getElementById('productType').value;
   let blocksHor, blocksVer;
+
+  // Initialize GP2 specific variables at the top to avoid ReferenceErrors
+  let gp2HalfAutoRows = 0;
+  let gp2HalfManualRows = 0;
+  let gp2HalfManualPosition = 'bottom';
+  let gp2FullVerticalBlocks = 0;
+  let hasFractionalInput = false;
+  let blocksVerRaw = 0;
+  let displayBlocksVer = 0;
+
   var widthAsFeet = document.getElementById('widthFeet').value;
   var heightAsFeet = document.getElementById('heightFeet').value;
   let radioButton = document.getElementById("dimensionInput");
@@ -269,19 +286,21 @@ function generateWall() {
   blocksHor = parseInt(document.getElementById('blocksHor').value, 10);
 
   // Parse blocksVer as float to detect fractional values (e.g., 4.5)
-  const blocksVerRaw = parseFloat(document.getElementById('blocksVer').value);
+  blocksVerRaw = parseFloat(document.getElementById('blocksVer').value);
   blocksVer = Math.floor(blocksVerRaw); // Get whole number part
+  gp2FullVerticalBlocks = blocksVer;
 
   // Detect if fractional input is being used for GP2 Full (e.g., 4.5 means 4 Full + 1 Half row)
-  const hasFractionalInput = (blocksVerRaw % 1) !== 0;
-  let autoGp2HalfRows = 0;
+  hasFractionalInput = (blocksVerRaw % 1) !== 0;
 
   if (hasFractionalInput && productType === 'ROEGP26Full') {
     // Extract fractional part (e.g., 0.5 from 4.5)
     const fractionalPart = blocksVerRaw % 1;
 
     // Convert fractional part to GP2 Half rows
-    autoGp2HalfRows = Math.round(fractionalPart * 2);
+    // 0.5 = 1 Half row (since 2 Half rows = 1 Full row height)
+    // 1.0 = 2 Half rows, 1.5 = 3 Half rows, etc.
+    gp2HalfAutoRows = Math.round(fractionalPart * 2);
   }
 
   const groundSupport = document.getElementById('groundSupport').checked;
@@ -311,16 +330,15 @@ function generateWall() {
   }
 
   // Get GP2 Half configuration for GP2 Full
-  let gp2HalfManualRows = 0; 
-  let gp2HalfManualPosition = 'bottom';
-  let gp2FullVerticalBlocks = blocksVer; 
+  // Manual checkbox (position specified by user)
+  gp2HalfManualPosition = 'bottom';
 
   // For dimension display: use original fractional value if fractional input detected
-  let displayBlocksVer = hasFractionalInput ? blocksVerRaw : blocksVer;
+  displayBlocksVer = hasFractionalInput ? blocksVerRaw : blocksVer;
 
-  // Check if GP2 Half is enabled via fractional input (auto-detection - always at top)
-  if (hasFractionalInput && autoGp2HalfRows > 0 && productType === 'ROEGP26Full') {
-    gp2FullVerticalBlocks = blocksVer;
+  // Log auto-detection result if applicable
+  if (hasFractionalInput && gp2HalfAutoRows > 0 && productType === 'ROEGP26Full') {
+    console.log('✅ Fractional input detected - auto GP2 Half rows at TOP:', gp2HalfAutoRows);
   }
 
   // Check if GP2 Half is enabled via manual checkbox (additive to fractional input)
@@ -434,8 +452,8 @@ function generateWall() {
     const showNumbers = window.showNumbers || false;
     CanvasRenderer.drawWall(requestData, zoom, showNumbers);
   }
-  if (typeof display208CircuitsNeeded === 'function') {
-    display208CircuitsNeeded();
+  if (typeof display208Circuits === 'function') {
+    display208Circuits();
   }
 }
 
