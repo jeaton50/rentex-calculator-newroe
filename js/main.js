@@ -958,8 +958,8 @@ window.generateAllEquipment = function() {
 
   // If Single Room mode, recalculate processing/distro/cables for the combined system
   if (window.screenCombineMode === 'single') {
-    var singleRoomData = null;
-    var singleRoomMgr = null;
+    let singleRoomData = null;
+    let singleRoomMgr = null;
     try {
       if (typeof window.calculateSingleRoomEquipment === 'function') {
         singleRoomData = window.calculateSingleRoomEquipment();
@@ -971,24 +971,24 @@ window.generateAllEquipment = function() {
 
     if (singleRoomData && singleRoomMgr && typeof singleRoomMgr.isSingleRoomRecalcItem === 'function') {
       // Remove existing processing/distro/cable items from combined equipment
-      for (var i = combinedEquipmentOrder.length - 1; i >= 0; i--) {
-        var key = combinedEquipmentOrder[i];
-        var item = combinedEquipment[key];
-        if (item && singleRoomMgr.isSingleRoomRecalcItem(item.ecode)) {
-          delete combinedEquipment[key];
-          combinedEquipmentOrder.splice(i, 1);
+      for (let sri = combinedEquipmentOrder.length - 1; sri >= 0; sri--) {
+        const srKey = combinedEquipmentOrder[sri];
+        const srItem = combinedEquipment[srKey];
+        if (srItem && singleRoomMgr.isSingleRoomRecalcItem(srItem.ecode)) {
+          delete combinedEquipment[srKey];
+          combinedEquipmentOrder.splice(sri, 1);
         }
       }
 
       // Add recalculated items to combined equipment
       if (singleRoomData.recalcItems && singleRoomData.recalcItems.length > 0) {
-        for (var ri = 0; ri < singleRoomData.recalcItems.length; ri++) {
-          var recalcItem = singleRoomData.recalcItems[ri];
-          var baseName = recalcItem.name.replace(/\s*\([^)]*\)/g, '').trim();
-          var recalcKey = recalcItem.ecode + '|' + baseName;
+        for (let ri = 0; ri < singleRoomData.recalcItems.length; ri++) {
+          const recalcItem = singleRoomData.recalcItems[ri];
+          const recalcName = recalcItem.name.replace(/\s*\([^)]*\)/g, '').trim();
+          const recalcKey = recalcItem.ecode + '|' + recalcName;
           combinedEquipment[recalcKey] = {
             ecode: recalcItem.ecode,
-            name: baseName,
+            name: recalcName,
             quantity: recalcItem.quantity,
             weight: recalcItem.weight
           };
@@ -998,8 +998,8 @@ window.generateAllEquipment = function() {
 
       // Recalculate total weight
       totalCombinedWeight = 0;
-      for (var wi = 0; wi < combinedEquipmentOrder.length; wi++) {
-        var wItem = combinedEquipment[combinedEquipmentOrder[wi]];
+      for (let wi = 0; wi < combinedEquipmentOrder.length; wi++) {
+        const wItem = combinedEquipment[combinedEquipmentOrder[wi]];
         if (wItem && wItem.quantity > 0) {
           totalCombinedWeight += wItem.weight * wItem.quantity;
         }
@@ -1011,9 +1011,9 @@ window.generateAllEquipment = function() {
       totalPixelsHorizontal = singleRoomData.totalPixelWidth || totalPixelsHorizontal;
       totalPixelsVertical = singleRoomData.maxPixelHeight || totalPixelsVertical;
 
-      var summaryContentDiv = document.getElementById('powerWeightSummary');
-      if (summaryContentDiv) {
-        summaryContentDiv.innerHTML = '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">' +
+      const srSummaryDiv = document.getElementById('powerWeightSummary');
+      if (srSummaryDiv) {
+        srSummaryDiv.innerHTML = '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">' +
           '<div class="power-summary">' +
             '<h4 style="margin-top: 0;">Power Requirements <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>' +
             '<div><strong>Voltage:</strong> ' + combinedVoltage.join(', ') + 'V</div>' +
