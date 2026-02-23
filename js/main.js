@@ -63,6 +63,9 @@ function updateVerticalBlocksLimit(productType) {
   const blocksVerInput = document.getElementById('blocksVer');
   if (!blocksVerInput) return;
 
+  // Skip capping during screen config loads — the caller will restore the correct values
+  if (window.isLoadingScreenConfig) return;
+
   // Remove any existing listener to prevent duplicates
   if (blocksVerInput._limitListener) {
     blocksVerInput.removeEventListener('input', blocksVerInput._limitListener);
@@ -111,7 +114,7 @@ function updateVerticalBlocksLimit(productType) {
     blocksVerInput.setAttribute('max', maxTiles.toString());
 
     // Add input listener to enforce range
-    const listener = function() {
+    const listener = function () {
       const value = parseInt(this.value, 10);
       if (isNaN(value) || value < 1) {
         this.value = '1';
@@ -144,10 +147,10 @@ function updateVerticalBlocksLimit(productType) {
 // Function to enforce height dimension limits for specific products
 function updateHeightDimensionLimit(productType) {
   const heightFeetInput = document.getElementById('heightFeet');
-  if (!heightFeetInput) {
-    console.log('updateHeightDimensionLimit: heightFeet input not found');
-    return;
-  }
+  if (!heightFeetInput) return;
+
+  // Skip capping during screen config loads — the caller will restore the correct values
+  if (window.isLoadingScreenConfig) return;
 
   // Remove any existing listener to prevent duplicates
   if (heightFeetInput._limitListener) {
@@ -177,7 +180,7 @@ function updateHeightDimensionLimit(productType) {
     heightFeetInput.setAttribute('max', maxHeightFeet.toString());
 
     // Add input listener to enforce range
-    const listener = function() {
+    const listener = function () {
       const value = parseFloat(this.value);
       if (isNaN(value) || value < 0) {
         this.value = '0';
@@ -447,14 +450,13 @@ function generateWall() {
     const halfTiles = halfHorizontal * halfVertical;
     const fullTiles = fullHorizontal * fullVertical;
 
-    // Calculate spares for each type (always add at least 1 spare case if tiles exist)
+    // Calculate spares for each type (round up to next full case)
     // GP2 Half: packages of 12
     const halfPackageSize = 12;
     let halfTilesWithSpares = 0;
     let halfSpares = 0;
     if (halfTiles > 0) {
-      const halfActiveCases = Math.ceil(halfTiles / halfPackageSize);
-      const halfTotalCases = halfActiveCases + 1; // Guarantee at least 1 spare case
+      const halfTotalCases = Math.ceil(halfTiles / halfPackageSize);
       halfTilesWithSpares = halfTotalCases * halfPackageSize;
       halfSpares = halfTilesWithSpares - halfTiles;
     }
@@ -464,8 +466,7 @@ function generateWall() {
     let fullTilesWithSpares = 0;
     let fullSpares = 0;
     if (fullTiles > 0) {
-      const fullActiveCases = Math.ceil(fullTiles / fullPackageSize);
-      const fullTotalCases = fullActiveCases + 1; // Guarantee at least 1 spare case
+      const fullTotalCases = Math.ceil(fullTiles / fullPackageSize);
       fullTilesWithSpares = fullTotalCases * fullPackageSize;
       fullSpares = fullTilesWithSpares - fullTiles;
     }
@@ -494,20 +495,18 @@ function generateWall() {
     const actualVerticalBlocks = (productType === 'ROEGP26Full' && gp2HalfBottomRow) ? gp2FullVerticalBlocks : blocksVer;
     totalBlocks = blocksHor * actualVerticalBlocks;
 
-    // GP2 products use package-based spare calculation (always add at least 1 spare case)
+    // GP2 products use package-based spare calculation (round up to next full case)
     if (productType === 'ROEGP26Full') {
-      // GP2 Full: packages of 6, always add at least 1 spare case
+      // GP2 Full: packages of 6
       const packageSize = 6;
-      const activeCases = Math.ceil(totalBlocks / packageSize);
-      const totalCases = activeCases + 1; // Guarantee at least 1 spare case
+      const totalCases = Math.ceil(totalBlocks / packageSize);
       const roundedTotal = totalCases * packageSize;
       totalSpares = roundedTotal - totalBlocks;
       totalBlocksWithSpares = roundedTotal;
     } else if (productType === 'ROEGP26Half') {
-      // GP2 Half: packages of 12, always add at least 1 spare case
+      // GP2 Half: packages of 12
       const packageSize = 12;
-      const activeCases = Math.ceil(totalBlocks / packageSize);
-      const totalCases = activeCases + 1; // Guarantee at least 1 spare case
+      const totalCases = Math.ceil(totalBlocks / packageSize);
       const roundedTotal = totalCases * packageSize;
       totalSpares = roundedTotal - totalBlocks;
       totalBlocksWithSpares = roundedTotal;
@@ -573,7 +572,7 @@ const doubleBaseImage = new Image();
 doubleBaseImage.src = 'static/images/double_base.png';
 
 // Generate combined equipment list for all screens
-window.generateAllEquipment = function() {
+window.generateAllEquipment = function () {
   if (typeof MultiScreenManager !== "undefined" && MultiScreenManager.saveCurrentScreenConfig) {
     MultiScreenManager.saveCurrentScreenConfig();
   }
@@ -622,7 +621,7 @@ window.generateAllEquipment = function() {
     cursor: pointer;
   `;
 
-  backButton.onclick = function() {
+  backButton.onclick = function () {
     const controlsSection = document.getElementById('controls');
     const wallDimensionsSection = document.getElementById('wallDimensions');
     const canvasContainer = document.getElementById('canvasContainer');
@@ -681,7 +680,57 @@ window.generateAllEquipment = function() {
   summaryContent.id = 'powerWeightSummary';
   summarySectionContainer.appendChild(summaryContent);
 
-  screenEquipmentContainer.appendChild(backButton);
+  // Button bar with Back, Export Excel, and Export PDF
+  const buttonBar = document.createElement('div');
+  buttonBar.style.cssText = 'display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;';
+
+  buttonBar.appendChild(backButton);
+  // Remove the standalone margin on backButton since the bar handles spacing
+  backButton.style.marginBottom = '0';
+
+  const excelButton = document.createElement('button');
+  excelButton.type = 'button';
+  excelButton.textContent = '📊 Export to Excel';
+  excelButton.style.cssText = `
+    padding: 8px 15px;
+    background-color: #217346;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+  `;
+  excelButton.onclick = function () {
+    if (typeof exportToExcel === 'function') {
+      exportToExcel();
+    } else {
+      alert('Export module not loaded yet. Please try again in a moment.');
+    }
+  };
+  buttonBar.appendChild(excelButton);
+
+  const pdfButton = document.createElement('button');
+  pdfButton.type = 'button';
+  pdfButton.textContent = '📄 Export PDF';
+  pdfButton.style.cssText = `
+    padding: 8px 15px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+  `;
+  pdfButton.onclick = function () {
+    if (typeof exportEquipmentPDF === 'function') {
+      exportEquipmentPDF();
+    } else {
+      alert('Export module not loaded yet. Please try again in a moment.');
+    }
+  };
+  buttonBar.appendChild(pdfButton);
+
+  screenEquipmentContainer.appendChild(buttonBar);
   screenEquipmentContainer.appendChild(summarySectionContainer);
 
   // Create flex container for screen sections
@@ -811,16 +860,14 @@ window.generateAllEquipment = function() {
         screenTbody.appendChild(row);
         screenWeight += item.weight * item.quantity;
 
-        // Strip parenthetical info (e.g., "(5 active + 1 spare)") from names for the
-        // merge key so package items with different per-screen counts get combined properly
-        const baseName = item.name.replace(/\s*\([^)]*\)/g, '').trim();
-        const key = `${item.ecode}|${baseName}`;
+        // Use full equipment name (matching Excel export) for merge key
+        const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
         screenKeys.push(key);
 
         if (!combinedEquipment[key]) {
           combinedEquipment[key] = {
             ecode: item.ecode,
-            name: baseName,
+            name: item.name,
             quantity: 0,
             weight: item.weight
           };
@@ -961,12 +1008,20 @@ window.generateAllEquipment = function() {
     let singleRoomData = null;
     let singleRoomMgr = null;
     try {
-      if (typeof window.calculateSingleRoomEquipment === 'function') {
-        singleRoomData = window.calculateSingleRoomEquipment();
+      if (typeof window.calculateSingleRoomEquipment !== 'function') {
+        throw new Error('calculateSingleRoomEquipment is not available');
       }
-      singleRoomMgr = window.MultiScreenManager || null;
-    } catch (err) {
-      console.error('Single Room: failed to get data:', err);
+
+    // Add recalculated items to combined equipment
+    for (const item of singleRoomData.recalcItems) {
+      const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
+      combinedEquipment[key] = {
+        ecode: item.ecode,
+        name: item.name,
+        quantity: item.quantity,
+        weight: item.weight
+      };
+      combinedEquipmentOrder.push(key);
     }
 
     if (singleRoomData && singleRoomMgr && typeof singleRoomMgr.isSingleRoomRecalcItem === 'function') {
@@ -1158,26 +1213,26 @@ window.generateAllEquipment = function() {
 };
 
 // Display functions for power and weight information
-window.displayWallWeight = function(weight) {
+window.displayWallWeight = function (weight) {
   const totalWeightDiv = document.getElementById('totalWallWeight');
   if (!totalWeightDiv) return;
   totalWeightDiv.innerHTML = `<strong>Wall Weight:</strong><br>${weight.toFixed(2)} lbs`;
 };
 
-window.displayEstShippingWeight = function(weight) {
+window.displayEstShippingWeight = function (weight) {
   const totalWeightDiv = document.getElementById('totalWeight');
   if (!totalWeightDiv) return;
   totalWeightDiv.innerHTML = `<strong>EST Shipping Weight:</strong><br><div style="text-align: center;">${weight.toFixed(2)} lbs</div>`;
 };
 
-window.displayTotalPixels = function(pixels) {
+window.displayTotalPixels = function (pixels) {
   const totalPixelsDiv = document.getElementById('totalPixels');
   if (!totalPixelsDiv) return;
   const px = pixels || 0;
   totalPixelsDiv.innerHTML = `<strong>Total Pixels:</strong><br>${px.toLocaleString()} px`;
 };
 
-window.displayTotalPower = function(voltage, amps, watts) {
+window.displayTotalPower = function (voltage, amps, watts) {
   const totalPowerDiv = document.getElementById('totalPower');
   if (!totalPowerDiv) return;
 
@@ -1238,7 +1293,7 @@ window.displayTotalPower = function(voltage, amps, watts) {
   }
 };
 
-window.displayDataPortsNeeded = function(productType, totalTiles, config = {}) {
+window.displayDataPortsNeeded = function (productType, totalTiles, config = {}) {
   const dataPortsDiv = document.getElementById('dataPortsNeeded');
   if (!dataPortsDiv) return;
 
@@ -1300,7 +1355,7 @@ window.displayDataPortsNeeded = function(productType, totalTiles, config = {}) {
   `;
 };
 
-window.display110Circuits = function() {
+window.display110Circuits = function () {
   const totalPowerDiv = document.getElementById('totalPower');
   if (!totalPowerDiv) return;
 
@@ -1409,7 +1464,7 @@ window.display110Circuits = function() {
   }
 };
 
-window.display208Circuits = function() {
+window.display208Circuits = function () {
   const totalPowerDiv = document.getElementById('totalPower');
   if (!totalPowerDiv) return;
 
@@ -1462,21 +1517,21 @@ window.display208Circuits = function() {
   totalPowerDiv.appendChild(circuitsDiv);
 };
 
-window.zoomIn = function() {
+window.zoomIn = function () {
   window.currentZoomLevel = Math.min(window.currentZoomLevel + 1, 8);
   if (typeof generateWall === 'function') {
     generateWall();
   }
 };
 
-window.zoomOut = function() {
+window.zoomOut = function () {
   window.currentZoomLevel = Math.max(window.currentZoomLevel - 1, 1);
   if (typeof generateWall === 'function') {
     generateWall();
   }
 };
 
-window.resetScreen = function() {
+window.resetScreen = function () {
   // Reset zoom level
   window.currentZoomLevel = 1;
 
@@ -1769,7 +1824,7 @@ function restoreFormState() {
   return true; // State was restored
 }
 
-window.openScreenViews = function() {
+window.openScreenViews = function () {
   // Save current state before navigating
   saveFormState();
 
@@ -1814,7 +1869,7 @@ window.openScreenViews = function() {
   window.location.href = `screen-views.html?product=${encodeURIComponent(productType)}&blocksHor=${blocksHor}&blocksVer=${blocksVer}&powerDistroType=${powerDistroType}&gp2HalfAutoRows=${gp2HalfAutoRows}&gp2HalfManualRows=${gp2HalfManualRows}&gp2HalfManualPosition=${encodeURIComponent(gp2HalfManualPosition)}&gp2FullVerticalBlocks=${gp2FullVerticalBlocks}`;
 };
 
-window.openTechnicalView = function() {
+window.openTechnicalView = function () {
   // Save current state before navigating
   saveFormState();
 
@@ -1862,7 +1917,7 @@ window.openTechnicalView = function() {
 // --- Missing Functions from Refactoring ---
 
 // Generate screen size configurations from tile quantity
-window.generateScreenSizesFromTileQuantity = function() {
+window.generateScreenSizesFromTileQuantity = function () {
   const tileQuantity = parseInt(document.getElementById('tileQuantity').value);
   const productType = document.getElementById('productType').value;
   const resultsDiv = document.getElementById('possibleScreenSizes');
@@ -1937,13 +1992,13 @@ window.generateScreenSizesFromTileQuantity = function() {
   }
 };
 
-window.selectScreenSize = function(width, height) {
+window.selectScreenSize = function (width, height) {
   document.getElementById('blocksHor').value = width;
   document.getElementById('blocksVer').value = height;
   generateWall();
 };
 
-window.updateBlocksBasedOnSelection = function() {
+window.updateBlocksBasedOnSelection = function () {
   const aspectRatioValue = document.getElementById('aspectRatio').value;
   const screenSizeValue = document.getElementById('screenSize').value;
 
@@ -1982,7 +2037,7 @@ window.updateBlocksBasedOnSelection = function() {
 
     document.getElementById('blocksHor').value = blocksHor;
     document.getElementById('blocksVer').value = blocksVer;
-    if(typeof updateHeightWarning === 'function') updateHeightWarning(height);
+    if (typeof updateHeightWarning === 'function') updateHeightWarning(height);
   } else if (aspectRatioValue) {
     // Aspect ratio only (no specific size)
     const [width, height] = aspectRatioValue.split(':').map(Number);
@@ -1993,12 +2048,12 @@ window.updateBlocksBasedOnSelection = function() {
     const blocksVer = isGP2Full ? bestGP2FullMix(wallHeightFeet) : Math.round(wallHeightFeet / 1.64);
     document.getElementById('blocksHor').value = blocksHor;
     document.getElementById('blocksVer').value = blocksVer;
-    if(typeof updateHeightWarning === 'function') updateHeightWarning(0);
+    if (typeof updateHeightWarning === 'function') updateHeightWarning(0);
   }
   updateDimensionsFromBlocks();
 }
 
-window.calcSpares = function(numberofBlocks, sparePercentage, factor) {
+window.calcSpares = function (numberofBlocks, sparePercentage, factor) {
   // Percentage as a number, ie 10 for 10%
   var sparesPercent = Math.ceil(numberofBlocks * (sparePercentage / 100));
   var total = numberofBlocks + sparesPercent;
@@ -2012,7 +2067,7 @@ window.calcSpares = function(numberofBlocks, sparePercentage, factor) {
 }
 
 // Wiring Diagram Capture Functions
-window.updateCaptureButtonVisibility = function() {
+window.updateCaptureButtonVisibility = function () {
   const captureButton = document.getElementById('captureWiringButton');
   const captureContainer = document.getElementById('captureButtonContainer');
   const toggleWiring = document.getElementById('toggleWiring');
@@ -2041,7 +2096,7 @@ window.updateCaptureButtonVisibility = function() {
   }
 }
 
-window.captureWiringDiagram = function() {
+window.captureWiringDiagram = function () {
   const canvas = document.getElementById('wallCanvas2D');
   if (!canvas) return;
 
@@ -2229,13 +2284,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Toggle the display of multiple screens options based on the radio selection.
-  document.getElementById('singleScreen')?.addEventListener('change', function() {
+  document.getElementById('singleScreen')?.addEventListener('change', function () {
     document.getElementById('multipleScreensOptions').style.display = 'none';
     document.getElementById('numScreens').value = '1';
     generateWall();
   });
 
-  document.getElementById('multipleScreens')?.addEventListener('change', function() {
+  document.getElementById('multipleScreens')?.addEventListener('change', function () {
     document.getElementById('multipleScreensOptions').style.display = 'block';
     document.getElementById('numScreens').value = '1';
     generateWall();
@@ -2251,7 +2306,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ROE Graphite Mix toggle
   const roeGraphicMixCheckbox = document.getElementById('roeGraphicMix');
   if (roeGraphicMixCheckbox) {
-    roeGraphicMixCheckbox.addEventListener('change', function() {
+    roeGraphicMixCheckbox.addEventListener('change', function () {
       const mixedTileInputs = document.getElementById('mixedTileInputs');
       const blockInputs = document.getElementById('blockInputs');
       const productTypeSelect = document.getElementById('productType');
@@ -2281,22 +2336,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const fullVerticalInput = document.getElementById('fullVertical');
 
   if (halfHorizontalInput) {
-    halfHorizontalInput.addEventListener('input', function() {
+    halfHorizontalInput.addEventListener('input', function () {
       if (typeof generateWall === 'function') generateWall();
     });
   }
   if (halfVerticalInput) {
-    halfVerticalInput.addEventListener('input', function() {
+    halfVerticalInput.addEventListener('input', function () {
       if (typeof generateWall === 'function') generateWall();
     });
   }
   if (fullHorizontalInput) {
-    fullHorizontalInput.addEventListener('input', function() {
+    fullHorizontalInput.addEventListener('input', function () {
       if (typeof generateWall === 'function') generateWall();
     });
   }
   if (fullVerticalInput) {
-    fullVerticalInput.addEventListener('input', function() {
+    fullVerticalInput.addEventListener('input', function () {
       if (typeof generateWall === 'function') generateWall();
     });
   }
@@ -2306,12 +2361,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const fullTilesBottomRadio = document.getElementById('fullTilesBottom');
 
   if (fullTilesTopRadio) {
-    fullTilesTopRadio.addEventListener('change', function() {
+    fullTilesTopRadio.addEventListener('change', function () {
       if (typeof generateWall === 'function') generateWall();
     });
   }
   if (fullTilesBottomRadio) {
-    fullTilesBottomRadio.addEventListener('change', function() {
+    fullTilesBottomRadio.addEventListener('change', function () {
       if (typeof generateWall === 'function') generateWall();
     });
   }
@@ -2584,7 +2639,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize multi-screen management listener
   const multiScreenCheckbox = document.getElementById('multipleScreenManagementCheckbox');
   if (multiScreenCheckbox) {
-    multiScreenCheckbox.addEventListener('change', function() {
+    multiScreenCheckbox.addEventListener('change', function () {
       if (typeof toggleMultiScreenManagement === 'function') {
         toggleMultiScreenManagement();
       } else {
