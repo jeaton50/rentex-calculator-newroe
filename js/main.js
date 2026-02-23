@@ -145,7 +145,7 @@ function updateHeightDimensionLimit(productType) {
       heightFeetInput.value = maxHeightFeet.toString();
       heightFeetInput.dispatchEvent(new Event('input'));
     }
-  } else {
+  } else 
     // Remove max limit for other products
     heightFeetInput.removeAttribute('max');
   }
