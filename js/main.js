@@ -232,16 +232,25 @@ function updateWall() {
 function generateWall() {
   const productType = document.getElementById('productType').value;
   let blocksHor, blocksVer;
-  const widthAsFeet = document.getElementById('widthFeet').value;
-  const heightAsFeet = document.getElementById('heightFeet').value;
-  const dimensionMode = document.getElementById("dimensionInput").checked;
+  var widthAsFeet = document.getElementById('widthFeet').value;
+  var heightAsFeet = document.getElementById('heightFeet').value;
+  let radioButton = document.getElementById("dimensionInput");
 
-  if (dimensionMode) {
-    let tileW = 1.64, tileH = (productType === 'ROEGP26Full') ? 3.28 : 1.64;
-    document.getElementById('blocksHor').value = Math.round(widthAsFeet / tileW);
-    document.getElementById('blocksVer').value = (productType === 'ROEGP26Full') ? 
-      Math.round((heightAsFeet / tileH) * 2) / 2 : Math.round(heightAsFeet / 1.64);
-  }
+  if (radioButton.checked) {
+    // Convert dimensions to tiles based on product type
+    let tileWidthFeet, tileHeightFeet;
+
+    if (productType === 'ROEGP26Full') {
+      tileWidthFeet = 1.64;  // 500mm
+      tileHeightFeet = 3.28; // 1000mm (GP2 Full is rectangular!)
+    } else if (productType === 'ROEGP26Half') {
+      tileWidthFeet = 1.64;  // 500mm
+      tileHeightFeet = 1.64; // 500mm (GP2 Half is square)
+    } else {
+      // Black Pearl, Theatrixx, Absen (all square tiles)
+      tileWidthFeet = 1.64;
+      tileHeightFeet = 1.64;
+    }
 
     const calculatedHor = widthAsFeet / tileWidthFeet;
     const calculatedVer = heightAsFeet / tileHeightFeet;
@@ -272,8 +281,6 @@ function generateWall() {
     const fractionalPart = blocksVerRaw % 1;
 
     // Convert fractional part to GP2 Half rows
-    // 0.5 = 1 Half row (since 2 Half rows = 1 Full row height)
-    // 1.0 = 2 Half rows, 1.5 = 3 Half rows, etc.
     autoGp2HalfRows = Math.round(fractionalPart * 2);
   }
 
@@ -285,12 +292,12 @@ function generateWall() {
   const flownSupportType = flownSupportTypeElement ? flownSupportTypeElement.value : null;
   const powerDistro = document.getElementById('powerDistroType').value;
   var voltage = (powerDistro == 110) ? 110 : 208;
-  const powerDistroType = document.getElementById('powerDistroType').value; // Duplicate but consistent
+  const powerDistroType = document.getElementById('powerDistroType').value;
   const wallTypeElement = document.querySelector('input[name="wallType"]:checked');
   const wallType = wallTypeElement ? wallTypeElement.value : 'Flat';
   const aspectRatioDropdown = document.getElementById('popularFormatsDropdown');
   let screenSize = null;
-  if (aspectRatioDropdown.style.display !== 'none') {
+  if (aspectRatioDropdown && aspectRatioDropdown.style.display !== 'none') {
     const aspectRatioValue = document.getElementById('aspectRatio').value;
     if (aspectRatioValue === "1:1") {
       screenSize = document.getElementById('screenSize').value;
@@ -304,23 +311,16 @@ function generateWall() {
   }
 
   // Get GP2 Half configuration for GP2 Full
-  // Two sources: 1) Auto-detected from fractional input (always top), 2) Manual checkbox (user-specified position)
-  let gp2HalfAutoRows = 0; // Auto-detected from fractional input (always at top)
-  let gp2HalfManualRows = 0; // Manual checkbox (position specified by user)
+  let gp2HalfManualRows = 0; 
   let gp2HalfManualPosition = 'bottom';
-  let gp2FullVerticalBlocks = blocksVer; // Store original input vertical blocks
+  let gp2FullVerticalBlocks = blocksVer; 
 
   // For dimension display: use original fractional value if fractional input detected
   let displayBlocksVer = hasFractionalInput ? blocksVerRaw : blocksVer;
 
   // Check if GP2 Half is enabled via fractional input (auto-detection - always at top)
   if (hasFractionalInput && autoGp2HalfRows > 0 && productType === 'ROEGP26Full') {
-    gp2HalfAutoRows = autoGp2HalfRows;
-
-    // Fractional input: 4.5 means 4 Full + 1 Half (not replacement, additive)
-    // blocksVer is already floored to the number of Full rows we want
     gp2FullVerticalBlocks = blocksVer;
-    console.log('✅ Fractional input detected - auto GP2 Half rows at TOP:', gp2HalfAutoRows);
   }
 
   // Check if GP2 Half is enabled via manual checkbox (additive to fractional input)
@@ -332,14 +332,11 @@ function generateWall() {
     gp2HalfManualRows = parseInt(gp2HalfCountElement?.value || 1, 10);
     gp2HalfManualPosition = gp2HalfPositionElement?.value || 'bottom';
 
-    console.log('✅ Manual GP2 Half checkbox CHECKED in generateWall() - rows:', gp2HalfManualRows, 'position:', gp2HalfManualPosition);
-
     // Update display blocks to show combined height (both auto and manual)
-    displayBlocksVer = blocksVer + (gp2HalfAutoRows / 2) + (gp2HalfManualRows / 2);
+    displayBlocksVer = blocksVer + (autoGp2HalfRows / 2) + (gp2HalfManualRows / 2);
   }
 
   // Legacy compatibility: if either auto or manual Half rows exist
- // Legacy compatibility: if either auto or manual Half rows exist
   const gp2HalfBottomRow = (gp2HalfAutoRows > 0) || (gp2HalfManualRows > 0);
   const gp2HalfRows = gp2HalfAutoRows + gp2HalfManualRows; // Total for equipment calculations
 
@@ -351,7 +348,6 @@ function generateWall() {
   var totalBlocks, totalSpares, totalBlocksWithSpares;
 
   if (roeGraphiteMixEnabled) {
-    // 1. Parse Inputs
     const halfHorizontal = parseInt(document.getElementById('halfHorizontal').value) || 0;
     const halfVertical = parseInt(document.getElementById('halfVertical').value) || 0;
     const fullHorizontal = parseInt(document.getElementById('fullHorizontal').value) || 0;
@@ -360,8 +356,6 @@ function generateWall() {
     const halfTiles = halfHorizontal * halfVertical;
     const fullTiles = fullHorizontal * fullVertical;
 
-    // 2. Calculate spares for each type (always add at least 1 spare case if tiles exist)
-    
     // GP2 Half: packages of 12
     const halfPackageSize = 12;
     let halfTilesWithSpares = 0;
@@ -384,34 +378,23 @@ function generateWall() {
       fullSpares = fullTilesWithSpares - fullTiles;
     }
 
-    // 3. Store Graphite Mix data for downstream functions
+    // Store Graphite Mix data for downstream functions
     graphiteMixData = {
-      halfHorizontal,
-      halfVertical,
-      fullHorizontal,
-      fullVertical,
-      halfTiles,
-      fullTiles,
-      halfSpares,
-      fullSpares,
-      halfTilesWithSpares,
-      fullTilesWithSpares
+      halfHorizontal, halfVertical, fullHorizontal, fullVertical,
+      halfTiles, fullTiles, halfSpares, fullSpares, halfTilesWithSpares, fullTilesWithSpares
     };
 
-    // 4. Set global total values
     totalBlocks = halfTiles + fullTiles;
     totalSpares = halfSpares + fullSpares;
     totalBlocksWithSpares = totalBlocks + totalSpares;
-  
+
   } else {
     // Normal mode: standard spare calculation
-    // For GP2 Full with GP2 Half enabled, use the reduced Full tile count
     const actualVerticalBlocks = (productType === 'ROEGP26Full' && gp2HalfBottomRow) ? gp2FullVerticalBlocks : blocksVer;
     totalBlocks = blocksHor * actualVerticalBlocks;
 
     // GP2 products use package-based spare calculation (always add at least 1 spare case)
     if (productType === 'ROEGP26Full') {
-      // GP2 Full: packages of 6, always add at least 1 spare case
       const packageSize = 6;
       const activeCases = Math.ceil(totalBlocks / packageSize);
       const totalCases = activeCases + 1; // Guarantee at least 1 spare case
@@ -419,7 +402,6 @@ function generateWall() {
       totalSpares = roundedTotal - totalBlocks;
       totalBlocksWithSpares = roundedTotal;
     } else if (productType === 'ROEGP26Half') {
-      // GP2 Half: packages of 12, always add at least 1 spare case
       const packageSize = 12;
       const activeCases = Math.ceil(totalBlocks / packageSize);
       const totalCases = activeCases + 1; // Guarantee at least 1 spare case
@@ -434,33 +416,13 @@ function generateWall() {
   }
 
   const requestData = {
-    productType,
-    blocksHor,
-    blocksVer: displayBlocksVer, // Use display blocks for dimensions
-    totalBlocks,
-    totalSpares,
-    totalBlocksWithSpares,
-    groundSupport,
-    groundSupportType,
-    flownSupport,
-    flownSupportType,
-    voltage,
-    wallType,
-    screenSize,
-    powerDistro,
-    powerDistroType,
-    blankRows,
-    gp2HalfBottomRow,
-    gp2HalfRows,
-    gp2HalfAutoRows,
-    gp2HalfManualRows,
-    gp2HalfManualPosition,
-    gp2FullVerticalBlocks, // Reduced GP2 Full blocks (after replacing top rows with Half)
-    roeGraphiteMixEnabled,
-    graphiteMixData
+    productType, blocksHor, blocksVer: displayBlocksVer, totalBlocks, totalSpares, totalBlocksWithSpares,
+    groundSupport, groundSupportType, flownSupport, flownSupportType, voltage, wallType, screenSize,
+    powerDistro, powerDistroType, blankRows, gp2HalfBottomRow, gp2HalfRows, gp2HalfAutoRows, gp2HalfManualRows,
+    gp2HalfManualPosition, gp2FullVerticalBlocks, roeGraphiteMixEnabled, graphiteMixData
   };
 
-  // Call module functions (showLoadingSpinner/hideLoadingSpinner removed)
+  // Call module functions
   if (typeof displayEquipment === 'function') {
     displayEquipment(requestData);
   }
