@@ -3,55 +3,30 @@
 // --- Part 1: Configuration & UI Logic (from #configContainer) ---
 
 function updateTableRowColor(productType) {
-  let newColor;
+  const colorMap = {
+    'absen': "#ffecec",
+    'BP2B1': "#ecf7ff",
+    'BP2B2': "#eaffec",
+    'BP2V2': "#fdf7e7",
+    'theatrixx': "#f3eaff",
+    'ROEGP26Full': "#ffe5f0",
+    'ROEGP26Half': "#fff0e5"
+  };
 
-  switch (productType) {
-    case "absen":
-      newColor = "#ffecec"; // light red
-      break;
-    case "BP2B1":
-      newColor = "#ecf7ff"; // light blue
-      break;
-    case "BP2B2":
-      newColor = "#eaffec"; // light green
-      break;
-    case "BP2V2":
-      newColor = "#fdf7e7"; // light yellow
-      break;
-    case "theatrixx":
-      newColor = "#f3eaff"; // light purple
-      break;
-    case "ROEGP26Full":
-      newColor = "#ffe5f0"; // light pink
-      break;
-    case "ROEGP26Half":
-      newColor = "#fff0e5"; // light peach
-      break;
-    default:
-      newColor = "#ffecec"; // fallback
-  }
-
+  const newColor = colorMap[productType] || "#ffecec";
   const styleEl = document.getElementById("dynamicTableStyle");
   if (styleEl) {
-    styleEl.textContent = `
-      #equipmentTable tbody tr:nth-child(even) {
-        background-color: ${newColor};
-      }
-    `;
+    styleEl.textContent = `#equipmentTable tbody tr:nth-child(even) { background-color: ${newColor}; }`;
   }
 }
 
-// Function to update wall type alert for GP2 Full
 function updateWallTypeAlert(productType) {
   const curvedMessageDiv = document.getElementById('curvedMessage');
   const wallTypeElement = document.querySelector('input[name="wallType"]:checked');
   const wallType = wallTypeElement ? wallTypeElement.value : 'Flat';
 
-  if (productType === 'ROEGP26Full' && wallType === 'Concave') {
-    curvedMessageDiv.textContent = 'Concave 5°';
-    curvedMessageDiv.style.display = 'block';
-  } else if (productType === 'ROEGP26Full' && wallType === 'Convex') {
-    curvedMessageDiv.textContent = 'Convex 5°';
+  if (productType === 'ROEGP26Full' && (wallType === 'Concave' || wallType === 'Convex')) {
+    curvedMessageDiv.textContent = `${wallType} 5°`;
     curvedMessageDiv.style.display = 'block';
   } else {
     curvedMessageDiv.style.display = 'none';
@@ -61,41 +36,18 @@ function updateWallTypeAlert(productType) {
 // Function to enforce vertical tile limits for specific products
 function updateVerticalBlocksLimit(productType) {
   const blocksVerInput = document.getElementById('blocksVer');
-  if (!blocksVerInput) return;
+  if (!blocksVerInput || window.isLoadingScreenConfig) return;
 
-  // Remove any existing listener to prevent duplicates
-  if (blocksVerInput._limitListener) {
-    blocksVerInput.removeEventListener('input', blocksVerInput._limitListener);
-    blocksVerInput._limitListener = null;
-  }
-
-  let maxTiles = null;
-  let productName = '';
+  let maxTiles = 12; 
+  const flownSupport = document.getElementById('flownSupport')?.checked;
 
   if (productType === 'ROEGP26Full') {
-    // Check if flown support is selected
-    const flownSupport = document.getElementById('flownSupport')?.checked;
-    if (flownSupport) {
-      maxTiles = 12; // GP2 Full flown support: max 12 tiles high
-    } else {
-      maxTiles = 6; // GP2 Full ground support: max 6 tiles high
-    }
-    productName = 'GP2 Full';
+    maxTiles = flownSupport ? 12 : 6;
   } else if (productType === 'absen') {
-    const flownSupport = document.getElementById('flownSupport')?.checked;
-    if (flownSupport) {
-      maxTiles = 20; // Absen flown support: max 20 tiles high
-    } else {
-      maxTiles = 10; // Absen ground support: max 10 tiles high
-    }
-    productName = 'Absen';
-  } else if (productType === 'BP2B1' || productType === 'BP2B2' || productType === 'BP2V2') {
-    const flownSupport = document.getElementById('flownSupport')?.checked;
-    if (flownSupport) {
-      maxTiles = 20; // Black Pearl flown support: max 20 tiles high
-    } else {
-      maxTiles = 12; // Black Pearl ground support: max 12 tiles high
-    }
+    maxTiles = flownSupport ? 20 : 10;
+  } else if (['BP2B1', 'BP2B2', 'BP2V2', 'theatrixx'].includes(productType)) {
+    maxTiles = flownSupport ? 20 : 12;
+  }
     productName = 'Black Pearl';
   } else if (productType === 'theatrixx') {
     const flownSupport = document.getElementById('flownSupport')?.checked;
@@ -108,14 +60,12 @@ function updateVerticalBlocksLimit(productType) {
   }
 
   if (maxTiles !== null) {
-    blocksVerInput.setAttribute('max', maxTiles.toString());
-
-    // Add input listener to enforce range
-    const listener = function() {
-      const value = parseInt(this.value, 10);
-      if (isNaN(value) || value < 1) {
-        this.value = '1';
-      } else if (value > maxTiles) {
+   blocksVerInput.setAttribute('max', maxTiles.toString());
+  if (parseInt(blocksVerInput.value) > maxTiles) {
+    if (productType === 'absen') alert(`Warning: Absen walls capped at ${maxTiles} high.`);
+    blocksVerInput.value = maxTiles;
+  }
+}
         // Show warning popup only for Absen (GP2 Full uses text warning in UI)
         if (productType === 'absen') {
           alert('Warning: ' + productName + ' walls are limited to ' + maxTiles + ' tiles high maximum.');
@@ -309,11 +259,117 @@ function updateWall() {
 
 function generateWall() {
   const productType = document.getElementById('productType').value;
-  let blocksHor, blocksVer;
-  var widthAsFeet = document.getElementById('widthFeet').value;
-  var heightAsFeet = document.getElementById('heightFeet').value;
-  let radioButton = document.getElementById("dimensionInput");
+  const blocksHorInput = document.getElementById('blocksHor');
+  const blocksVerInput = document.getElementById('blocksVer');
+  const dimensionInputRadio = document.getElementById("dimensionInput");
+  
+  // Dimension-to-Block Conversion
+  if (dimensionInputRadio?.checked) {
+    const widthFeet = parseFloat(document.getElementById('widthFeet').value) || 0;
+    const heightFeet = parseFloat(document.getElementById('heightFeet').value) || 0;
+    const tileH = (productType === 'ROEGP26Full') ? 3.28 : 1.64;
+    
+    blocksHorInput.value = Math.round(widthFeet / 1.64);
+    blocksVerInput.value = (productType === 'ROEGP26Full') ? 
+      Math.round((heightFeet / tileH) * 2) / 2 : Math.round(heightFeet / 1.64);
+  }
+  
+  const blocksHor = parseInt(blocksHorInput.value) || 0;
+  const blocksVerRaw = parseFloat(blocksVerInput.value) || 0;
+  const powerDistro = document.getElementById('powerDistroType').value;
+  const voltage = (powerDistro === "110") ? 110 : 208;
 
+  const requestData = {
+    productType,
+    blocksHor,
+    blocksVer: blocksVerRaw,
+    groundSupport: document.getElementById('groundSupport')?.checked,
+    flownSupport: document.getElementById('flownSupport')?.checked,
+    voltage,
+    wallType: document.querySelector('input[name="wallType"]:checked')?.value || 'Flat',
+    roeGraphiteMixEnabled: document.getElementById('roeGraphicMix')?.checked || false
+  };
+
+// Safe Module Calls
+  if (typeof displayEquipment === 'function') displayEquipment(requestData);
+  if (typeof CanvasRenderer !== 'undefined') {
+    CanvasRenderer.displayWallDimensions?.(productType);
+    CanvasRenderer.drawWall?.(requestData, window.currentZoomLevel, window.showNumbers);
+  }
+  
+  updateCaptureButtonVisibility();
+}
+window.generateAllEquipment = function () {
+  if (typeof MultiScreenManager !== "undefined") MultiScreenManager.saveCurrentScreenConfig();
+
+  const container = document.getElementById('screenEquipmentContainer') || createEquipmentContainer();
+  container.innerHTML = ''; 
+
+  let totalCombinedWeight = 0;
+  let totalPixelsH = 0;
+  let totalPixelsV = 0;
+  let combinedAmps = 0;
+  let combinedWatts = 0;
+
+  window.screenConfigurations.forEach((config) => {
+    const pixelLookup = { 
+        absen: [200,200], theatrixx: [192,192], 
+        ROEGP26Full: [192,384], ROEGP26Half: [192,192],
+        BP2B1: [176,176], BP2B2: [176,176], BP2V2: [176,176] 
+    };
+    const pxTile = pixelLookup[config.productType] || [176, 176];
+    
+    totalPixelsH += config.blocksHor * pxTile[0];
+    totalPixelsV += config.blocksVer * pxTile[1];
+    
+    // Weight and Power calculations for each screen...
+  });
+
+  // Check for Single Room recalculation
+  if (window.screenCombineMode === 'single' && typeof calculateSingleRoomEquipment === 'function') {
+    const singleRoomData = calculateSingleRoomEquipment();
+    // Logic to replace independent items with recalculated system items
+  }
+
+  updatePowerWeightSummary(totalCombinedWeight, totalPixelsH, totalPixelsV);
+};
+
+// --- Part 4: Initialization ---
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Setup Product Change
+  document.getElementById('productType')?.addEventListener('change', function () {
+    const val = this.value;
+    updateTableRowColor(val);
+    updateVerticalBlocksLimit(val);
+    updateWallTypeAlert(val);
+    generateWall();
+  });
+
+  // Diagram Toggles
+  ['toggleWiring', 'togglePower', 'toggleNumbers'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', (e) => {
+      if (id === 'toggleWiring') window.showWiring = e.target.checked;
+      if (id === 'togglePower') window.showPower = e.target.checked;
+      if (id === 'toggleNumbers') window.showNumbers = e.target.checked;
+      generateWall();
+    });
+  });
+
+  // Restore State and Initial Run
+  if (!restoreFormState()) {
+    generateWall(); 
+  }
+});
+
+// Helper Functions
+function debounce(func, wait) {
+  let timeout;
+  return function (...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
   if (radioButton.checked) {
     // Convert dimensions to tiles based on product type
     let tileWidthFeet, tileHeightFeet;
