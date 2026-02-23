@@ -1004,18 +1004,11 @@ window.generateAllEquipment = function () {
   screenEquipmentContainer.appendChild(modeToggleContainer);
 
   // If Single Room mode, recalculate processing/distro/cables for the combined system
-  if (window.screenCombineMode === 'single' && typeof window.calculateSingleRoomEquipment === 'function') {
-    const singleRoomData = window.calculateSingleRoomEquipment();
-
-    // Remove existing processing/distro/cable items from combined equipment
-    for (let i = combinedEquipmentOrder.length - 1; i >= 0; i--) {
-      const key = combinedEquipmentOrder[i];
-      const item = combinedEquipment[key];
-      if (item && MultiScreenManager.isSingleRoomRecalcItem(item.ecode)) {
-        delete combinedEquipment[key];
-        combinedEquipmentOrder.splice(i, 1);
+  if (window.screenCombineMode === 'single') {
+    try {
+      if (typeof window.calculateSingleRoomEquipment !== 'function') {
+        throw new Error('calculateSingleRoomEquipment is not available');
       }
-    }
 
     // Add recalculated items to combined equipment
     for (const item of singleRoomData.recalcItems) {
@@ -1029,43 +1022,69 @@ window.generateAllEquipment = function () {
       combinedEquipmentOrder.push(key);
     }
 
-    // Recalculate total weight
-    totalCombinedWeight = 0;
-    for (const key of combinedEquipmentOrder) {
-      const item = combinedEquipment[key];
-      if (item && item.quantity > 0) {
-        totalCombinedWeight += item.weight * item.quantity;
+      // Remove existing processing/distro/cable items from combined equipment
+      for (let i = combinedEquipmentOrder.length - 1; i >= 0; i--) {
+        const key = combinedEquipmentOrder[i];
+        const item = combinedEquipment[key];
+        if (item && mgr.isSingleRoomRecalcItem(item.ecode)) {
+          delete combinedEquipment[key];
+          combinedEquipmentOrder.splice(i, 1);
+        }
       }
-    }
 
-    // Update recalculated values from single room data
-    combinedAmps = singleRoomData.power.amps;
-    combinedWatts = singleRoomData.power.watts;
-    totalPixelsHorizontal = singleRoomData.totalPixelWidth || totalPixelsHorizontal;
-    totalPixelsVertical = singleRoomData.maxPixelHeight || totalPixelsVertical;
+      // Add recalculated items to combined equipment
+      for (const item of singleRoomData.recalcItems) {
+        const baseName = item.name.replace(/\s*\([^)]*\)/g, '').trim();
+        const key = `${item.ecode}|${baseName}`;
+        combinedEquipment[key] = {
+          ecode: item.ecode,
+          name: baseName,
+          quantity: item.quantity,
+          weight: item.weight
+        };
+        combinedEquipmentOrder.push(key);
+      }
 
-    const summaryContentDiv = document.getElementById('powerWeightSummary');
-    if (summaryContentDiv) {
-      summaryContentDiv.innerHTML = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
-          <div class="power-summary">
-            <h4 style="margin-top: 0;">Power Requirements <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
-            <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
-            <div><strong>Total Amperage:</strong> ${combinedAmps.toFixed(2)}A</div>
-            <div><strong>Total Power:</strong> ${combinedWatts.toFixed(2)}W</div>
+      // Recalculate total weight
+      totalCombinedWeight = 0;
+      for (const key of combinedEquipmentOrder) {
+        const item = combinedEquipment[key];
+        if (item && item.quantity > 0) {
+          totalCombinedWeight += item.weight * item.quantity;
+        }
+      }
+
+      // Update recalculated values from single room data
+      combinedAmps = singleRoomData.power.amps;
+      combinedWatts = singleRoomData.power.watts;
+      totalPixelsHorizontal = singleRoomData.totalPixelWidth || totalPixelsHorizontal;
+      totalPixelsVertical = singleRoomData.maxPixelHeight || totalPixelsVertical;
+
+      const summaryContentDiv = document.getElementById('powerWeightSummary');
+      if (summaryContentDiv) {
+        summaryContentDiv.innerHTML = `
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+            <div class="power-summary">
+              <h4 style="margin-top: 0;">Power Requirements <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
+              <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
+              <div><strong>Total Amperage:</strong> ${(combinedAmps || 0).toFixed(2)}A</div>
+              <div><strong>Total Power:</strong> ${(combinedWatts || 0).toFixed(2)}W</div>
+            </div>
+            <div class="pixel-summary">
+              <h4 style="margin-top: 0;">Total Pixels <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
+              <div><strong>Horizontal:</strong> ${(totalPixelsHorizontal || 0).toLocaleString()} px</div>
+              <div><strong>Vertical:</strong> ${(totalPixelsVertical || 0).toLocaleString()} px</div>
+            </div>
+            <div class="weight-summary">
+              <h4 style="margin-top: 0;">Weight Summary <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
+              <div><strong>Total Equipment Weight:</strong> ${(totalCombinedWeight || 0).toFixed(2)} lbs</div>
+              <div><strong>Est. Shipping Weight:</strong> ${((totalCombinedWeight || 0) * 1.15).toFixed(2)} lbs</div>
+            </div>
           </div>
-          <div class="pixel-summary">
-            <h4 style="margin-top: 0;">Total Pixels <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
-            <div><strong>Horizontal:</strong> ${(totalPixelsHorizontal || 0).toLocaleString()} px</div>
-            <div><strong>Vertical:</strong> ${(totalPixelsVertical || 0).toLocaleString()} px</div>
-          </div>
-          <div class="weight-summary">
-            <h4 style="margin-top: 0;">Weight Summary <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
-            <div><strong>Total Equipment Weight:</strong> ${totalCombinedWeight.toFixed(2)} lbs</div>
-            <div><strong>Est. Shipping Weight:</strong> ${(totalCombinedWeight * 1.15).toFixed(2)} lbs</div>
-          </div>
-        </div>
-      `;
+        `;
+      }
+    } catch (err) {
+      console.error('Single Room recalculation failed:', err);
     }
   }
 
