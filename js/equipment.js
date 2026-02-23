@@ -236,6 +236,23 @@ function roeGp26FullCircuitCount(totalPanels, voltage, gp2HalfTileCount = 0) {
 
 const EquipmentCalculator = {
   /**
+   * Get pixel dimensions per tile for a given product type.
+   * Single source of truth used by both single-screen and multi-screen calculations.
+   */
+  getPixelsPerTile(productType) {
+    switch (productType) {
+      case 'absen':     return { width: 200, height: 200 };
+      case 'theatrixx': return { width: 192, height: 192 };
+      case 'ROEGP26Full': return { width: 192, height: 384 };
+      case 'ROEGP26Half': return { width: 192, height: 192 };
+      case 'BP2B1':
+      case 'BP2B2':
+      case 'BP2V2':
+      default:          return { width: 176, height: 176 };
+    }
+  },
+
+  /**
    * Calculate processor requirements (Brompton or Novastar)
    */
   calculateProcessors(config) {
@@ -250,6 +267,8 @@ const EquipmentCalculator = {
       gp2HalfBottomRow,
       gp2HalfRows,
       gp2FullVerticalBlocks,
+      overridePixelWidth,
+      overridePixelHeight,
     } = config;
 
     let pixelsPerTileWidth, pixelsPerTileHeight;
@@ -303,7 +322,11 @@ const EquipmentCalculator = {
 
     // Calculate pixel dimensions - account for mixed GP2 Full + GP2 Half configurations
     let pixelsHeight, pixelsWidth;
-    if (productType === "ROEGP26Full" && gp2HalfBottomRow && gp2HalfRows > 0) {
+    if (overridePixelWidth !== undefined && overridePixelHeight !== undefined) {
+      // Use pre-computed pixel dimensions (for multi-screen combined calculations)
+      pixelsWidth = overridePixelWidth;
+      pixelsHeight = overridePixelHeight;
+    } else if (productType === "ROEGP26Full" && gp2HalfBottomRow && gp2HalfRows > 0) {
       // Mixed configuration: GP2 Full (384px tall) + GP2 Half (192px tall)
       // Use gp2FullVerticalBlocks for actual GP2 Full tiles count
       const actualFullBlocks = gp2FullVerticalBlocks || verticalBlocks;
@@ -653,11 +676,10 @@ const EquipmentCalculator = {
     if (productType === "ROEGP26Full" && gp2HalfBottomRow && gp2HalfRows > 0) {
       const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows;
 
-      // GP2 Half: Use package-based spare calculation (same as equipment display)
-      // Always add at least 1 spare case (12 tiles per case)
+      // GP2 Half: Use package-based spare calculation (round up to next full case)
       const packageSize = 12;
       const halfActiveCases = Math.ceil(gp2HalfTilesNeeded / packageSize);
-      const halfTotalCases = halfActiveCases + 1; // Guarantee at least 1 spare case
+      const halfTotalCases = halfActiveCases;
       const gp2HalfWithSpares = halfTotalCases * packageSize;
 
       totalTilesWithSparesIncludingHalf = totalTilesWithSpares + gp2HalfWithSpares;
@@ -1265,10 +1287,10 @@ function addROEGP26Equipment(config, tbody) {
       console.log('Adding GP2 Half equipment - rows:', gp2HalfRows, 'horizontalBlocks:', horizontalBlocks);
       const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows;
 
-      // GP2 Half: Always add at least 1 spare case
+      // GP2 Half: Round up to next full case
       const packageSize = 12;
       const halfActiveCases = Math.ceil(gp2HalfTilesNeeded / packageSize);
-      const halfTotalCases = halfActiveCases + 1; // Guarantee at least 1 spare case
+      const halfTotalCases = halfActiveCases;
       const gp2HalfWithSpare = halfTotalCases * packageSize;
       const gp2HalfSpareTiles = gp2HalfWithSpare - gp2HalfTilesNeeded;
       const halfSpareCases = halfTotalCases - halfActiveCases;

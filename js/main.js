@@ -3,34 +3,17 @@
 // --- Part 1: Configuration & UI Logic (from #configContainer) ---
 
 function updateTableRowColor(productType) {
-  let newColor;
+  const colorMap = {
+    'absen': "#ffecec",
+    'BP2B1': "#ecf7ff",
+    'BP2B2': "#eaffec",
+    'BP2V2': "#fdf7e7",
+    'theatrixx': "#f3eaff",
+    'ROEGP26Full': "#ffe5f0",
+    'ROEGP26Half': "#fff0e5"
+  };
 
-  switch (productType) {
-    case "absen":
-      newColor = "#ffecec"; // light red
-      break;
-    case "BP2B1":
-      newColor = "#ecf7ff"; // light blue
-      break;
-    case "BP2B2":
-      newColor = "#eaffec"; // light green
-      break;
-    case "BP2V2":
-      newColor = "#fdf7e7"; // light yellow
-      break;
-    case "theatrixx":
-      newColor = "#f3eaff"; // light purple
-      break;
-    case "ROEGP26Full":
-      newColor = "#ffe5f0"; // light pink
-      break;
-    case "ROEGP26Half":
-      newColor = "#fff0e5"; // light peach
-      break;
-    default:
-      newColor = "#ffecec"; // fallback
-  }
-
+ const newColor = colorMap[productType] || "#ffecec";
   const styleEl = document.getElementById("dynamicTableStyle");
   if (styleEl) {
     styleEl.textContent = `
@@ -47,11 +30,8 @@ function updateWallTypeAlert(productType) {
   const wallTypeElement = document.querySelector('input[name="wallType"]:checked');
   const wallType = wallTypeElement ? wallTypeElement.value : 'Flat';
 
-  if (productType === 'ROEGP26Full' && wallType === 'Concave') {
-    curvedMessageDiv.textContent = 'Concave 5°';
-    curvedMessageDiv.style.display = 'block';
-  } else if (productType === 'ROEGP26Full' && wallType === 'Convex') {
-    curvedMessageDiv.textContent = 'Convex 5°';
+  if (productType === 'ROEGP26Full' && (wallType === 'Concave' || wallType === 'Convex')) {
+    curvedMessageDiv.textContent = `${wallType} 5°`;
     curvedMessageDiv.style.display = 'block';
   } else {
     curvedMessageDiv.style.display = 'none';
@@ -63,9 +43,6 @@ function updateVerticalBlocksLimit(productType) {
   const blocksVerInput = document.getElementById('blocksVer');
   if (!blocksVerInput) return;
 
-  // Skip capping during screen config loads — the caller will restore the correct values
-  if (window.isLoadingScreenConfig) return;
-
   // Remove any existing listener to prevent duplicates
   if (blocksVerInput._limitListener) {
     blocksVerInput.removeEventListener('input', blocksVerInput._limitListener);
@@ -74,40 +51,17 @@ function updateVerticalBlocksLimit(productType) {
 
   let maxTiles = null;
   let productName = '';
+  const flownSupport = document.getElementById('flownSupport')?.checked;
 
-  if (productType === 'ROEGP26Full') {
-    // Check if flown support is selected
-    const flownSupport = document.getElementById('flownSupport')?.checked;
-    if (flownSupport) {
-      maxTiles = 12; // GP2 Full flown support: max 12 tiles high
-    } else {
-      maxTiles = 6; // GP2 Full ground support: max 6 tiles high
-    }
+if (productType === 'ROEGP26Full') {
+    maxTiles = flownSupport ? 12 : 6;
     productName = 'GP2 Full';
   } else if (productType === 'absen') {
-    const flownSupport = document.getElementById('flownSupport')?.checked;
-    if (flownSupport) {
-      maxTiles = 20; // Absen flown support: max 20 tiles high
-    } else {
-      maxTiles = 10; // Absen ground support: max 10 tiles high
-    }
+    maxTiles = flownSupport ? 20 : 10;
     productName = 'Absen';
-  } else if (productType === 'BP2B1' || productType === 'BP2B2' || productType === 'BP2V2') {
-    const flownSupport = document.getElementById('flownSupport')?.checked;
-    if (flownSupport) {
-      maxTiles = 20; // Black Pearl flown support: max 20 tiles high
-    } else {
-      maxTiles = 12; // Black Pearl ground support: max 12 tiles high
-    }
-    productName = 'Black Pearl';
-  } else if (productType === 'theatrixx') {
-    const flownSupport = document.getElementById('flownSupport')?.checked;
-    if (flownSupport) {
-      maxTiles = 20; // Theatrixx flown support: max 20 tiles high
-    } else {
-      maxTiles = 12; // Theatrixx ground support: max 12 tiles high
-    }
-    productName = 'Theatrixx';
+  } else if (['BP2B1', 'BP2B2', 'BP2V2', 'theatrixx'].includes(productType)) {
+    maxTiles = flownSupport ? 20 : 12;
+    productName = productType.includes('BP2') ? 'Black Pearl' : 'Theatrixx';
   }
 
   if (maxTiles !== null) {
@@ -121,14 +75,10 @@ function updateVerticalBlocksLimit(productType) {
       if (isNaN(value) || value < 1) {
         this.value = '1';
       } else if (value > maxTiles) {
-        // Show warning popup only for Absen (GP2 Full uses text warning in UI)
-        if (productType === 'absen') {
-          alert('Warning: ' + productName + ' walls are limited to ' + maxTiles + ' tiles high maximum.');
-        }
+        if (productType === 'absen') alert(`Warning: ${productName} walls limited to ${maxTiles} tiles high.`);
         this.value = maxTiles.toString();
       }
     };
-
     blocksVerInput._limitListener = listener;
     blocksVerInput.addEventListener('input', listener);
 
@@ -141,18 +91,19 @@ function updateVerticalBlocksLimit(productType) {
       blocksVerInput.dispatchEvent(new Event('input'));
     }
   } else {
-    // Remove max limit for other products
     blocksVerInput.removeAttribute('max');
   }
 }
 
 // Function to enforce height dimension limits for specific products
+// Function to enforce height dimension limits for specific products
+// Function to enforce height dimension limits for specific products
 function updateHeightDimensionLimit(productType) {
   const heightFeetInput = document.getElementById('heightFeet');
-  if (!heightFeetInput) return;
-
-  // Skip capping during screen config loads — the caller will restore the correct values
-  if (window.isLoadingScreenConfig) return;
+  if (!heightFeetInput) {
+    console.log('updateHeightDimensionLimit: heightFeet input not found');
+    return;
+  }
 
   // Remove any existing listener to prevent duplicates
   if (heightFeetInput._limitListener) {
@@ -162,19 +113,18 @@ function updateHeightDimensionLimit(productType) {
 
   let maxHeightFeet = null;
   let productName = '';
-  const flownSupport = document.getElementById('flownSupport')?.checked;
 
   if (productType === 'ROEGP26Full') {
-    maxHeightFeet = flownSupport ? 39.36 : 19.68; // GP2 Full: flown 12×3.28'=39.36', ground 6×3.28'=19.68'
+    maxHeightFeet = 19.68; // GP2 Full: 6 tiles × 3.28' = 19.68 feet
     productName = 'GP2 Full';
   } else if (productType === 'absen') {
-    maxHeightFeet = flownSupport ? 32.8 : 16.4; // Absen: flown 20×1.64'=32.8', ground 10×1.64'=16.4'
+    maxHeightFeet = 16.4; // Absen: 10 tiles × 1.64' = 16.4 feet
     productName = 'Absen';
   } else if (productType === 'BP2B1' || productType === 'BP2B2' || productType === 'BP2V2') {
-    maxHeightFeet = flownSupport ? 32.8 : 19.68; // Black Pearl: flown 20×1.64'=32.8', ground 12×1.64'=19.68'
+    maxHeightFeet = 19.68; // Black Pearl: 12 tiles × 1.64' = 19.68 feet
     productName = 'Black Pearl';
   } else if (productType === 'theatrixx') {
-    maxHeightFeet = flownSupport ? 32.8 : 19.68; // Theatrixx: flown 20×1.64'=32.8', ground 12×1.64'=19.68'
+    maxHeightFeet = 19.68; // Theatrixx: 12 tiles × 1.64' = 19.68 feet
     productName = 'Theatrixx';
   }
 
@@ -182,7 +132,7 @@ function updateHeightDimensionLimit(productType) {
     heightFeetInput.setAttribute('max', maxHeightFeet.toString());
 
     // Add input listener to enforce range
-    const listener = function () {
+    const listener = function() {
       const value = parseFloat(this.value);
       if (isNaN(value) || value < 0) {
         this.value = '0';
@@ -217,42 +167,15 @@ function updateHeightDimensionLimit(productType) {
 
 // Define initial zoom level and global variables
 window.currentZoomLevel = 1;
+window.showNumbers = window.showWiring = window.showPower = false;
+window.wiringDirection = window.powerDirection = 'horizontal';
+window.wiringStartPosition = window.powerStartPosition = 'bottom-left';
 
-window.showNumbers = false;
-window.showWiring = false;
-window.wiringDirection = 'horizontal';
-window.wiringStartPosition = 'bottom-left';
-window.showPower = false;
-window.powerDirection = 'horizontal';
-window.powerStartPosition = 'bottom-left';
-var totalWeight = 0;
-let hasChecked = false;
-
-// Flags for preventing recursive updates
-let isUpdatingDimensions = false;
-let isUpdatingBlocks = false;
-
-// Spinner control variables
-let spinnerTimeout = null;
-let isSpinnerVisible = false;
-
-// Preload the block image
-let blockImage = new Image();
+const blockImage = new Image();
 blockImage.src = 'static/images/block.png';
-blockImage.onload = () => { console.log('Block image loaded successfully.'); };
-blockImage.onerror = () => {
-  console.error('Failed to load the block image.');
-  // alert('Error: Unable to load the block image. Please check the image path and try again.'); // annoying on load
-};
 
-// Wall background image - this will be stretched across the entire wall
 window.wallBackgroundImage = new Image();
 window.wallBackgroundImage.src = 'static/images/wall_background.png';
-window.wallBackgroundImage.onload = () => { console.log('Wall background image loaded successfully.'); };
-window.wallBackgroundImage.onerror = () => {
-  console.error('Failed to load the wall background image.');
-  console.log('Will use block image as fallback.');
-};
 
 function debounce(func, wait) {
   let timeout;
@@ -388,12 +311,12 @@ function generateWall() {
   const flownSupportType = flownSupportTypeElement ? flownSupportTypeElement.value : null;
   const powerDistro = document.getElementById('powerDistroType').value;
   var voltage = (powerDistro == 110) ? 110 : 208;
-  const powerDistroType = document.getElementById('powerDistroType').value; // Duplicate but consistent
+  const powerDistroType = document.getElementById('powerDistroType').value;
   const wallTypeElement = document.querySelector('input[name="wallType"]:checked');
   const wallType = wallTypeElement ? wallTypeElement.value : 'Flat';
   const aspectRatioDropdown = document.getElementById('popularFormatsDropdown');
   let screenSize = null;
-  if (aspectRatioDropdown.style.display !== 'none') {
+  if (aspectRatioDropdown && aspectRatioDropdown.style.display !== 'none') {
     const aspectRatioValue = document.getElementById('aspectRatio').value;
     if (aspectRatioValue === "1:1") {
       screenSize = document.getElementById('screenSize').value;
@@ -427,10 +350,8 @@ function generateWall() {
     gp2HalfManualRows = parseInt(gp2HalfCountElement?.value || 1, 10);
     gp2HalfManualPosition = gp2HalfPositionElement?.value || 'bottom';
 
-    console.log('✅ Manual GP2 Half checkbox CHECKED in generateWall() - rows:', gp2HalfManualRows, 'position:', gp2HalfManualPosition);
-
     // Update display blocks to show combined height (both auto and manual)
-    displayBlocksVer = blocksVer + (gp2HalfAutoRows / 2) + (gp2HalfManualRows / 2);
+    displayBlocksVer = blocksVer + (autoGp2HalfRows / 2) + (gp2HalfManualRows / 2);
   }
 
   // Legacy compatibility: if either auto or manual Half rows exist
@@ -445,16 +366,14 @@ function generateWall() {
   var totalBlocks, totalSpares, totalBlocksWithSpares;
 
   if (roeGraphiteMixEnabled) {
-    // ROE Graphite Mix mode: calculate spares separately for Half and Full tiles
-    const halfHorizontal = parseInt(document.getElementById('halfHorizontal')?.value || 0, 10);
-    const halfVertical = parseInt(document.getElementById('halfVertical')?.value || 0, 10);
-    const fullHorizontal = parseInt(document.getElementById('fullHorizontal')?.value || 0, 10);
-    const fullVertical = parseInt(document.getElementById('fullVertical')?.value || 0, 10);
+    const halfHorizontal = parseInt(document.getElementById('halfHorizontal').value) || 0;
+    const halfVertical = parseInt(document.getElementById('halfVertical').value) || 0;
+    const fullHorizontal = parseInt(document.getElementById('fullHorizontal').value) || 0;
+    const fullVertical = parseInt(document.getElementById('fullVertical').value) || 0;
 
     const halfTiles = halfHorizontal * halfVertical;
     const fullTiles = fullHorizontal * fullVertical;
 
-    // Calculate spares for each type (always add at least 1 spare case if tiles exist)
     // GP2 Half: packages of 12
     const halfPackageSize = 12;
     let halfTilesWithSpares = 0;
@@ -477,33 +396,23 @@ function generateWall() {
       fullSpares = fullTilesWithSpares - fullTiles;
     }
 
-    // Store Graphite Mix data
+    // Store Graphite Mix data for downstream functions
     graphiteMixData = {
-      halfHorizontal,
-      halfVertical,
-      fullHorizontal,
-      fullVertical,
-      halfTiles,
-      fullTiles,
-      halfSpares,
-      fullSpares,
-      halfTilesWithSpares,
-      fullTilesWithSpares
+      halfHorizontal, halfVertical, fullHorizontal, fullVertical,
+      halfTiles, fullTiles, halfSpares, fullSpares, halfTilesWithSpares, fullTilesWithSpares
     };
 
-    // For backward compatibility, set total values
     totalBlocks = halfTiles + fullTiles;
     totalSpares = halfSpares + fullSpares;
     totalBlocksWithSpares = totalBlocks + totalSpares;
+
   } else {
     // Normal mode: standard spare calculation
-    // For GP2 Full with GP2 Half enabled, use the reduced Full tile count
     const actualVerticalBlocks = (productType === 'ROEGP26Full' && gp2HalfBottomRow) ? gp2FullVerticalBlocks : blocksVer;
     totalBlocks = blocksHor * actualVerticalBlocks;
 
     // GP2 products use package-based spare calculation (always add at least 1 spare case)
     if (productType === 'ROEGP26Full') {
-      // GP2 Full: packages of 6, always add at least 1 spare case
       const packageSize = 6;
       const activeCases = Math.ceil(totalBlocks / packageSize);
       const totalCases = activeCases + 1; // Guarantee at least 1 spare case
@@ -511,7 +420,6 @@ function generateWall() {
       totalSpares = roundedTotal - totalBlocks;
       totalBlocksWithSpares = roundedTotal;
     } else if (productType === 'ROEGP26Half') {
-      // GP2 Half: packages of 12, always add at least 1 spare case
       const packageSize = 12;
       const activeCases = Math.ceil(totalBlocks / packageSize);
       const totalCases = activeCases + 1; // Guarantee at least 1 spare case
@@ -526,33 +434,13 @@ function generateWall() {
   }
 
   const requestData = {
-    productType,
-    blocksHor,
-    blocksVer: displayBlocksVer, // Use display blocks for dimensions
-    totalBlocks,
-    totalSpares,
-    totalBlocksWithSpares,
-    groundSupport,
-    groundSupportType,
-    flownSupport,
-    flownSupportType,
-    voltage,
-    wallType,
-    screenSize,
-    powerDistro,
-    powerDistroType,
-    blankRows,
-    gp2HalfBottomRow,
-    gp2HalfRows,
-    gp2HalfAutoRows,
-    gp2HalfManualRows,
-    gp2HalfManualPosition,
-    gp2FullVerticalBlocks, // Reduced GP2 Full blocks (after replacing top rows with Half)
-    roeGraphiteMixEnabled,
-    graphiteMixData
+    productType, blocksHor, blocksVer: displayBlocksVer, totalBlocks, totalSpares, totalBlocksWithSpares,
+    groundSupport, groundSupportType, flownSupport, flownSupportType, voltage, wallType, screenSize,
+    powerDistro, powerDistroType, blankRows, gp2HalfBottomRow, gp2HalfRows, gp2HalfAutoRows, gp2HalfManualRows,
+    gp2HalfManualPosition, gp2FullVerticalBlocks, roeGraphiteMixEnabled, graphiteMixData
   };
 
-  // Call module functions (showLoadingSpinner/hideLoadingSpinner removed)
+  // Call module functions
   if (typeof displayEquipment === 'function') {
     displayEquipment(requestData);
   }
@@ -580,7 +468,7 @@ const doubleBaseImage = new Image();
 doubleBaseImage.src = 'static/images/double_base.png';
 
 // Generate combined equipment list for all screens
-window.generateAllEquipment = function () {
+window.generateAllEquipment = function() {
   if (typeof MultiScreenManager !== "undefined" && MultiScreenManager.saveCurrentScreenConfig) {
     MultiScreenManager.saveCurrentScreenConfig();
   }
@@ -629,7 +517,7 @@ window.generateAllEquipment = function () {
     cursor: pointer;
   `;
 
-  backButton.onclick = function () {
+  backButton.onclick = function() {
     const controlsSection = document.getElementById('controls');
     const wallDimensionsSection = document.getElementById('wallDimensions');
     const canvasContainer = document.getElementById('canvasContainer');
@@ -688,57 +576,7 @@ window.generateAllEquipment = function () {
   summaryContent.id = 'powerWeightSummary';
   summarySectionContainer.appendChild(summaryContent);
 
-  // Button bar with Back, Export Excel, and Export PDF
-  const buttonBar = document.createElement('div');
-  buttonBar.style.cssText = 'display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;';
-
-  buttonBar.appendChild(backButton);
-  // Remove the standalone margin on backButton since the bar handles spacing
-  backButton.style.marginBottom = '0';
-
-  const excelButton = document.createElement('button');
-  excelButton.type = 'button';
-  excelButton.textContent = '📊 Export to Excel';
-  excelButton.style.cssText = `
-    padding: 8px 15px;
-    background-color: #217346;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-  `;
-  excelButton.onclick = function () {
-    if (typeof exportToExcel === 'function') {
-      exportToExcel();
-    } else {
-      alert('Export module not loaded yet. Please try again in a moment.');
-    }
-  };
-  buttonBar.appendChild(excelButton);
-
-  const pdfButton = document.createElement('button');
-  pdfButton.type = 'button';
-  pdfButton.textContent = '📄 Export PDF';
-  pdfButton.style.cssText = `
-    padding: 8px 15px;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-  `;
-  pdfButton.onclick = function () {
-    if (typeof exportEquipmentPDF === 'function') {
-      exportEquipmentPDF();
-    } else {
-      alert('Export module not loaded yet. Please try again in a moment.');
-    }
-  };
-  buttonBar.appendChild(pdfButton);
-
-  screenEquipmentContainer.appendChild(buttonBar);
+  screenEquipmentContainer.appendChild(backButton);
   screenEquipmentContainer.appendChild(summarySectionContainer);
 
   // Create flex container for screen sections
@@ -839,14 +677,16 @@ window.generateAllEquipment = function () {
         screenTbody.appendChild(row);
         screenWeight += item.weight * item.quantity;
 
-        // Use full equipment name (matching Excel export) for merge key
-        const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
+        // Strip parenthetical info (e.g., "(5 active + 1 spare)") from names for the
+        // merge key so package items with different per-screen counts get combined properly
+        const baseName = item.name.replace(/\s*\([^)]*\)/g, '').trim();
+        const key = `${item.ecode}|${baseName}`;
         screenKeys.push(key);
 
         if (!combinedEquipment[key]) {
           combinedEquipment[key] = {
             ecode: item.ecode,
-            name: item.name,
+            name: baseName,
             quantity: 0,
             weight: item.weight
           };
@@ -914,136 +754,57 @@ window.generateAllEquipment = function () {
   `;
   screenEquipmentContainer.appendChild(combinedHeader);
 
-  // Add room mode toggle (Individual Rooms / Single Room)
-  const modeToggleContainer = document.createElement('div');
-  modeToggleContainer.style.cssText = `
+  // Add combine buttons (Combine Distro and Combine Processing)
+  const combineButtonsContainer = document.createElement('div');
+  combineButtonsContainer.style.cssText = `
     margin-top: 15px;
     margin-bottom: 15px;
     display: flex;
-    gap: 0;
+    gap: 15px;
     align-items: center;
   `;
 
-  const modeLabel = document.createElement('span');
-  modeLabel.textContent = 'Combine Mode: ';
-  modeLabel.style.cssText = 'font-weight: bold; margin-right: 10px; font-size: 14px;';
-  modeToggleContainer.appendChild(modeLabel);
-
-  const isIndividual = (window.screenCombineMode || 'individual') === 'individual';
-
-  const individualBtn = document.createElement('button');
-  individualBtn.type = 'button';
-  individualBtn.textContent = 'Individual Rooms';
-  individualBtn.title = 'Each room keeps its own independent processing, power distribution, and cable calculations. The combined total is a simple sum of all rooms.';
-  individualBtn.style.cssText = `
+  const combineDistroBtn = document.createElement('button');
+  combineDistroBtn.type = 'button';
+  combineDistroBtn.textContent = 'Combine Distro';
+  combineDistroBtn.style.cssText = `
     padding: 8px 16px;
-    background-color: ${isIndividual ? '#007bff' : '#e9ecef'};
-    color: ${isIndividual ? 'white' : '#333'};
-    border: 1px solid ${isIndividual ? '#007bff' : '#ccc'};
-    border-radius: 4px 0 0 4px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
-    font-weight: ${isIndividual ? 'bold' : 'normal'};
   `;
-  individualBtn.onclick = () => {
-    if (window.screenCombineMode !== 'individual') {
-      window.screenCombineMode = 'individual';
-      window.generateAllEquipment();
+  combineDistroBtn.onclick = () => {
+    if (typeof window.showCombineDistroDialog === 'function') {
+      window.showCombineDistroDialog();
     }
   };
 
-  const singleRoomBtn = document.createElement('button');
-  singleRoomBtn.type = 'button';
-  singleRoomBtn.textContent = 'Single Room';
-  singleRoomBtn.title = 'Treat all screens as one combined wall/system. Recalculates processing, power distribution, and cables based on the combined total pixels and power draw.';
-  singleRoomBtn.style.cssText = `
+  const combineProcessingBtn = document.createElement('button');
+  combineProcessingBtn.type = 'button';
+  combineProcessingBtn.textContent = 'Combine Processing';
+  combineProcessingBtn.style.cssText = `
     padding: 8px 16px;
-    background-color: ${!isIndividual ? '#007bff' : '#e9ecef'};
-    color: ${!isIndividual ? 'white' : '#333'};
-    border: 1px solid ${!isIndividual ? '#007bff' : '#ccc'};
-    border-radius: 0 4px 4px 0;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
-    font-weight: ${!isIndividual ? 'bold' : 'normal'};
   `;
-  singleRoomBtn.onclick = () => {
-    if (window.screenCombineMode !== 'single') {
-      window.screenCombineMode = 'single';
-      window.generateAllEquipment();
+  combineProcessingBtn.onclick = () => {
+    if (typeof window.showCombineProcessingDialog === 'function') {
+      window.showCombineProcessingDialog();
+    } else {
+      console.error('showCombineProcessingDialog is not a function!');
     }
   };
 
-  modeToggleContainer.appendChild(individualBtn);
-  modeToggleContainer.appendChild(singleRoomBtn);
-  screenEquipmentContainer.appendChild(modeToggleContainer);
-
-  // If Single Room mode, recalculate processing/distro/cables for the combined system
-  if (window.screenCombineMode === 'single' && typeof window.calculateSingleRoomEquipment === 'function') {
-    const singleRoomData = window.calculateSingleRoomEquipment();
-
-    // Remove existing processing/distro/cable items from combined equipment
-    for (let i = combinedEquipmentOrder.length - 1; i >= 0; i--) {
-      const key = combinedEquipmentOrder[i];
-      const item = combinedEquipment[key];
-      if (item && MultiScreenManager.isSingleRoomRecalcItem(item.ecode)) {
-        delete combinedEquipment[key];
-        combinedEquipmentOrder.splice(i, 1);
-      }
-    }
-
-    // Add recalculated items to combined equipment
-    for (const item of singleRoomData.recalcItems) {
-      const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
-      combinedEquipment[key] = {
-        ecode: item.ecode,
-        name: item.name,
-        quantity: item.quantity,
-        weight: item.weight
-      };
-      combinedEquipmentOrder.push(key);
-    }
-
-    // Recalculate total weight
-    totalCombinedWeight = 0;
-    for (const key of combinedEquipmentOrder) {
-      const item = combinedEquipment[key];
-      if (item && item.quantity > 0) {
-        totalCombinedWeight += item.weight * item.quantity;
-      }
-    }
-
-    // Update power summary with recalculated values
-    combinedAmps = singleRoomData.power.amps;
-    combinedWatts = singleRoomData.power.watts;
-    const summaryContentDiv = document.getElementById('powerWeightSummary');
-    if (summaryContentDiv) {
-      summaryContentDiv.innerHTML = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-          <div class="power-summary">
-            <h4 style="margin-top: 0;">Power Requirements <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
-            <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
-            <div><strong>Total Amperage:</strong> ${combinedAmps.toFixed(2)}A</div>
-            <div><strong>Total Power:</strong> ${combinedWatts.toFixed(2)}W</div>
-          </div>
-          <div class="weight-summary">
-            <h4 style="margin-top: 0;">Weight Summary <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
-            <div><strong>Total Equipment Weight:</strong> ${totalCombinedWeight.toFixed(2)} lbs</div>
-            <div><strong>Est. Shipping Weight:</strong> ${(totalCombinedWeight * 1.15).toFixed(2)} lbs</div>
-          </div>
-        </div>
-      `;
-    }
-  }
-
-  // Add mode description text
-  const modeDescription = document.createElement('p');
-  modeDescription.style.cssText = 'font-size: 12px; color: #666; margin-top: 0; margin-bottom: 10px; font-style: italic;';
-  if (window.screenCombineMode === 'single') {
-    modeDescription.textContent = 'Single Room: All screens treated as one combined system. Processing, power distro, and cables are recalculated for the combined total.';
-  } else {
-    modeDescription.textContent = 'Individual Rooms: Each room\'s processing, power, distro, and cables are calculated independently. Combined total is a simple sum.';
-  }
-  screenEquipmentContainer.appendChild(modeDescription);
+  combineButtonsContainer.appendChild(combineDistroBtn);
+  combineButtonsContainer.appendChild(combineProcessingBtn);
+  screenEquipmentContainer.appendChild(combineButtonsContainer);
 
   // Create combined table
   const combinedTable = document.createElement('table');
@@ -1069,7 +830,7 @@ window.generateAllEquipment = function () {
 
   // Add combined equipment to table
   for (const item of consolidatedEquipment) {
-    if (item && item.quantity > 0) {
+    if (item.quantity > 0) {
       const row = document.createElement('tr');
       row.innerHTML = `
         <td>${item.ecode || ''}</td>
@@ -1123,25 +884,25 @@ window.generateAllEquipment = function () {
 };
 
 // Display functions for power and weight information
-window.displayWallWeight = function (weight) {
+window.displayWallWeight = function(weight) {
   const totalWeightDiv = document.getElementById('totalWallWeight');
   if (!totalWeightDiv) return;
   totalWeightDiv.innerHTML = `<strong>Wall Weight:</strong><br>${weight.toFixed(2)} lbs`;
 };
 
-window.displayEstShippingWeight = function (weight) {
+window.displayEstShippingWeight = function(weight) {
   const totalWeightDiv = document.getElementById('totalWeight');
   if (!totalWeightDiv) return;
   totalWeightDiv.innerHTML = `<strong>EST Shipping Weight:</strong><br><div style="text-align: center;">${weight.toFixed(2)} lbs</div>`;
 };
 
-window.displayTotalPixels = function (pixels) {
+window.displayTotalPixels = function(pixels) {
   const totalPixelsDiv = document.getElementById('totalPixels');
   if (!totalPixelsDiv) return;
   totalPixelsDiv.innerHTML = `<strong>Total Pixels:</strong><br>${pixels.toLocaleString()} px`;
 };
 
-window.displayTotalPower = function (voltage, amps, watts) {
+window.displayTotalPower = function(voltage, amps, watts) {
   const totalPowerDiv = document.getElementById('totalPower');
   if (!totalPowerDiv) return;
 
@@ -1202,7 +963,7 @@ window.displayTotalPower = function (voltage, amps, watts) {
   }
 };
 
-window.displayDataPortsNeeded = function (productType, totalTiles, config = {}) {
+window.displayDataPortsNeeded = function(productType, totalTiles, config = {}) {
   const dataPortsDiv = document.getElementById('dataPortsNeeded');
   if (!dataPortsDiv) return;
 
@@ -1264,7 +1025,7 @@ window.displayDataPortsNeeded = function (productType, totalTiles, config = {}) 
   `;
 };
 
-window.display110Circuits = function () {
+window.display110Circuits = function() {
   const totalPowerDiv = document.getElementById('totalPower');
   if (!totalPowerDiv) return;
 
@@ -1373,7 +1134,7 @@ window.display110Circuits = function () {
   }
 };
 
-window.display208Circuits = function () {
+window.display208Circuits = function() {
   const totalPowerDiv = document.getElementById('totalPower');
   if (!totalPowerDiv) return;
 
@@ -1426,21 +1187,21 @@ window.display208Circuits = function () {
   totalPowerDiv.appendChild(circuitsDiv);
 };
 
-window.zoomIn = function () {
+window.zoomIn = function() {
   window.currentZoomLevel = Math.min(window.currentZoomLevel + 1, 8);
   if (typeof generateWall === 'function') {
     generateWall();
   }
 };
 
-window.zoomOut = function () {
+window.zoomOut = function() {
   window.currentZoomLevel = Math.max(window.currentZoomLevel - 1, 1);
   if (typeof generateWall === 'function') {
     generateWall();
   }
 };
 
-window.resetScreen = function () {
+window.resetScreen = function() {
   // Reset zoom level
   window.currentZoomLevel = 1;
 
@@ -1733,7 +1494,7 @@ function restoreFormState() {
   return true; // State was restored
 }
 
-window.openScreenViews = function () {
+window.openScreenViews = function() {
   // Save current state before navigating
   saveFormState();
 
@@ -1778,7 +1539,7 @@ window.openScreenViews = function () {
   window.location.href = `screen-views.html?product=${encodeURIComponent(productType)}&blocksHor=${blocksHor}&blocksVer=${blocksVer}&powerDistroType=${powerDistroType}&gp2HalfAutoRows=${gp2HalfAutoRows}&gp2HalfManualRows=${gp2HalfManualRows}&gp2HalfManualPosition=${encodeURIComponent(gp2HalfManualPosition)}&gp2FullVerticalBlocks=${gp2FullVerticalBlocks}`;
 };
 
-window.openTechnicalView = function () {
+window.openTechnicalView = function() {
   // Save current state before navigating
   saveFormState();
 
@@ -1826,7 +1587,7 @@ window.openTechnicalView = function () {
 // --- Missing Functions from Refactoring ---
 
 // Generate screen size configurations from tile quantity
-window.generateScreenSizesFromTileQuantity = function () {
+window.generateScreenSizesFromTileQuantity = function() {
   const tileQuantity = parseInt(document.getElementById('tileQuantity').value);
   const productType = document.getElementById('productType').value;
   const resultsDiv = document.getElementById('possibleScreenSizes');
@@ -1836,9 +1597,8 @@ window.generateScreenSizesFromTileQuantity = function () {
     return;
   }
 
-  // Get tile dimensions and limits based on product type and support type
+  // Get tile dimensions and limits based on product type
   let tileWidthFeet, tileHeightFeet, maxVertical;
-  const flownSupport = document.getElementById('flownSupport')?.checked;
 
   // Use constants or defaults if CONSTANTS is not defined
   const limits = (typeof CONSTANTS !== 'undefined' && CONSTANTS.MAX_VERTICAL_TILES) ? CONSTANTS.MAX_VERTICAL_TILES : {};
@@ -1846,16 +1606,16 @@ window.generateScreenSizesFromTileQuantity = function () {
   if (productType === 'ROEGP26Full') {
     tileWidthFeet = 1.64; // 500mm
     tileHeightFeet = 3.28; // 1000mm
-    maxVertical = flownSupport ? 12 : (limits.ROEGP26Full || 7);
+    maxVertical = limits.ROEGP26Full || 7;
   } else if (productType === 'ROEGP26Half') {
     tileWidthFeet = 1.64; // 500mm
     tileHeightFeet = 1.64; // 500mm
-    maxVertical = flownSupport ? 20 : (limits.ROEGP26Half || 13);
+    maxVertical = limits.ROEGP26Half || 13;
   } else {
     // Default for Absen, BP2, Theatrixx (all 500x500mm)
     tileWidthFeet = 1.64;
     tileHeightFeet = 1.64;
-    maxVertical = flownSupport ? 20 : (limits[productType] || 13);
+    maxVertical = limits[productType] || 13;
   }
 
   // Find all factor pairs (width × height = quantity)
@@ -1901,13 +1661,13 @@ window.generateScreenSizesFromTileQuantity = function () {
   }
 };
 
-window.selectScreenSize = function (width, height) {
+window.selectScreenSize = function(width, height) {
   document.getElementById('blocksHor').value = width;
   document.getElementById('blocksVer').value = height;
   generateWall();
 };
 
-window.updateBlocksBasedOnSelection = function () {
+window.updateBlocksBasedOnSelection = function() {
   const aspectRatioValue = document.getElementById('aspectRatio').value;
   const screenSizeValue = document.getElementById('screenSize').value;
 
@@ -1946,7 +1706,7 @@ window.updateBlocksBasedOnSelection = function () {
 
     document.getElementById('blocksHor').value = blocksHor;
     document.getElementById('blocksVer').value = blocksVer;
-    if (typeof updateHeightWarning === 'function') updateHeightWarning(height);
+    if(typeof updateHeightWarning === 'function') updateHeightWarning(height);
   } else if (aspectRatioValue) {
     // Aspect ratio only (no specific size)
     const [width, height] = aspectRatioValue.split(':').map(Number);
@@ -1957,12 +1717,12 @@ window.updateBlocksBasedOnSelection = function () {
     const blocksVer = isGP2Full ? bestGP2FullMix(wallHeightFeet) : Math.round(wallHeightFeet / 1.64);
     document.getElementById('blocksHor').value = blocksHor;
     document.getElementById('blocksVer').value = blocksVer;
-    if (typeof updateHeightWarning === 'function') updateHeightWarning(0);
+    if(typeof updateHeightWarning === 'function') updateHeightWarning(0);
   }
   updateDimensionsFromBlocks();
 }
 
-window.calcSpares = function (numberofBlocks, sparePercentage, factor) {
+window.calcSpares = function(numberofBlocks, sparePercentage, factor) {
   // Percentage as a number, ie 10 for 10%
   var sparesPercent = Math.ceil(numberofBlocks * (sparePercentage / 100));
   var total = numberofBlocks + sparesPercent;
@@ -1976,7 +1736,7 @@ window.calcSpares = function (numberofBlocks, sparePercentage, factor) {
 }
 
 // Wiring Diagram Capture Functions
-window.updateCaptureButtonVisibility = function () {
+window.updateCaptureButtonVisibility = function() {
   const captureButton = document.getElementById('captureWiringButton');
   const captureContainer = document.getElementById('captureButtonContainer');
   const toggleWiring = document.getElementById('toggleWiring');
@@ -2005,7 +1765,7 @@ window.updateCaptureButtonVisibility = function () {
   }
 }
 
-window.captureWiringDiagram = function () {
+window.captureWiringDiagram = function() {
   const canvas = document.getElementById('wallCanvas2D');
   if (!canvas) return;
 
@@ -2193,13 +1953,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Toggle the display of multiple screens options based on the radio selection.
-  document.getElementById('singleScreen')?.addEventListener('change', function () {
+  document.getElementById('singleScreen')?.addEventListener('change', function() {
     document.getElementById('multipleScreensOptions').style.display = 'none';
     document.getElementById('numScreens').value = '1';
     generateWall();
   });
 
-  document.getElementById('multipleScreens')?.addEventListener('change', function () {
+  document.getElementById('multipleScreens')?.addEventListener('change', function() {
     document.getElementById('multipleScreensOptions').style.display = 'block';
     document.getElementById('numScreens').value = '1';
     generateWall();
@@ -2215,7 +1975,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ROE Graphite Mix toggle
   const roeGraphicMixCheckbox = document.getElementById('roeGraphicMix');
   if (roeGraphicMixCheckbox) {
-    roeGraphicMixCheckbox.addEventListener('change', function () {
+    roeGraphicMixCheckbox.addEventListener('change', function() {
       const mixedTileInputs = document.getElementById('mixedTileInputs');
       const blockInputs = document.getElementById('blockInputs');
       const productTypeSelect = document.getElementById('productType');
@@ -2245,22 +2005,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const fullVerticalInput = document.getElementById('fullVertical');
 
   if (halfHorizontalInput) {
-    halfHorizontalInput.addEventListener('input', function () {
+    halfHorizontalInput.addEventListener('input', function() {
       if (typeof generateWall === 'function') generateWall();
     });
   }
   if (halfVerticalInput) {
-    halfVerticalInput.addEventListener('input', function () {
+    halfVerticalInput.addEventListener('input', function() {
       if (typeof generateWall === 'function') generateWall();
     });
   }
   if (fullHorizontalInput) {
-    fullHorizontalInput.addEventListener('input', function () {
+    fullHorizontalInput.addEventListener('input', function() {
       if (typeof generateWall === 'function') generateWall();
     });
   }
   if (fullVerticalInput) {
-    fullVerticalInput.addEventListener('input', function () {
+    fullVerticalInput.addEventListener('input', function() {
       if (typeof generateWall === 'function') generateWall();
     });
   }
@@ -2270,12 +2030,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const fullTilesBottomRadio = document.getElementById('fullTilesBottom');
 
   if (fullTilesTopRadio) {
-    fullTilesTopRadio.addEventListener('change', function () {
+    fullTilesTopRadio.addEventListener('change', function() {
       if (typeof generateWall === 'function') generateWall();
     });
   }
   if (fullTilesBottomRadio) {
-    fullTilesBottomRadio.addEventListener('change', function () {
+    fullTilesBottomRadio.addEventListener('change', function() {
       if (typeof generateWall === 'function') generateWall();
     });
   }
@@ -2548,7 +2308,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize multi-screen management listener
   const multiScreenCheckbox = document.getElementById('multipleScreenManagementCheckbox');
   if (multiScreenCheckbox) {
-    multiScreenCheckbox.addEventListener('change', function () {
+    multiScreenCheckbox.addEventListener('change', function() {
       if (typeof toggleMultiScreenManagement === 'function') {
         toggleMultiScreenManagement();
       } else {
