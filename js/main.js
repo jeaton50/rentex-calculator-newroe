@@ -3,34 +3,17 @@
 // --- Part 1: Configuration & UI Logic (from #configContainer) ---
 
 function updateTableRowColor(productType) {
-  let newColor;
+  const colorMap = {
+    'absen': "#ffecec",
+    'BP2B1': "#ecf7ff",
+    'BP2B2': "#eaffec",
+    'BP2V2': "#fdf7e7",
+    'theatrixx': "#f3eaff",
+    'ROEGP26Full': "#ffe5f0",
+    'ROEGP26Half': "#fff0e5"
+  };
 
-  switch (productType) {
-    case "absen":
-      newColor = "#ffecec"; // light red
-      break;
-    case "BP2B1":
-      newColor = "#ecf7ff"; // light blue
-      break;
-    case "BP2B2":
-      newColor = "#eaffec"; // light green
-      break;
-    case "BP2V2":
-      newColor = "#fdf7e7"; // light yellow
-      break;
-    case "theatrixx":
-      newColor = "#f3eaff"; // light purple
-      break;
-    case "ROEGP26Full":
-      newColor = "#ffe5f0"; // light pink
-      break;
-    case "ROEGP26Half":
-      newColor = "#fff0e5"; // light peach
-      break;
-    default:
-      newColor = "#ffecec"; // fallback
-  }
-
+ const newColor = colorMap[productType] || "#ffecec";
   const styleEl = document.getElementById("dynamicTableStyle");
   if (styleEl) {
     styleEl.textContent = `
@@ -47,11 +30,8 @@ function updateWallTypeAlert(productType) {
   const wallTypeElement = document.querySelector('input[name="wallType"]:checked');
   const wallType = wallTypeElement ? wallTypeElement.value : 'Flat';
 
-  if (productType === 'ROEGP26Full' && wallType === 'Concave') {
-    curvedMessageDiv.textContent = 'Concave 5°';
-    curvedMessageDiv.style.display = 'block';
-  } else if (productType === 'ROEGP26Full' && wallType === 'Convex') {
-    curvedMessageDiv.textContent = 'Convex 5°';
+  if (productType === 'ROEGP26Full' && (wallType === 'Concave' || wallType === 'Convex')) {
+    curvedMessageDiv.textContent = `${wallType} 5°`;
     curvedMessageDiv.style.display = 'block';
   } else {
     curvedMessageDiv.style.display = 'none';
@@ -71,72 +51,39 @@ function updateVerticalBlocksLimit(productType) {
 
   let maxTiles = null;
   let productName = '';
+  const flownSupport = document.getElementById('flownSupport')?.checked;
 
-  if (productType === 'ROEGP26Full') {
-    // Check if flown support is selected
-    const flownSupport = document.getElementById('flownSupport')?.checked;
-    if (flownSupport) {
-      maxTiles = 12; // GP2 Full flown support: max 12 tiles high
-    } else {
-      maxTiles = 6; // GP2 Full ground support: max 6 tiles high
-    }
+if (productType === 'ROEGP26Full') {
+    maxTiles = flownSupport ? 12 : 6;
     productName = 'GP2 Full';
   } else if (productType === 'absen') {
-    const flownSupport = document.getElementById('flownSupport')?.checked;
-    if (flownSupport) {
-      maxTiles = 20; // Absen flown support: max 20 tiles high
-    } else {
-      maxTiles = 10; // Absen ground support: max 10 tiles high
-    }
+    maxTiles = flownSupport ? 20 : 10;
     productName = 'Absen';
-  } else if (productType === 'BP2B1' || productType === 'BP2B2' || productType === 'BP2V2') {
-    const flownSupport = document.getElementById('flownSupport')?.checked;
-    if (flownSupport) {
-      maxTiles = 20; // Black Pearl flown support: max 20 tiles high
-    } else {
-      maxTiles = 12; // Black Pearl ground support: max 12 tiles high
-    }
-    productName = 'Black Pearl';
-  } else if (productType === 'theatrixx') {
-    const flownSupport = document.getElementById('flownSupport')?.checked;
-    if (flownSupport) {
-      maxTiles = 20; // Theatrixx flown support: max 20 tiles high
-    } else {
-      maxTiles = 12; // Theatrixx ground support: max 12 tiles high
-    }
-    productName = 'Theatrixx';
+  } else if (['BP2B1', 'BP2B2', 'BP2V2', 'theatrixx'].includes(productType)) {
+    maxTiles = flownSupport ? 20 : 12;
+    productName = productType.includes('BP2') ? 'Black Pearl' : 'Theatrixx';
   }
 
   if (maxTiles !== null) {
     blocksVerInput.setAttribute('max', maxTiles.toString());
-
-    // Add input listener to enforce range
     const listener = function() {
       const value = parseInt(this.value, 10);
       if (isNaN(value) || value < 1) {
         this.value = '1';
       } else if (value > maxTiles) {
-        // Show warning popup only for Absen (GP2 Full uses text warning in UI)
-        if (productType === 'absen') {
-          alert('Warning: ' + productName + ' walls are limited to ' + maxTiles + ' tiles high maximum.');
-        }
+        if (productType === 'absen') alert(`Warning: ${productName} walls limited to ${maxTiles} tiles high.`);
         this.value = maxTiles.toString();
       }
     };
-
     blocksVerInput._limitListener = listener;
     blocksVerInput.addEventListener('input', listener);
 
     // If current value exceeds limit, cap it and show warning
-    if (parseInt(blocksVerInput.value, 10) > maxTiles) {
-      if (productType === 'absen') {
-        alert('Warning: ' + productName + ' walls are limited to ' + maxTiles + ' tiles high maximum. Height has been capped.');
-      }
+   if (parseInt(blocksVerInput.value, 10) > maxTiles) {
       blocksVerInput.value = maxTiles.toString();
       blocksVerInput.dispatchEvent(new Event('input'));
     }
   } else {
-    // Remove max limit for other products
     blocksVerInput.removeAttribute('max');
   }
 }
@@ -144,19 +91,16 @@ function updateVerticalBlocksLimit(productType) {
 // Function to enforce height dimension limits for specific products
 function updateHeightDimensionLimit(productType) {
   const heightFeetInput = document.getElementById('heightFeet');
-  if (!heightFeetInput) {
-    console.log('updateHeightDimensionLimit: heightFeet input not found');
-    return;
-  }
+  if (!heightFeetInput) return;
+  
 
   // Remove any existing listener to prevent duplicates
   if (heightFeetInput._limitListener) {
     heightFeetInput.removeEventListener('input', heightFeetInput._limitListener);
     heightFeetInput._limitListener = null;
   }
-
-  let maxHeightFeet = null;
-  let productName = '';
+  let maxHeightFeet = (productType === 'absen') ? 16.4 : 19.68;
+  let productName = productType;
 
   if (productType === 'ROEGP26Full') {
     maxHeightFeet = 19.68; // GP2 Full: 6 tiles × 3.28' = 19.68 feet
@@ -191,7 +135,7 @@ function updateHeightDimensionLimit(productType) {
 
     heightFeetInput._limitListener = listener;
     heightFeetInput.addEventListener('input', listener);
-
+}
     // If current value exceeds limit, cap it and show warning
     const currentValue = parseFloat(heightFeetInput.value);
     if (currentValue > maxHeightFeet) {
@@ -211,42 +155,15 @@ function updateHeightDimensionLimit(productType) {
 
 // Define initial zoom level and global variables
 window.currentZoomLevel = 1;
+window.showNumbers = window.showWiring = window.showPower = false;
+window.wiringDirection = window.powerDirection = 'horizontal';
+window.wiringStartPosition = window.powerStartPosition = 'bottom-left';
 
-window.showNumbers = false;
-window.showWiring = false;
-window.wiringDirection = 'horizontal';
-window.wiringStartPosition = 'bottom-left';
-window.showPower = false;
-window.powerDirection = 'horizontal';
-window.powerStartPosition = 'bottom-left';
-var totalWeight = 0;
-let hasChecked = false;
-
-// Flags for preventing recursive updates
-let isUpdatingDimensions = false;
-let isUpdatingBlocks = false;
-
-// Spinner control variables
-let spinnerTimeout = null;
-let isSpinnerVisible = false;
-
-// Preload the block image
-let blockImage = new Image();
+const blockImage = new Image();
 blockImage.src = 'static/images/block.png';
-blockImage.onload = () => { console.log('Block image loaded successfully.'); };
-blockImage.onerror = () => {
-  console.error('Failed to load the block image.');
-  // alert('Error: Unable to load the block image. Please check the image path and try again.'); // annoying on load
-};
 
-// Wall background image - this will be stretched across the entire wall
 window.wallBackgroundImage = new Image();
 window.wallBackgroundImage.src = 'static/images/wall_background.png';
-window.wallBackgroundImage.onload = () => { console.log('Wall background image loaded successfully.'); };
-window.wallBackgroundImage.onerror = () => {
-  console.error('Failed to load the wall background image.');
-  console.log('Will use block image as fallback.');
-};
 
 function debounce(func, wait) {
   let timeout;
@@ -254,7 +171,7 @@ function debounce(func, wait) {
     clearTimeout(timeout);
     timeout = setTimeout(() => func.apply(this, args), wait);
   };
-}
+}}
 
 // Wrapper function - calls Calculator module
 function handleDimensionInput(input) {
@@ -310,25 +227,16 @@ function updateWall() {
 function generateWall() {
   const productType = document.getElementById('productType').value;
   let blocksHor, blocksVer;
-  var widthAsFeet = document.getElementById('widthFeet').value;
-  var heightAsFeet = document.getElementById('heightFeet').value;
-  let radioButton = document.getElementById("dimensionInput");
+  const widthAsFeet = document.getElementById('widthFeet').value;
+  const heightAsFeet = document.getElementById('heightFeet').value;
+  const dimensionMode = document.getElementById("dimensionInput").checked;
 
-  if (radioButton.checked) {
-    // Convert dimensions to tiles based on product type
-    let tileWidthFeet, tileHeightFeet;
-
-    if (productType === 'ROEGP26Full') {
-      tileWidthFeet = 1.64;  // 500mm
-      tileHeightFeet = 3.28; // 1000mm (GP2 Full is rectangular!)
-    } else if (productType === 'ROEGP26Half') {
-      tileWidthFeet = 1.64;  // 500mm
-      tileHeightFeet = 1.64; // 500mm (GP2 Half is square)
-    } else {
-      // Black Pearl, Theatrixx, Absen (all square tiles)
-      tileWidthFeet = 1.64;
-      tileHeightFeet = 1.64;
-    }
+  if (dimensionMode) {
+    let tileW = 1.64, tileH = (productType === 'ROEGP26Full') ? 3.28 : 1.64;
+    document.getElementById('blocksHor').value = Math.round(widthAsFeet / tileW);
+    document.getElementById('blocksVer').value = (productType === 'ROEGP26Full') ? 
+      Math.round((heightAsFeet / tileH) * 2) / 2 : Math.round(heightAsFeet / 1.64);
+  }
 
     const calculatedHor = widthAsFeet / tileWidthFeet;
     const calculatedVer = heightAsFeet / tileHeightFeet;
@@ -436,17 +344,23 @@ function generateWall() {
   // Calculate total blocks, spares, etc.
   var totalBlocks, totalSpares, totalBlocksWithSpares;
 
+const roeGraphiteMixEnabled = document.getElementById('roeGraphicMix')?.checked || false;
   if (roeGraphiteMixEnabled) {
-    // ROE Graphite Mix mode: calculate spares separately for Half and Full tiles
-    const halfHorizontal = parseInt(document.getElementById('halfHorizontal')?.value || 0, 10);
-    const halfVertical = parseInt(document.getElementById('halfVertical')?.value || 0, 10);
-    const fullHorizontal = parseInt(document.getElementById('fullHorizontal')?.value || 0, 10);
-    const fullVertical = parseInt(document.getElementById('fullVertical')?.value || 0, 10);
+    const halfH = parseInt(document.getElementById('halfHorizontal').value) || 0;
+    const halfV = parseInt(document.getElementById('halfVertical').value) || 0;
+    const fullH = parseInt(document.getElementById('fullHorizontal').value) || 0;
+    const fullV = parseInt(document.getElementById('fullVertical').value) || 0;
 
     const halfTiles = halfHorizontal * halfVertical;
     const fullTiles = fullHorizontal * fullVertical;
 
     // Calculate spares for each type (always add at least 1 spare case if tiles exist)
+    // GP2 Half: packages of 12
+   const halfTiles = halfHorizontal * halfVertical;
+    const fullTiles = fullHorizontal * fullVertical;
+
+    // Calculate spares for each type (always add at least 1 spare case if tiles exist)
+    
     // GP2 Half: packages of 12
     const halfPackageSize = 12;
     let halfTilesWithSpares = 0;
