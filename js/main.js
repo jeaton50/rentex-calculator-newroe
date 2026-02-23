@@ -339,6 +339,7 @@ function generateWall() {
   }
 
   // Legacy compatibility: if either auto or manual Half rows exist
+ // Legacy compatibility: if either auto or manual Half rows exist
   const gp2HalfBottomRow = (gp2HalfAutoRows > 0) || (gp2HalfManualRows > 0);
   const gp2HalfRows = gp2HalfAutoRows + gp2HalfManualRows; // Total for equipment calculations
 
@@ -349,22 +350,17 @@ function generateWall() {
   // Calculate total blocks, spares, etc.
   var totalBlocks, totalSpares, totalBlocksWithSpares;
 
-const roeGraphiteMixEnabled = document.getElementById('roeGraphicMix')?.checked || false;
   if (roeGraphiteMixEnabled) {
-    const halfH = parseInt(document.getElementById('halfHorizontal').value) || 0;
-    const halfV = parseInt(document.getElementById('halfVertical').value) || 0;
-    const fullH = parseInt(document.getElementById('fullHorizontal').value) || 0;
-    const fullV = parseInt(document.getElementById('fullVertical').value) || 0;
+    // 1. Parse Inputs
+    const halfHorizontal = parseInt(document.getElementById('halfHorizontal').value) || 0;
+    const halfVertical = parseInt(document.getElementById('halfVertical').value) || 0;
+    const fullHorizontal = parseInt(document.getElementById('fullHorizontal').value) || 0;
+    const fullVertical = parseInt(document.getElementById('fullVertical').value) || 0;
 
     const halfTiles = halfHorizontal * halfVertical;
     const fullTiles = fullHorizontal * fullVertical;
 
-    // Calculate spares for each type (always add at least 1 spare case if tiles exist)
-    // GP2 Half: packages of 12
-   const halfTiles = halfHorizontal * halfVertical;
-    const fullTiles = fullHorizontal * fullVertical;
-
-    // Calculate spares for each type (always add at least 1 spare case if tiles exist)
+    // 2. Calculate spares for each type (always add at least 1 spare case if tiles exist)
     
     // GP2 Half: packages of 12
     const halfPackageSize = 12;
@@ -388,7 +384,7 @@ const roeGraphiteMixEnabled = document.getElementById('roeGraphicMix')?.checked 
       fullSpares = fullTilesWithSpares - fullTiles;
     }
 
-    // Store Graphite Mix data
+    // 3. Store Graphite Mix data for downstream functions
     graphiteMixData = {
       halfHorizontal,
       halfVertical,
@@ -402,10 +398,11 @@ const roeGraphiteMixEnabled = document.getElementById('roeGraphicMix')?.checked 
       fullTilesWithSpares
     };
 
-    // For backward compatibility, set total values
+    // 4. Set global total values
     totalBlocks = halfTiles + fullTiles;
     totalSpares = halfSpares + fullSpares;
     totalBlocksWithSpares = totalBlocks + totalSpares;
+  
   } else {
     // Normal mode: standard spare calculation
     // For GP2 Full with GP2 Half enabled, use the reduced Full tile count
