@@ -176,7 +176,7 @@ function debounce(func, wait) {
     clearTimeout(timeout);
     timeout = setTimeout(() => func.apply(this, args), wait);
   };
-}}
+}
 
 // Wrapper function - calls Calculator module
 function handleDimensionInput(input) {
