@@ -221,12 +221,27 @@
     </div>
 
     <div class="controls">
-      <label for="curveSlider">Curve Adjustment:</label>
-      <input type="range" id="curveSlider" min="-5" max="5" step="2.5" value="0">
-      <div>
-        <div class="curve-value" id="curveValue">0°</div>
-        <div class="curve-type" id="curveType">Flat</div>
+      <div id="singleCurveControl" style="display: flex; align-items: center; gap: 20px;">
+        <label for="curveSlider">Curve Adjustment:</label>
+        <input type="range" id="curveSlider" min="-5" max="5" step="2.5" value="0">
+        <div>
+          <div class="curve-value" id="curveValue">0°</div>
+          <div class="curve-type" id="curveType">Flat</div>
+        </div>
       </div>
+
+      <!-- Dual curve controls for GP2 products -->
+      <div id="dualCurveControls" style="display: none; width: 100%;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <label for="horizontalCurveSlider" style="min-width: 150px;">Curve:</label>
+          <input type="range" id="horizontalCurveSlider" min="-5" max="5" step="1" value="0" style="width: 300px;">
+          <div>
+            <div class="curve-value" id="horizontalCurveValue">0°</div>
+            <div class="curve-type" id="horizontalCurveType">Flat</div>
+          </div>
+        </div>
+      </div>
+
       <button type="button" class="reset-button" id="resetButton">Reset View</button>
     </div>
 
@@ -269,13 +284,69 @@
 
       const productType = (urlParams.get('product') || localStorage.getItem('screenProduct') || 'absen').toLowerCase();
 
+      // Get GP2 Half configuration parameters
+      const gp2HalfAutoRows = parseInt(urlParams.get('gp2HalfAutoRows') || localStorage.getItem('gp2HalfAutoRows') || '0');
+      const gp2HalfManualRows = parseInt(urlParams.get('gp2HalfManualRows') || localStorage.getItem('gp2HalfManualRows') || '0');
+      const gp2HalfManualPosition = urlParams.get('gp2HalfManualPosition') || localStorage.getItem('gp2HalfManualPosition') || 'bottom';
+      const gp2FullVerticalBlocks = parseInt(urlParams.get('gp2FullVerticalBlocks') || localStorage.getItem('gp2FullVerticalBlocks') || urlParams.get('blocksVer') || localStorage.getItem('screenBlocksVer') || '6');
+
+      // Set block dimensions based on product type
+      let blockWidth = 500;   // mm - default for most products
+      let blockHeight = 500;  // mm - default for most products
+
+      // Check if we have mixed GP2 configuration
+      const hasMixedGP2 = productType === 'roegp26full' && (gp2HalfAutoRows > 0 || gp2HalfManualRows > 0);
+
+      if (productType === 'roegp26full' && !hasMixedGP2) {
+        blockWidth = 500;   // mm
+        blockHeight = 1000; // mm - GP2 Full is 500x1000
+      }
+
+      // For mixed GP2, we'll handle heights per-row
+      const halfBlockHeight = 500;   // mm - GP2 Half
+      const fullBlockHeight = 1000;  // mm - GP2 Full
+
+      // Calculate total vertical blocks for mixed configurations
+      let blocksVer = parseInt(urlParams.get('blocksVer') || localStorage.getItem('screenBlocksVer') || '6');
+      if (hasMixedGP2) {
+        // Calculate layout
+        let topHalfRows = 0;
+        let bottomHalfRows = 0;
+
+        if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+          topHalfRows = gp2HalfAutoRows;
+          if (gp2HalfManualPosition === 'top') {
+            topHalfRows += gp2HalfManualRows;
+          } else {
+            bottomHalfRows = gp2HalfManualRows;
+          }
+        } else if (gp2HalfAutoRows > 0) {
+          topHalfRows = gp2HalfAutoRows;
+        } else if (gp2HalfManualRows > 0) {
+          if (gp2HalfManualPosition === 'top') {
+            topHalfRows = gp2HalfManualRows;
+          } else {
+            bottomHalfRows = gp2HalfManualRows;
+          }
+        }
+
+        blocksVer = topHalfRows + gp2FullVerticalBlocks + bottomHalfRows;
+      }
+
       return {
         productType: productType,
         blocksHor: parseInt(urlParams.get('blocksHor') || localStorage.getItem('screenBlocksHor') || '10'),
-        blocksVer: parseInt(urlParams.get('blocksVer') || localStorage.getItem('screenBlocksVer') || '6'),
+        blocksVer: blocksVer,
         powerDistroType: urlParams.get('powerDistroType') || localStorage.getItem('screenPowerDistroType') || '208',
-        blockWidth: 500,  // mm - Both Absen and Theatrixx use 500mm blocks
-        blockHeight: 500  // mm - Both Absen and Theatrixx use 500mm blocks
+        blockWidth: blockWidth,
+        blockHeight: blockHeight,
+        gp2HalfAutoRows: gp2HalfAutoRows,
+        gp2HalfManualRows: gp2HalfManualRows,
+        gp2HalfManualPosition: gp2HalfManualPosition,
+        gp2FullVerticalBlocks: gp2FullVerticalBlocks,
+        hasMixedGP2: hasMixedGP2,
+        halfBlockHeight: halfBlockHeight,
+        fullBlockHeight: fullBlockHeight
       };
     }
 
@@ -317,28 +388,121 @@
         maxCurve: 5,
         step: 5,
         rangeText: '| <strong>Flat:</strong> 0° | <strong>Concave:</strong> +5°'
+      },
+      roegp26full: {
+        displayName: 'ROE GP2.6 Full',
+        minCurve: -5,
+        maxCurve: 5,
+        step: 5,
+        rangeText: '<strong>Convex:</strong> -5° | <strong>Flat:</strong> 0° | <strong>Concave:</strong> +5°'
+      },
+      roegp26half: {
+        displayName: 'ROE GP2.6 Half',
+        minCurve: -5,
+        maxCurve: 5,
+        step: 5,
+        rangeText: '<strong>Convex:</strong> -5° | <strong>Flat:</strong> 0° | <strong>Concave:</strong> +5°'
       }
     };
 
     const config = productConfig[params.productType] || productConfig.absen;
 
+    // Check if GP2 product for dual curve controls
+    const isGP2Product = params.productType === 'roegp26full' || params.productType === 'roegp26half';
+
     // Update info display
     document.getElementById('productInfo').textContent = `Product: ${config.displayName}`;
+
+    // Calculate height for mixed GP2 configurations
+    let heightInMeters;
+    if (params.hasMixedGP2) {
+      // Calculate layout
+      let topHalfRows = 0;
+      let bottomHalfRows = 0;
+
+      if (params.gp2HalfAutoRows > 0 && params.gp2HalfManualRows > 0) {
+        topHalfRows = params.gp2HalfAutoRows;
+        if (params.gp2HalfManualPosition === 'top') {
+          topHalfRows += params.gp2HalfManualRows;
+        } else {
+          bottomHalfRows = params.gp2HalfManualRows;
+        }
+      } else if (params.gp2HalfAutoRows > 0) {
+        topHalfRows = params.gp2HalfAutoRows;
+      } else if (params.gp2HalfManualRows > 0) {
+        if (params.gp2HalfManualPosition === 'top') {
+          topHalfRows = params.gp2HalfManualRows;
+        } else {
+          bottomHalfRows = params.gp2HalfManualRows;
+        }
+      }
+
+      const halfHeight = (topHalfRows + bottomHalfRows) * params.halfBlockHeight;
+      const fullHeight = params.gp2FullVerticalBlocks * params.fullBlockHeight;
+      heightInMeters = (halfHeight + fullHeight) / 1000;
+    } else {
+      heightInMeters = (params.blocksVer * params.blockHeight) / 1000;
+    }
+
     document.getElementById('dimensionsInfo').textContent =
-      `Screen Size: ${params.blocksHor} × ${params.blocksVer} tiles (${(params.blocksHor * params.blockWidth / 1000).toFixed(2)}m × ${(params.blocksVer * params.blockHeight / 1000).toFixed(2)}m)`;
+      `Screen Size: ${params.blocksHor} × ${params.blocksVer} tiles (${(params.blocksHor * params.blockWidth / 1000).toFixed(2)}m × ${heightInMeters.toFixed(2)}m)`;
 
     // Update range info text
-    const convexText = config.minCurve < 0 ? '<strong>Convex:</strong> Negative angles ' : '';
-    document.getElementById('rangeInfo').innerHTML = `${convexText}${config.rangeText}`;
+    if (isGP2Product) {
+      document.getElementById('rangeInfo').innerHTML = `
+        <strong>Curve Range:</strong> -5° to +5° |
+        <strong>Convex:</strong> Negative angles | <strong>Flat:</strong> 0° | <strong>Concave:</strong> Positive angles
+      `;
+    } else {
+      const convexText = config.minCurve < 0 ? '<strong>Convex:</strong> Negative angles ' : '';
+      document.getElementById('rangeInfo').innerHTML = `${convexText}${config.rangeText}`;
+    }
 
-    // Update back button to preserve calculator state
+    // Update back button to preserve calculator state including GP2 Half parameters
     const backButton = document.getElementById('backButton');
-    backButton.href = `index.html?product=${encodeURIComponent(params.productType)}&blocksHor=${params.blocksHor}&blocksVer=${params.blocksVer}&powerDistroType=${params.powerDistroType}`;
 
-    // Curve control
+    // Convert lowercase product type back to proper case for main page
+    const productTypeMap = {
+      'absen': 'absen',
+      'bp2b1': 'BP2B1',
+      'bp2b2': 'BP2B2',
+      'bp2v2': 'BP2V2',
+      'theatrixx': 'theatrixx',
+      'roegp26full': 'ROEGP26Full',
+      'roegp26half': 'ROEGP26Half'
+    };
+    const properCaseProduct = productTypeMap[params.productType] || params.productType;
+
+    let backUrl = `index.html?product=${encodeURIComponent(properCaseProduct)}&blocksHor=${params.blocksHor}&blocksVer=${params.blocksVer}&powerDistroType=${params.powerDistroType}`;
+
+    // Add GP2 Half parameters if they exist
+    if (params.gp2HalfAutoRows > 0 || params.gp2HalfManualRows > 0) {
+      backUrl += `&gp2HalfAutoRows=${params.gp2HalfAutoRows}&gp2HalfManualRows=${params.gp2HalfManualRows}&gp2HalfManualPosition=${encodeURIComponent(params.gp2HalfManualPosition)}&gp2FullVerticalBlocks=${params.gp2FullVerticalBlocks}`;
+    }
+
+    backButton.href = backUrl;
+
+    // Curve control variables
+    let horizontalCurve = 0;
+
+    // Show/hide appropriate controls
+    if (isGP2Product) {
+      document.getElementById('singleCurveControl').style.display = 'none';
+      document.getElementById('dualCurveControls').style.display = 'block';
+    } else {
+      document.getElementById('singleCurveControl').style.display = 'flex';
+      document.getElementById('dualCurveControls').style.display = 'none';
+    }
+
+    // Single curve control (for non-GP2 products)
     const curveSlider = document.getElementById('curveSlider');
     const curveValue = document.getElementById('curveValue');
     const curveType = document.getElementById('curveType');
+
+    // Dual curve controls (for GP2 products)
+    const horizontalCurveSlider = document.getElementById('horizontalCurveSlider');
+    const horizontalCurveValue = document.getElementById('horizontalCurveValue');
+    const horizontalCurveType = document.getElementById('horizontalCurveType');
 
     // Set slider range based on product type
     curveSlider.min = config.minCurve;
@@ -367,6 +531,21 @@
       }
     }
 
+    function updateCurveDisplayDual(angle, valueElement, typeElement) {
+      valueElement.textContent = `${angle > 0 ? '+' : ''}${angle}°`;
+
+      if (angle < 0) {
+        typeElement.textContent = 'Convex';
+        typeElement.style.color = '#dc2626';
+      } else if (angle > 0) {
+        typeElement.textContent = 'Concave';
+        typeElement.style.color = '#dc2626';
+      } else {
+        typeElement.textContent = 'Flat';
+        typeElement.style.color = '#666';
+      }
+    }
+
     // Draw front view
     function drawFrontView() {
       const canvas = document.getElementById('frontViewCanvas');
@@ -379,7 +558,40 @@
       const availableWidth = canvas.width - (padding * 2);
       const availableHeight = canvas.height - (padding * 2);
 
-      const aspectRatio = params.blocksHor / params.blocksVer;
+      // Calculate aspect ratio - for mixed GP2, need to account for different tile heights
+      let actualWidth = params.blocksHor * params.blockWidth;
+      let actualHeight;
+
+      if (params.hasMixedGP2) {
+        // Calculate layout
+        let topHalfRows = 0;
+        let bottomHalfRows = 0;
+
+        if (params.gp2HalfAutoRows > 0 && params.gp2HalfManualRows > 0) {
+          topHalfRows = params.gp2HalfAutoRows;
+          if (params.gp2HalfManualPosition === 'top') {
+            topHalfRows += params.gp2HalfManualRows;
+          } else {
+            bottomHalfRows = params.gp2HalfManualRows;
+          }
+        } else if (params.gp2HalfAutoRows > 0) {
+          topHalfRows = params.gp2HalfAutoRows;
+        } else if (params.gp2HalfManualRows > 0) {
+          if (params.gp2HalfManualPosition === 'top') {
+            topHalfRows = params.gp2HalfManualRows;
+          } else {
+            bottomHalfRows = params.gp2HalfManualRows;
+          }
+        }
+
+        const halfHeight = (topHalfRows + bottomHalfRows) * params.halfBlockHeight;
+        const fullHeight = params.gp2FullVerticalBlocks * params.fullBlockHeight;
+        actualHeight = halfHeight + fullHeight;
+      } else {
+        actualHeight = params.blocksVer * params.blockHeight;
+      }
+
+      const aspectRatio = actualWidth / actualHeight;
       let screenWidth, screenHeight;
 
       if (availableWidth / availableHeight > aspectRatio) {
@@ -399,7 +611,6 @@
 
       // Draw tile grid
       const tileWidth = screenWidth / params.blocksHor;
-      const tileHeight = screenHeight / params.blocksVer;
 
       ctx.strokeStyle = '#555';
       ctx.lineWidth = 1;
@@ -413,13 +624,71 @@
         ctx.stroke();
       }
 
-      // Horizontal lines
-      for (let i = 0; i <= params.blocksVer; i++) {
-        const y = startY + (i * tileHeight);
+      // Horizontal lines - account for different row heights in mixed GP2
+      if (params.hasMixedGP2) {
+        // Calculate layout
+        let topHalfRows = 0;
+        let bottomHalfRows = 0;
+
+        if (params.gp2HalfAutoRows > 0 && params.gp2HalfManualRows > 0) {
+          topHalfRows = params.gp2HalfAutoRows;
+          if (params.gp2HalfManualPosition === 'top') {
+            topHalfRows += params.gp2HalfManualRows;
+          } else {
+            bottomHalfRows = params.gp2HalfManualRows;
+          }
+        } else if (params.gp2HalfAutoRows > 0) {
+          topHalfRows = params.gp2HalfAutoRows;
+        } else if (params.gp2HalfManualRows > 0) {
+          if (params.gp2HalfManualPosition === 'top') {
+            topHalfRows = params.gp2HalfManualRows;
+          } else {
+            bottomHalfRows = params.gp2HalfManualRows;
+          }
+        }
+
+        const fullRowsStart = topHalfRows;
+        const fullRowsEnd = topHalfRows + params.gp2FullVerticalBlocks;
+
+        // Function to get tile type for row
+        const getTileHeightForRow = (row) => {
+          if (row < fullRowsStart) {
+            return params.halfBlockHeight;
+          } else if (row >= fullRowsEnd) {
+            return params.halfBlockHeight;
+          }else {
+            return params.fullBlockHeight;
+          }
+        };
+
+        // Calculate scale factor
+        const scaleFactor = screenHeight / actualHeight;
+
+        // Draw horizontal lines at accumulated heights
+        let accumulatedY = startY;
         ctx.beginPath();
-        ctx.moveTo(startX, y);
-        ctx.lineTo(startX + screenWidth, y);
+        ctx.moveTo(startX, accumulatedY);
+        ctx.lineTo(startX + screenWidth, accumulatedY);
         ctx.stroke();
+
+        for (let row = 0; row < params.blocksVer; row++) {
+          const rowHeight = getTileHeightForRow(row);
+          accumulatedY += rowHeight * scaleFactor;
+          ctx.beginPath();
+          ctx.moveTo(startX, accumulatedY);
+          ctx.lineTo(startX + screenWidth, accumulatedY);
+          ctx.stroke();
+        }
+      } else {
+        // Uniform tile heights
+        const tileHeight = screenHeight / params.blocksVer;
+        for (let i = 0; i <= params.blocksVer; i++) {
+          const y = startY + (i * tileHeight);
+          ctx.beginPath();
+          ctx.moveTo(startX, y);
+          ctx.lineTo(startX + screenWidth, y);
+          ctx.stroke();
+        }
       }
 
       // Draw border
@@ -557,15 +826,26 @@
 
     // Update displays
     function updateViews() {
-      const angle = parseFloat(curveSlider.value);
-      updateCurveDisplay(angle);
-      drawFrontView();
-      drawTopView(angle);
+      if (isGP2Product) {
+        horizontalCurve = parseFloat(horizontalCurveSlider.value);
+        updateCurveDisplayDual(horizontalCurve, horizontalCurveValue, horizontalCurveType);
+        drawFrontView();
+        drawTopView(horizontalCurve);
+      } else {
+        const angle = parseFloat(curveSlider.value);
+        updateCurveDisplay(angle);
+        drawFrontView();
+        drawTopView(angle);
+      }
     }
 
     // Reset function
     function resetView() {
-      curveSlider.value = 0;
+      if (isGP2Product) {
+        horizontalCurveSlider.value = 0;
+      } else {
+        curveSlider.value = 0;
+      }
       topViewZoomLevel = 0.5;
       updateZoomDisplay();
       updateViews();
@@ -576,7 +856,11 @@
       if (topViewZoomLevel < maxZoom) {
         topViewZoomLevel += zoomStep;
         updateZoomDisplay();
-        drawTopView(parseFloat(curveSlider.value));
+        if (isGP2Product) {
+          drawTopView(parseFloat(horizontalCurveSlider.value));
+        } else {
+          drawTopView(parseFloat(curveSlider.value));
+        }
       }
     }
 
@@ -584,7 +868,11 @@
       if (topViewZoomLevel > minZoom) {
         topViewZoomLevel -= zoomStep;
         updateZoomDisplay();
-        drawTopView(parseFloat(curveSlider.value));
+        if (isGP2Product) {
+          drawTopView(parseFloat(horizontalCurveSlider.value));
+        } else {
+          drawTopView(parseFloat(curveSlider.value));
+        }
       }
     }
 
@@ -661,14 +949,28 @@
     function captureTopView() {
       const productName = config.displayName.replace(/\s+/g, '_');
       const dimensions = `${params.blocksHor}x${params.blocksVer}`;
-      const curveAngle = parseFloat(curveSlider.value);
-      const curveText = curveAngle === 0 ? 'Flat' : `${curveAngle > 0 ? 'Concave' : 'Convex'}_${Math.abs(curveAngle)}deg`;
+
+      let curveText;
+      if (isGP2Product) {
+        const hCurve = parseFloat(horizontalCurveSlider.value);
+        curveText = hCurve === 0 ? 'Flat' : `${hCurve > 0 ? 'Concave' : 'Convex'}_${Math.abs(hCurve)}deg`;
+      } else {
+        const curveAngle = parseFloat(curveSlider.value);
+        curveText = curveAngle === 0 ? 'Flat' : `${curveAngle > 0 ? 'Concave' : 'Convex'}_${Math.abs(curveAngle)}deg`;
+      }
+
       const filename = `${productName}_Top_View_${dimensions}_${curveText}.png`;
       captureCanvas('topViewCanvas', filename);
     }
 
     // Event listeners
     curveSlider.addEventListener('input', updateViews);
+
+    // Add event listeners for GP2 dual curve controls
+    if (isGP2Product) {
+      horizontalCurveSlider.addEventListener('input', updateViews);
+    }
+
     document.getElementById('resetButton').addEventListener('click', resetView);
     document.getElementById('zoomInButton').addEventListener('click', zoomIn);
     document.getElementById('zoomOutButton').addEventListener('click', zoomOut);

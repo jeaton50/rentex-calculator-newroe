@@ -1,0 +1,12 @@
+{
+  "name": "rentex-calculator",
+  "version": "1.0.0",
+  "description": "ROE LED Wall Calculator",
+  "scripts": {
+    "build": "echo 'No build required - static HTML site'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jeaton50/rentex-calculator-newroe"
+  }
+}

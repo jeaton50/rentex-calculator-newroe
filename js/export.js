@@ -106,15 +106,27 @@ const ExportManager = {
 
     // Check if in multiple screen mode
     const multipleScreens = window.multiScreenInitialized &&
-                            document.getElementById('multipleScreenManagementCheckbox')?.checked &&
-                            window.screenConfigurations &&
-                            window.screenConfigurations.length > 1;
+      document.getElementById('multipleScreenManagementCheckbox')?.checked &&
+      window.screenConfigurations &&
+      window.screenConfigurations.length > 1;
+
+    // Save current screen config so active screen data is included
+    if (multipleScreens && window.MultiScreenManager) {
+      window.MultiScreenManager.saveCurrentScreenConfig();
+    }
+
+    // Helper: build a stable merge key (strips parenthetical suffixes, null-safe)
+    const makeMergeKey = (ecode, name) => {
+      const e = (ecode || '').trim();
+      const n = (name || '').replace(/\s*\([^)]*\)/g, '').trim();
+      return `${e}|${n}`;
+    };
 
     // Build order map from first screen
     if (multipleScreens && window.screenConfigurations.length > 0) {
       const firstScreenEquipment = this.getEquipmentForScreen(window.screenConfigurations[0]);
       firstScreenEquipment.forEach(item => {
-        const key = `${item.ecode}|${item.name}`;
+        const key = makeMergeKey(item.ecode, item.name);
         if (!(key in equipmentOrderMap)) {
           equipmentOrderMap[key] = orderIndex++;
         }
@@ -137,8 +149,8 @@ const ExportManager = {
               const ecodes = item.ecode || '';
               const equipmentName = item.name || '';
               const qtyOrdered = typeof item.quantity === 'number' ?
-                                 item.quantity.toString() :
-                                 Number(item.quantity).toString();
+                item.quantity.toString() :
+                Number(item.quantity).toString();
 
               data.push([ecodes, ecodes, ecodes, qtyOrdered, equipmentName, sortOrder++]);
             }
@@ -152,7 +164,8 @@ const ExportManager = {
 
         // Add combined equipment totals section
         data.push(['', '', '', '', '', sortOrder++]); // Empty row
-        data.push(['', '', '', '', '===== COMBINED EQUIPMENT TOTALS =====', sortOrder++]);
+        const modeLabel = window.screenCombineMode === 'single' ? 'SINGLE ROOM' : 'INDIVIDUAL ROOMS';
+        data.push(['', '', '', '', `===== COMBINED EQUIPMENT TOTALS (${modeLabel}) =====`, sortOrder++]);
 
         // Create map to combine quantities
         const combinedEquipment = {};
@@ -163,11 +176,13 @@ const ExportManager = {
           screenEquipment.forEach(item => {
             const qty = Number(item.quantity);
             if (qty > 0) {
-              const key = `${item.ecode.trim()}|${item.name.trim()}`;
+              const key = makeMergeKey(item.ecode, item.name);
               if (!combinedEquipment[key]) {
+                // Use the base name (parenthetical text stripped) for display
+                const baseName = (item.name || '').replace(/\s*\([^)]*\)/g, '').trim();
                 combinedEquipment[key] = {
-                  ecode: item.ecode,
-                  name: item.name,
+                  ecode: item.ecode || '',
+                  name: baseName,
                   quantity: 0,
                   order: key in equipmentOrderMap ? equipmentOrderMap[key] : 999999
                 };
@@ -185,6 +200,39 @@ const ExportManager = {
           }
         });
 
+        // If Single Room mode, replace processing/distro/cables with recalculated values
+        const isSingleRoom = window.screenCombineMode === 'single';
+        if (isSingleRoom && typeof window.calculateSingleRoomEquipment === 'function') {
+          const singleRoomData = window.calculateSingleRoomEquipment();
+
+          // Remove existing processing/distro/cable items from combined equipment
+          const recalcEcodes = new Set([
+            'SX40', 'XD10', 'S8', 'MX40PRO',
+            'CUBEDIST', 'TP1', 'L2130T1FB', 'SOCA6XTRU1', 'TXT32SOCA',
+            'CAT5ES005', 'ECON010C6', 'ECON050C6', 'ECON100C6', 'ECON1M',
+            'TRUE125FT', 'T11M', 'EDT110M', 'TXT32ED6', 'TXT32T125'
+          ]);
+
+          Object.keys(combinedEquipment).forEach(key => {
+            if (recalcEcodes.has(combinedEquipment[key].ecode)) {
+              delete combinedEquipment[key];
+            }
+          });
+
+          // Add recalculated items
+          singleRoomData.recalcItems.forEach(item => {
+            if (item.quantity > 0) {
+              const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
+              combinedEquipment[key] = {
+                ecode: item.ecode,
+                name: item.name,
+                quantity: item.quantity,
+                order: key in equipmentOrderMap ? equipmentOrderMap[key] : 999999
+              };
+            }
+          });
+        }
+
         // Sort combined equipment by original order
         const consolidatedEquipment = Object.values(combinedEquipment);
         consolidatedEquipment.sort((a, b) => a.order - b.order);
@@ -194,8 +242,8 @@ const ExportManager = {
           const ecodes = item.ecode || '';
           const equipmentName = item.name || '';
           const qtyOrdered = typeof item.quantity === 'number' ?
-                             item.quantity.toString() :
-                             Number(item.quantity).toString();
+            item.quantity.toString() :
+            Number(item.quantity).toString();
 
           // Skip invalid quantities
           if (item.quantity <= 0 || isNaN(item.quantity)) {
@@ -207,8 +255,10 @@ const ExportManager = {
         });
 
       } catch (error) {
-        console.error('Error in multiple screen export:', error);
-        alert('There was an error exporting multiple screen equipment. Falling back to single screen export.');
+        const errorMsg = error.message || String(error);
+        const errorStack = error.stack || '(no stack)';
+        console.error('Error in multiple screen export:', errorMsg, '\nStack:', errorStack);
+        alert('There was an error exporting multiple screen equipment. Falling back to single screen export.\n\nError: ' + errorMsg + '\n\nStack trace:\n' + errorStack);
 
         // Fallback to single screen export
         this.exportSingleScreen(table, data, sortOrder);
@@ -272,6 +322,465 @@ const ExportManager = {
 
       data.push([ecodes, ecodes, ecodes, qtyOrdered, equipmentName, sortOrder++]);
     });
+  },
+
+  /**
+   * Build a map from equipment code to image base path (without extension).
+   * The loader will try SVG first, then fall back to PNG.
+   * @returns {Object} Map of ecode -> base path (e.g. 'static/images/equipment/PL25BB1')
+   */
+  buildImageMap() {
+    const imageMap = {};
+    if (typeof EQUIPMENT !== 'undefined') {
+      Object.values(EQUIPMENT).forEach(item => {
+        if (item.image) {
+          // Strip extension to get base path — loader will try .svg then .png
+          const baseName = item.image.replace(/\.\w+$/, '');
+          imageMap[item.code] = 'static/images/equipment/' + baseName;
+        }
+      });
+    }
+    return imageMap;
+  },
+
+  /**
+   * Load an equipment image, trying SVG first (for crisp vector line art)
+   * then falling back to PNG. Returns a base64 data URL.
+   * SVGs render at 600px (10× cell = ~600dpi), PNGs at 180px (3× cell = ~216dpi).
+   * @param {string} basePath - Base path without extension
+   * @returns {Promise<string|null>} Base64 data URL or null if both fail
+   */
+  loadEquipmentImage(basePath) {
+    if (!basePath) return Promise.resolve(null);
+
+    // Try SVG first (vector — razor-sharp for line drawings)
+    return this.loadImageAsBase64(basePath + '.svg', true).then(result => {
+      if (result) return result;
+      // Fall back to PNG
+      return this.loadImageAsBase64(basePath + '.png', false);
+    });
+  },
+
+  /**
+   * Load logo image preserving its actual aspect ratio.
+   * Returns { dataUrl, naturalWidth, naturalHeight } or null.
+   */
+  loadLogoImage(src) {
+    return new Promise((resolve) => {
+      if (!src) { resolve(null); return; }
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function () {
+        const SCALE = 2; // 2× for crispness
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth * SCALE;
+        canvas.height = img.naturalHeight * SCALE;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve({
+          dataUrl: canvas.toDataURL('image/png'),
+          naturalWidth: img.naturalWidth,
+          naturalHeight: img.naturalHeight
+        });
+      };
+      img.onerror = function () { resolve(null); };
+      img.src = src;
+    });
+  },
+
+  /**
+   * Load an image and return it as a base64 data URL, normalized to a
+   * consistent square thumbnail for PDF insertion.
+   * Scales to fit (aspect-ratio preserved), centered on a white background.
+   * @param {string} src - Image file path
+   * @param {boolean} isSvg - If true, render at higher resolution for vector crispness
+   * @returns {Promise<string|null>} Base64 data URL or null if load fails
+   */
+  loadImageAsBase64(src, isSvg = false) {
+    return new Promise((resolve) => {
+      if (!src) { resolve(null); return; }
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function () {
+        // Higher resolution = more detail preserved when downscaling
+        // SVG: 10× cell (600px); PNG: 5× cell (300px ≈ 300dpi)
+        const TARGET = isSvg ? 600 : 300;
+        const canvas = document.createElement('canvas');
+        canvas.width = TARGET;
+        canvas.height = TARGET;
+        const ctx = canvas.getContext('2d');
+
+        // White background (so transparent images don't look odd)
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, TARGET, TARGET);
+
+        // Scale to fit within TARGET×TARGET, preserving aspect ratio, centered
+        const scale = Math.min(TARGET / img.naturalWidth, TARGET / img.naturalHeight);
+        const drawW = img.naturalWidth * scale;
+        const drawH = img.naturalHeight * scale;
+        const offsetX = (TARGET - drawW) / 2;
+        const offsetY = (TARGET - drawH) / 2;
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+
+        // PNG for line art (lossless, sharp edges); JPEG for photos
+        if (isSvg) {
+          resolve(canvas.toDataURL('image/png'));
+        } else {
+          resolve(canvas.toDataURL('image/png'));
+        }
+      };
+      img.onerror = function () {
+        resolve(null);
+      };
+      img.src = src;
+    });
+  },
+
+  /**
+   * Get current equipment data from table or multi-screen configs
+   * Returns a flat array of { ecode, name, quantity, weight } items
+   * @returns {Array} Equipment items
+   */
+  getCurrentEquipmentData() {
+    const multipleScreens = window.multiScreenInitialized &&
+      document.getElementById('multipleScreenManagementCheckbox')?.checked &&
+      window.screenConfigurations &&
+      window.screenConfigurations.length > 1;
+
+    if (multipleScreens) {
+      // Combine equipment from all screens
+      const combinedEquipment = {};
+      window.screenConfigurations.forEach(config => {
+        const screenEquipment = this.getEquipmentForScreen(config);
+        screenEquipment.forEach(item => {
+          const qty = Number(item.quantity);
+          if (qty > 0) {
+            const key = `${item.ecode.trim()}|${item.name.trim()}`;
+            if (!combinedEquipment[key]) {
+              combinedEquipment[key] = { ecode: item.ecode, name: item.name, quantity: 0, weight: Number(item.weight) || 0 };
+            }
+            combinedEquipment[key].quantity += qty;
+          }
+        });
+      });
+
+      // If Single Room mode, recalculate processing/distro/cables
+      if (window.screenCombineMode === 'single' && typeof window.calculateSingleRoomEquipment === 'function' &&
+          window.MultiScreenManager) {
+        const singleRoomData = window.calculateSingleRoomEquipment();
+
+        // Remove items that will be recalculated
+        Object.keys(combinedEquipment).forEach(key => {
+          const item = combinedEquipment[key];
+          if (item && window.MultiScreenManager.isSingleRoomRecalcItem(item.ecode)) {
+            delete combinedEquipment[key];
+          }
+        });
+
+        // Add recalculated items
+        for (const item of singleRoomData.recalcItems) {
+          const baseName = item.name.replace(/\s*\([^)]*\)/g, '').trim();
+          const key = `${item.ecode}|${baseName}`;
+          combinedEquipment[key] = {
+            ecode: item.ecode,
+            name: baseName,
+            quantity: item.quantity,
+            weight: Number(item.weight) || 0
+          };
+        }
+      }
+
+      return Object.values(combinedEquipment).filter(item => item.quantity > 0);
+    } else {
+      // Read from current equipment table
+      const table = document.getElementById('equipmentTable');
+      if (!table) return [];
+      const items = [];
+      const rows = table.querySelectorAll('tbody tr');
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const ecode = cells[0] ? cells[0].textContent.trim() : '';
+        const name = cells[1] ? cells[1].textContent.trim() : '';
+        const quantity = cells[2] ? Number(cells[2].textContent.trim()) : 0;
+        const weight = cells[3] ? Number(cells[3].textContent.trim()) : 0;
+        if (name && !name.toLowerCase().includes('total weight') && quantity > 0) {
+          items.push({ ecode, name, quantity, weight });
+        }
+      });
+      return items;
+    }
+  },
+
+  /**
+   * Dynamically load a script and return a promise that resolves when loaded
+   * @param {string} src - Script URL
+   * @returns {Promise<void>}
+   */
+  loadScript(src) {
+    return new Promise((resolve, reject) => {
+      // Check if already loaded
+      const existing = document.querySelector(`script[src="${src}"]`);
+      if (existing) { resolve(); return; }
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+      document.head.appendChild(script);
+    });
+  },
+
+  /**
+   * Ensure jsPDF and autoTable plugin are loaded (on-demand)
+   * Loads jsPDF first, then the autoTable plugin which depends on it
+   * @returns {Promise<void>}
+   */
+  async ensurePDFLibraries() {
+    if (typeof jspdf === 'undefined' || !jspdf.jsPDF) {
+      await this.loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+    }
+    // autoTable must load after jsPDF
+    if (typeof jspdf !== 'undefined' && jspdf.jsPDF && !jspdf.jsPDF.prototype.autoTable) {
+      await this.loadScript('https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js');
+    }
+  },
+
+  /**
+   * Export equipment list as PDF with embedded product images
+   * Uses jsPDF with autoTable plugin
+   * Images are loaded from static/images/equipment/ directory
+   */
+  async exportToPDF() {
+    const equipmentItems = this.getCurrentEquipmentData();
+    if (equipmentItems.length === 0) {
+      alert('No equipment to export. Please configure a wall first.');
+      return;
+    }
+
+    // Show loading indicator
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'pdfLoadingIndicator';
+    loadingDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;';
+    loadingDiv.innerHTML = '<div style="background:white;padding:30px 50px;border-radius:10px;font-size:18px;font-family:Arial,sans-serif;">Generating PDF with images...</div>';
+    document.body.appendChild(loadingDiv);
+
+    try {
+      // Load PDF libraries on-demand (jsPDF first, then autoTable)
+      await this.ensurePDFLibraries();
+
+      const { jsPDF } = jspdf;
+      const doc = new jsPDF('portrait', 'pt', 'letter');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 40;
+
+      // Build image map and preload all images
+      const imageMap = this.buildImageMap();
+      const imageCache = {};
+
+      // Preload all equipment images
+      const uniqueEcodes = [...new Set(equipmentItems.map(item => item.ecode))];
+      await Promise.all(uniqueEcodes.map(async (ecode) => {
+        const basePath = imageMap[ecode];
+        if (basePath) {
+          imageCache[ecode] = await this.loadEquipmentImage(basePath);
+        }
+      }));
+
+      // Load Rentex logo preserving actual aspect ratio
+      let logoData = null;
+      let logoNaturalW = 0, logoNaturalH = 0;
+      try {
+        const logoResult = await this.loadLogoImage('static/images/rentexLogo.png');
+        if (logoResult) {
+          logoData = logoResult.dataUrl;
+          logoNaturalW = logoResult.naturalWidth;
+          logoNaturalH = logoResult.naturalHeight;
+        }
+      } catch (e) {
+        console.warn('Could not load Rentex logo for PDF');
+      }
+
+      // --- Draw PDF Header ---
+      let yPos = margin;
+
+      // Logo — fit within 140×50 pt, preserving aspect ratio
+      if (logoData) {
+        const maxLogoW = 140, maxLogoH = 50;
+        const logoScale = Math.min(maxLogoW / logoNaturalW, maxLogoH / logoNaturalH);
+        const logoW = logoNaturalW * logoScale;
+        const logoH = logoNaturalH * logoScale;
+        doc.addImage(logoData, 'PNG', margin, yPos, logoW, logoH);
+      }
+
+      // Order info on the right
+      const orderNumber = document.getElementById('orderNumber')?.value || '';
+      const orderDate = document.getElementById('orderDate')?.value || '';
+      const location = document.getElementById('location')?.value || '';
+      const productTypeSelect = document.getElementById('productType');
+      const productTypeName = productTypeSelect ?
+        productTypeSelect.options[productTypeSelect.selectedIndex].text :
+        '';
+
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      const rightX = pageWidth - margin;
+      if (orderNumber) {
+        doc.text(`Order #: ${orderNumber}`, rightX, yPos + 12, { align: 'right' });
+      }
+      if (orderDate) {
+        doc.text(`Date: ${orderDate}`, rightX, yPos + 24, { align: 'right' });
+      }
+      if (location) {
+        doc.text(`Location: ${location}`, rightX, yPos + 36, { align: 'right' });
+      }
+
+      yPos += 50;
+
+      // Title
+      doc.setFontSize(16);
+      doc.setTextColor(0);
+      doc.text('Equipment List', pageWidth / 2, yPos, { align: 'center' });
+      if (productTypeName) {
+        doc.setFontSize(11);
+        doc.setTextColor(80);
+        doc.text(productTypeName, pageWidth / 2, yPos + 16, { align: 'center' });
+      }
+      yPos += 30;
+
+      // Separator line
+      doc.setDrawColor(200);
+      doc.setLineWidth(0.5);
+      doc.line(margin, yPos, pageWidth - margin, yPos);
+      yPos += 10;
+
+      // --- Equipment Table with Images ---
+      // Image cell size: 60x60 pt (~0.83 inches, from 300x300 source)
+      const imgCellSize = 60;
+      const rowPadding = 5;
+      const rowHeight = imgCellSize + (rowPadding * 2);
+
+      // Build a quick lookup: row index -> has image loaded
+      const rowHasImage = equipmentItems.map(item => !!imageCache[item.ecode]);
+      const hasAnyImages = rowHasImage.some(Boolean);
+
+      // Always include Image column so layout is ready as images are added
+      const columns = [
+        { header: 'Image', dataKey: 'image' },
+        { header: 'Ecode', dataKey: 'ecode' },
+        { header: 'Equipment Name', dataKey: 'name' },
+        { header: 'Qty', dataKey: 'quantity' },
+        { header: 'Weight (lbs)', dataKey: 'weight' }
+      ];
+
+      // Table data
+      const tableData = equipmentItems.map(item => ({
+        image: '',
+        ecode: item.ecode,
+        name: item.name,
+        quantity: item.quantity.toString(),
+        weight: item.weight ? Number(item.weight).toFixed(2) : '0.00'
+      }));
+
+      // Column styles
+      const columnStyles = {
+        image: { cellWidth: imgCellSize + 10 },
+        ecode: { cellWidth: 70, valign: 'middle', fontSize: 9 },
+        name: { valign: 'middle', fontSize: 9 },
+        quantity: { cellWidth: 30, halign: 'center', valign: 'middle', fontSize: 10, fontStyle: 'bold' },
+        weight: { cellWidth: 55, halign: 'right', valign: 'middle', fontSize: 9 }
+      };
+
+      // Generate table using autoTable
+      doc.autoTable({
+        startY: yPos,
+        columns: columns,
+        body: tableData,
+        margin: { left: margin, right: margin },
+        theme: 'grid',
+        headStyles: {
+          fillColor: [44, 62, 80],
+          textColor: [255, 255, 255],
+          fontSize: 10,
+          fontStyle: 'bold',
+          halign: 'center',
+          valign: 'middle'
+        },
+        styles: {
+          overflow: 'linebreak',
+          cellPadding: 5,
+          lineColor: [220, 220, 220],
+          lineWidth: 0.5
+        },
+        columnStyles: columnStyles,
+        alternateRowStyles: {
+          fillColor: [248, 249, 250]
+        },
+        didDrawCell: (data) => {
+          // Draw equipment image in the image column
+          if (data.column.dataKey === 'image' && data.section === 'body') {
+            try {
+              const item = equipmentItems[data.row.index];
+              if (!item) return;
+              const imgData = imageCache[item.ecode];
+              if (imgData) {
+                // Center image within actual cell dimensions (handles rows taller than minimum)
+                const cellW = data.cell.width;
+                const cellH = data.cell.height;
+                const imgOffsetX = (cellW - imgCellSize) / 2;
+                const imgOffsetY = (cellH - imgCellSize) / 2;
+                const cellX = data.cell.x + imgOffsetX;
+                const cellY = data.cell.y + imgOffsetY;
+                // Auto-detect format from data URL prefix
+                const fmt = imgData.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+                doc.addImage(imgData, fmt, cellX, cellY, imgCellSize, imgCellSize);
+              }
+            } catch (e) {
+              console.warn('Could not draw image for row', data.row.index, e);
+            }
+          }
+        },
+        didParseCell: (data) => {
+          // Only set tall row height for rows that actually have an image
+          if (data.column.dataKey === 'image' && data.section === 'body') {
+            const idx = data.row.index;
+            if (idx >= 0 && idx < rowHasImage.length && rowHasImage[idx]) {
+              data.cell.styles.minCellHeight = rowHeight;
+            }
+          }
+        }
+      });
+
+      // Footer with timestamp
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(
+          `Generated ${new Date().toLocaleDateString()} | Page ${i} of ${totalPages}`,
+          pageWidth / 2,
+          pageHeight - 20,
+          { align: 'center' }
+        );
+      }
+
+      // Save the PDF
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      doc.save(`Equipment_List_${timestamp}.pdf`);
+
+    } catch (error) {
+      console.error('PDF export error:', error);
+      alert('Failed to generate PDF. Error: ' + error.message);
+    } finally {
+      // Remove loading indicator
+      const indicator = document.getElementById('pdfLoadingIndicator');
+      if (indicator) indicator.remove();
+    }
   },
 
   /**
@@ -401,65 +910,65 @@ const ExportManager = {
         });
       }
     })
-    .then((canvas) => {
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          alert('Failed to create image blob.');
-          return;
-        }
-
-        // For iOS: download, for others: copy to clipboard
-        if (isIOS()) {
-          fallbackDownload(blob);
-        } else {
-          try {
-            const clipboardItem = new ClipboardItem({ [blob.type]: blob });
-            await navigator.clipboard.write([clipboardItem]);
-            alert('Screenshot Captured, please paste in email');
-          } catch (clipboardError) {
-            console.error('Clipboard copy error:', clipboardError);
-            fallbackDownload(blob);
+      .then((canvas) => {
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            alert('Failed to create image blob.');
+            return;
           }
-        }
 
-        // Prepare email with quote information
-        const blocksHor = parseInt(document.getElementById('blocksHor')?.value || 0, 10);
-        const blocksVer = parseInt(document.getElementById('blocksVer')?.value || 0, 10);
-        const totalTiles = blocksHor * blocksVer;
-        const orderNumber = document.getElementById('orderNumber')?.value || 'Unknown';
-        const location = document.getElementById('location')?.value || 'Not provided';
-        const orderDate = document.getElementById('orderDate')?.value || 'Not provided';
-        const productTypeSelect = document.getElementById('productType');
-        const productTypeName = productTypeSelect ?
-                                productTypeSelect.options[productTypeSelect.selectedIndex].text :
-                                'Unknown';
+          // For iOS: download, for others: copy to clipboard
+          if (isIOS()) {
+            fallbackDownload(blob);
+          } else {
+            try {
+              const clipboardItem = new ClipboardItem({ [blob.type]: blob });
+              await navigator.clipboard.write([clipboardItem]);
+              alert('Screenshot Captured, please paste in email');
+            } catch (clipboardError) {
+              console.error('Clipboard copy error:', clipboardError);
+              fallbackDownload(blob);
+            }
+          }
 
-        const emailSubject = `LED Quote Approval - Order# ${orderNumber}`;
-        const emailBody = encodeURIComponent(
-          'Dates: ' + orderDate + '\n\n' +
-          'Location: ' + location + '\n\n' +
-          'LED Walls\n\n' +
-          'Make/Model: ' + productTypeName + '\n\n' +
-          'Can they use any other make/model: \n\n' +
-          '# tiles: ' + totalTiles + '\n\n' +
-          'x tiles wide: ' + blocksHor + '\n\n' +
-          'y tiles tall: ' + blocksVer
-        );
+          // Prepare email with quote information
+          const blocksHor = parseInt(document.getElementById('blocksHor')?.value || 0, 10);
+          const blocksVer = parseInt(document.getElementById('blocksVer')?.value || 0, 10);
+          const totalTiles = blocksHor * blocksVer;
+          const orderNumber = document.getElementById('orderNumber')?.value || 'Unknown';
+          const location = document.getElementById('location')?.value || 'Not provided';
+          const orderDate = document.getElementById('orderDate')?.value || 'Not provided';
+          const productTypeSelect = document.getElementById('productType');
+          const productTypeName = productTypeSelect ?
+            productTypeSelect.options[productTypeSelect.selectedIndex].text :
+            'Unknown';
 
-        // Open email client
-        window.location.href = `mailto:LEDPanel@rentex.com?subject=${emailSubject}&body=${emailBody}`;
+          const emailSubject = `LED Quote Approval - Order# ${orderNumber}`;
+          const emailBody = encodeURIComponent(
+            'Dates: ' + orderDate + '\n\n' +
+            'Location: ' + location + '\n\n' +
+            'LED Walls\n\n' +
+            'Make/Model: ' + productTypeName + '\n\n' +
+            'Can they use any other make/model: \n\n' +
+            '# tiles: ' + totalTiles + '\n\n' +
+            'x tiles wide: ' + blocksHor + '\n\n' +
+            'y tiles tall: ' + blocksVer
+          );
 
-        // Restore original zoom level
+          // Open email client
+          window.location.href = `mailto:LEDPanel@rentex.com?subject=${emailSubject}&body=${emailBody}`;
+
+          // Restore original zoom level
+          htmlElement.style.zoom = originalZoom || '90%';
+        });
+      })
+      .catch((error) => {
+        console.error('Canvas capture error:', error);
+        alert('Screenshot capture failed. Check console for details.');
+
+        // Restore original zoom level even on error
         htmlElement.style.zoom = originalZoom || '90%';
       });
-    })
-    .catch((error) => {
-      console.error('Canvas capture error:', error);
-      alert('Screenshot capture failed. Check console for details.');
-
-      // Restore original zoom level even on error
-      htmlElement.style.zoom = originalZoom || '90%';
-    });
   }
 };
 
@@ -468,6 +977,7 @@ if (typeof window !== 'undefined') {
   window.ExportManager = ExportManager;
   window.exportToExcel = () => ExportManager.exportToExcel();
   window.captureEntireScreen = () => ExportManager.captureEntireScreen();
+  window.exportEquipmentPDF = () => ExportManager.exportToPDF();
   window.getEquipmentForScreen = (config) => ExportManager.getEquipmentForScreen(config);
 }
 

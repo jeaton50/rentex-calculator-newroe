@@ -3,6 +3,8 @@
  * Handles all tile calculations, dimension conversions, and aspect ratio logic
  */
 
+console.log('🔧 Calculator.js LOADED - Version: gp2half-debug-v3');
+
 /**
  * Block size constant in feet (500mm converted to feet)
  * @const {number}
@@ -101,6 +103,11 @@ const Calculator = {
   calculateBlocksFromAspectRatio(aspectRatio, screenSize = null) {
     let horizontalBlocks, verticalBlocks;
 
+    // Determine tile height based on product type (GP2 Full tiles are 1000mm tall, others are 500mm)
+    const productType = document.getElementById('productType')?.value || 'absen';
+    const tileWidthFeet = 1.64;
+    const tileHeightFeet = (productType === 'ROEGP26Full') ? 3.28 : 1.64;
+
     // Handle specific screen sizes for certain aspect ratios
     const ratiosWithSizes = ["1:1", "16:9", "32:9", "48:9", "4:3", "2:1", "3:1"];
 
@@ -109,22 +116,56 @@ const Calculator = {
 
       // Special case for 7x7
       if (screenSize === "7x7") {
-        horizontalBlocks = verticalBlocks = 5;
+        horizontalBlocks = 5;
+        verticalBlocks = (productType === 'ROEGP26Full') ? this.bestGP2FullMix(7) : 5;
       } else {
-        horizontalBlocks = Math.round(width / 1.64);
-        verticalBlocks = Math.round(height / 1.64);
+        horizontalBlocks = Math.round(width / tileWidthFeet);
+        verticalBlocks = (productType === 'ROEGP26Full')
+          ? this.bestGP2FullMix(height)
+          : Math.round(height / tileHeightFeet);
       }
 
       return { horizontalBlocks, verticalBlocks, height };
     }
 
-    // Calculate from aspect ratio
+    // Calculate from aspect ratio only (no specific size)
     const [width, height] = aspectRatio.split(':').map(Number);
     const baseWidth = 16;
     horizontalBlocks = baseWidth;
-    verticalBlocks = Math.round((height / width) * baseWidth);
+    const wallWidthFeet = baseWidth * tileWidthFeet;
+    const wallHeightFeet = wallWidthFeet * (height / width);
+    verticalBlocks = (productType === 'ROEGP26Full')
+      ? this.bestGP2FullMix(wallHeightFeet)
+      : Math.round(wallHeightFeet / tileHeightFeet);
 
     return { horizontalBlocks, verticalBlocks, height: 0 };
+  },
+
+  /**
+   * Find the best mix of GP2 Full + Half rows to match a target height in feet.
+   * Returns a fractional blocksVer value (e.g., 3.5 = 3 Full + 1 Half row).
+   * @param {number} targetFeet - Target wall height in feet
+   * @returns {number} Optimal blocksVer value (may include .5 for a Half row)
+   */
+  bestGP2FullMix(targetFeet) {
+    const fullHeight = 3.28;  // GP2 Full tile height in feet
+    const halfHeight = 1.64;  // GP2 Half tile height in feet
+
+    // Option 1: Full rows only
+    const fullOnly = Math.round(targetFeet / fullHeight);
+    const fullOnlyActual = fullOnly * fullHeight;
+
+    // Option 2: Best mix of Full + Half (find closest using half-tile granularity)
+    const halfUnits = Math.round(targetFeet / halfHeight);
+    const mixFullRows = Math.floor(halfUnits / 2);
+    const mixHalfRows = halfUnits % 2;  // 0 or 1
+    const mixActual = mixFullRows * fullHeight + mixHalfRows * halfHeight;
+
+    // Pick whichever is closer to target
+    if (Math.abs(mixActual - targetFeet) < Math.abs(fullOnlyActual - targetFeet)) {
+      return mixFullRows + (mixHalfRows * 0.5);
+    }
+    return fullOnly;
   },
 
   /**
@@ -139,7 +180,9 @@ const Calculator = {
       'BP2B1': 13,
       'BP2B2': 13,
       'BP2V2': 13,
-      'theatrixx': 13
+      'theatrixx': 13,
+      'ROEGP26Full': 7,
+      'ROEGP26Half': 13
     };
 
     const limit = maxTiles[productType] || 13;
@@ -187,6 +230,7 @@ const Calculator = {
    */
   calculate208Circuits(productType, totalTiles) {
     let ampsRequired;
+    let maxAmpsPerCircuit = 20; // Default for most products
 
     switch (productType) {
       case 'absen':
@@ -200,12 +244,22 @@ const Calculator = {
       case 'theatrixx':
         ampsRequired = totalTiles * 1.27403;
         break;
+      case 'ROEGP26Full':
+        // GP2 Full: 250W per panel at 208V
+        // Max 10 panels per circuit (12.02A, matches equipment.js logic)
+        ampsRequired = (totalTiles * 250) / 208;
+        maxAmpsPerCircuit = 12.02; // 10 panels worth
+        break;
+      case 'ROEGP26Half':
+        // GP2 Half: 160W per panel at 208V
+        ampsRequired = (totalTiles * 160) / 208;
+        break;
       default:
         ampsRequired = 0;
     }
 
-    // Each circuit can handle approximately 15-20 amps
-    const circuitsNeeded = Math.ceil(ampsRequired / 20);
+    // Each circuit can handle approximately 15-20 amps (varies by product)
+    const circuitsNeeded = Math.ceil(ampsRequired / maxAmpsPerCircuit);
 
     return circuitsNeeded;
   }
@@ -219,6 +273,7 @@ const Calculator = {
 function generateWallConfiguration() {
   // Get product type
   const productType = document.getElementById('productType')?.value || 'absen';
+  console.log('🎯 generateWallConfiguration - productType:', productType);
 
   // Get input mode
   const isDimensionInput = document.getElementById('dimensionInput')?.checked || false;
@@ -276,6 +331,38 @@ function generateWallConfiguration() {
     blankRows = parseInt(document.getElementById('dummyTileCount')?.value || 0, 10) || 1;
   }
 
+  // Get GP2 Half row configuration for GP2 Full
+  console.log('📍 About to check GP2 Half checkbox...');
+  const gp2HalfCheckboxElement = document.getElementById('gp2HalfCheckbox');
+  const gp2HalfCountElement = document.getElementById('gp2HalfCount');
+  const gp2HalfPositionElement = document.getElementById('gp2HalfPosition');
+  console.log('📍 gp2HalfCheckbox element:', gp2HalfCheckboxElement);
+  console.log('📍 gp2HalfCheckbox checked?:', gp2HalfCheckboxElement?.checked);
+  console.log('📍 gp2HalfCount element:', gp2HalfCountElement);
+  console.log('📍 gp2HalfCount value:', gp2HalfCountElement?.value);
+  console.log('📍 gp2HalfPosition value:', gp2HalfPositionElement?.value);
+
+  let gp2HalfBottomRow = false;
+  let gp2HalfRows = 0;
+  let gp2HalfPosition = 'bottom';
+  if (gp2HalfCheckboxElement?.checked) {
+    gp2HalfBottomRow = true;
+    gp2HalfRows = parseInt(gp2HalfCountElement?.value || 1, 10);
+    gp2HalfPosition = gp2HalfPositionElement?.value || 'bottom';
+    console.log('✅ GP2 Half checkbox CHECKED - rows:', gp2HalfRows, 'position:', gp2HalfPosition);
+  } else {
+    console.log('❌ GP2 Half checkbox NOT checked');
+  }
+
+  // For GP2 Full with GP2 Half bottom rows, add those rows to vertical count for wall dimensions
+  let totalVerticalBlocks = verticalBlocks;
+  if (productType === 'ROEGP26Full' && gp2HalfBottomRow) {
+    // Each GP2 Half row is 0.5m, each GP2 Full row is 1.0m
+    // So 2 GP2 Half rows = 1 GP2 Full row equivalent
+    totalVerticalBlocks = verticalBlocks + Math.ceil(gp2HalfRows / 2);
+    console.log('GP2 Full with GP2 Half - original vertical:', verticalBlocks, 'total vertical:', totalVerticalBlocks);
+  }
+
   // Calculate totals
   const totals = Calculator.calculateWallTotals({
     horizontalBlocks,
@@ -287,7 +374,7 @@ function generateWallConfiguration() {
   return {
     productType,
     blocksHor: horizontalBlocks,
-    blocksVer: verticalBlocks,
+    blocksVer: totalVerticalBlocks, // Use total including GP2 Half rows for display
     totalBlocks: totals.totalTiles,
     totalSpares: totals.totalSpares,
     totalBlocksWithSpares: totals.totalTilesWithSpares,
@@ -300,7 +387,11 @@ function generateWallConfiguration() {
     screenSize,
     powerDistro,
     powerDistroType: powerDistro,
-    blankRows
+    blankRows,
+    gp2HalfBottomRow,
+    gp2HalfRows,
+    gp2HalfPosition,
+    gp2FullVerticalBlocks: verticalBlocks // Original GP2 Full vertical blocks (not including GP2 Half)
   };
 }
 
@@ -362,8 +453,9 @@ function updateBlocksFromAspectRatio() {
   if (blocksHorInput) blocksHorInput.value = blocks.horizontalBlocks;
   if (blocksVerInput) blocksVerInput.value = blocks.verticalBlocks;
 
-  // Update height warning if applicable
-  if (blocks.height > 18.4) {
+  // Update height warning if applicable (only for ground support)
+  const flownSupportCheckbox = document.getElementById('flownSupport');
+  if (blocks.height > 18.4 && !flownSupportCheckbox?.checked) {
     const warningElement = document.getElementById('blockVerticalWarning');
     if (warningElement) {
       warningElement.textContent = '***EXCEEDS LIMIT, MUST FLY***';
