@@ -157,19 +157,18 @@ function updateHeightDimensionLimit(productType) {
 
   let maxHeightFeet = null;
   let productName = '';
-  const flownSupport = document.getElementById('flownSupport')?.checked;
 
   if (productType === 'ROEGP26Full') {
-    maxHeightFeet = flownSupport ? 39.36 : 19.68; // GP2 Full: flown 12×3.28'=39.36', ground 6×3.28'=19.68'
+    maxHeightFeet = 19.68; // GP2 Full: 6 tiles × 3.28' = 19.68 feet
     productName = 'GP2 Full';
   } else if (productType === 'absen') {
-    maxHeightFeet = flownSupport ? 32.8 : 16.4; // Absen: flown 20×1.64'=32.8', ground 10×1.64'=16.4'
+    maxHeightFeet = 16.4; // Absen: 10 tiles × 1.64' = 16.4 feet
     productName = 'Absen';
   } else if (productType === 'BP2B1' || productType === 'BP2B2' || productType === 'BP2V2') {
-    maxHeightFeet = flownSupport ? 32.8 : 19.68; // Black Pearl: flown 20×1.64'=32.8', ground 12×1.64'=19.68'
+    maxHeightFeet = 19.68; // Black Pearl: 12 tiles × 1.64' = 19.68 feet
     productName = 'Black Pearl';
   } else if (productType === 'theatrixx') {
-    maxHeightFeet = flownSupport ? 32.8 : 19.68; // Theatrixx: flown 20×1.64'=32.8', ground 12×1.64'=19.68'
+    maxHeightFeet = 19.68; // Theatrixx: 12 tiles × 1.64' = 19.68 feet
     productName = 'Theatrixx';
   }
 
@@ -698,8 +697,6 @@ window.generateAllEquipment = function() {
   let combinedVoltage = [];
   let combinedAmps = 0;
   let combinedWatts = 0;
-  let totalPixelsHorizontal = 0;
-  let totalPixelsVertical = 0;
 
   // Loop through each screen and generate its equipment
   window.screenConfigurations.forEach((config, index) => {
@@ -725,18 +722,6 @@ window.generateAllEquipment = function() {
     } else if (productType === "theatrixx") {
       amps = (voltage == 110) ? totalBlocks * 1.63636 : (totalBlocks * 865.38461) / 1000;
       watts = totalBlocks * 190;
-    } else if (productType === "ROEGP26Full") {
-      let fullWatts = totalBlocks * 320;
-      let halfWatts = 0;
-      if (config.gp2HalfEnabled && config.gp2HalfCount > 0) {
-        const gp2HalfTiles = config.blocksHor * config.gp2HalfCount;
-        halfWatts = gp2HalfTiles * 160;
-      }
-      watts = fullWatts + halfWatts;
-      amps = voltage ? watts / voltage : 0;
-    } else if (productType === "ROEGP26Half") {
-      watts = totalBlocks * 160;
-      amps = voltage ? watts / voltage : 0;
     } else {
       amps = 0;
       watts = 0;
@@ -748,27 +733,12 @@ window.generateAllEquipment = function() {
     combinedAmps += amps;
     combinedWatts += watts;
 
-    // Calculate pixel dimensions for this screen using known pixel-per-tile values
-    const pixelLookup = { absen: [200,200], theatrixx: [192,192], ROEGP26Full: [192,384], ROEGP26Half: [192,192], BP2B1: [176,176], BP2B2: [176,176], BP2V2: [176,176] };
-    const pxTile = pixelLookup[productType] || [176, 176];
-    let screenPixelsH = config.blocksHor * pxTile[0];
-    let screenPixelsV = config.blocksVer * pxTile[1];
-
-    // Account for GP2 Half rows on this screen
-    if (productType === 'ROEGP26Full' && config.gp2HalfEnabled && config.gp2HalfCount > 0) {
-      screenPixelsV = config.blocksVer * 384 + config.gp2HalfCount * 192;
-    }
-
-    totalPixelsHorizontal += screenPixelsH;
-    totalPixelsVertical += screenPixelsV;
-
     screenSection.innerHTML = `
       <h3>Screen ${config.id} Equipment</h3>
       <div class="screen-power-summary" style="margin-bottom: 15px; padding: 8px; background-color: #f0f0f0; border-radius: 5px;">
         <div><strong>Product Type:</strong> ${productType}</div>
         <div><strong>Dimensions:</strong> ${config.blocksHor} x ${config.blocksVer} tiles</div>
         <div><strong>Size:</strong> ${(config.blocksHor * 1.64).toFixed(2)}' x ${(config.blocksVer * 1.64).toFixed(2)}'</div>
-        <div><strong>Pixels:</strong> ${screenPixelsH} x ${screenPixelsV}</div>
         <div><strong>Voltage:</strong> ${voltage}V</div>
         <div><strong>Amperage:</strong> ${amps.toFixed(2)}A</div>
         <div><strong>Power:</strong> ${watts.toFixed(2)}W</div>
@@ -858,17 +828,12 @@ window.generateAllEquipment = function() {
   const summaryContentDiv = document.getElementById('powerWeightSummary');
   if (summaryContentDiv) {
     summaryContentDiv.innerHTML = `
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
         <div class="power-summary">
           <h4 style="margin-top: 0;">Power Requirements</h4>
           <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
           <div><strong>Total Amperage:</strong> ${combinedAmps.toFixed(2)}A</div>
           <div><strong>Total Power:</strong> ${combinedWatts.toFixed(2)}W</div>
-        </div>
-        <div class="pixel-summary">
-          <h4 style="margin-top: 0;">Total Pixels</h4>
-          <div><strong>Horizontal:</strong> ${(totalPixelsHorizontal || 0).toLocaleString()} px</div>
-          <div><strong>Vertical:</strong> ${(totalPixelsVertical || 0).toLocaleString()} px</div>
         </div>
         <div class="weight-summary">
           <h4 style="margin-top: 0;">Weight Summary</h4>
@@ -893,190 +858,57 @@ window.generateAllEquipment = function() {
   `;
   screenEquipmentContainer.appendChild(combinedHeader);
 
-  // Add room mode toggle (Individual Rooms / Single Room)
-  const modeToggleContainer = document.createElement('div');
-  modeToggleContainer.style.cssText = `
+  // Add combine buttons (Combine Distro and Combine Processing)
+  const combineButtonsContainer = document.createElement('div');
+  combineButtonsContainer.style.cssText = `
     margin-top: 15px;
     margin-bottom: 15px;
     display: flex;
-    gap: 0;
+    gap: 15px;
     align-items: center;
   `;
 
-  const modeLabel = document.createElement('span');
-  modeLabel.textContent = 'Combine Mode: ';
-  modeLabel.style.cssText = 'font-weight: bold; margin-right: 10px; font-size: 14px;';
-  modeToggleContainer.appendChild(modeLabel);
-
-  const isIndividual = (window.screenCombineMode || 'individual') === 'individual';
-
-  const individualBtn = document.createElement('button');
-  individualBtn.type = 'button';
-  individualBtn.textContent = 'Individual Rooms';
-  individualBtn.title = 'Each room keeps its own independent processing, power distribution, and cable calculations. The combined total is a simple sum of all rooms.';
-  individualBtn.style.cssText = `
+  const combineDistroBtn = document.createElement('button');
+  combineDistroBtn.type = 'button';
+  combineDistroBtn.textContent = 'Combine Distro';
+  combineDistroBtn.style.cssText = `
     padding: 8px 16px;
-    background-color: ${isIndividual ? '#007bff' : '#e9ecef'};
-    color: ${isIndividual ? 'white' : '#333'};
-    border: 1px solid ${isIndividual ? '#007bff' : '#ccc'};
-    border-radius: 4px 0 0 4px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
-    font-weight: ${isIndividual ? 'bold' : 'normal'};
   `;
-  individualBtn.onclick = () => {
-    if (window.screenCombineMode !== 'individual') {
-      window.screenCombineMode = 'individual';
-      window.generateAllEquipment();
+  combineDistroBtn.onclick = () => {
+    if (typeof window.showCombineDistroDialog === 'function') {
+      window.showCombineDistroDialog();
     }
   };
 
-  const singleRoomBtn = document.createElement('button');
-  singleRoomBtn.type = 'button';
-  singleRoomBtn.textContent = 'Single Room';
-  singleRoomBtn.title = 'Treat all screens as one combined wall/system. Recalculates processing, power distribution, and cables based on the combined total pixels and power draw.';
-  singleRoomBtn.style.cssText = `
+  const combineProcessingBtn = document.createElement('button');
+  combineProcessingBtn.type = 'button';
+  combineProcessingBtn.textContent = 'Combine Processing';
+  combineProcessingBtn.style.cssText = `
     padding: 8px 16px;
-    background-color: ${!isIndividual ? '#007bff' : '#e9ecef'};
-    color: ${!isIndividual ? 'white' : '#333'};
-    border: 1px solid ${!isIndividual ? '#007bff' : '#ccc'};
-    border-radius: 0 4px 4px 0;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
-    font-weight: ${!isIndividual ? 'bold' : 'normal'};
   `;
-  singleRoomBtn.onclick = () => {
-    if (window.screenCombineMode !== 'single') {
-      window.screenCombineMode = 'single';
-      window.generateAllEquipment();
+  combineProcessingBtn.onclick = () => {
+    if (typeof window.showCombineProcessingDialog === 'function') {
+      window.showCombineProcessingDialog();
+    } else {
+      console.error('showCombineProcessingDialog is not a function!');
     }
   };
 
-  modeToggleContainer.appendChild(individualBtn);
-  modeToggleContainer.appendChild(singleRoomBtn);
-  screenEquipmentContainer.appendChild(modeToggleContainer);
-
-  // If Single Room mode, recalculate processing/distro/cables for the combined system
-  if (window.screenCombineMode === 'single') {
-    try {
-      if (typeof window.calculateSingleRoomEquipment !== 'function') {
-        throw new Error('calculateSingleRoomEquipment is not available');
-      }
-
-      const singleRoomData = window.calculateSingleRoomEquipment();
-      const mgr = window.MultiScreenManager;
-      if (!mgr || typeof mgr.isSingleRoomRecalcItem !== 'function') {
-        throw new Error('MultiScreenManager.isSingleRoomRecalcItem is not available');
-      }
-
-      // Remove existing processing/distro/cable items from combined equipment
-      for (let i = combinedEquipmentOrder.length - 1; i >= 0; i--) {
-        const key = combinedEquipmentOrder[i];
-        const item = combinedEquipment[key];
-        if (item && mgr.isSingleRoomRecalcItem(item.ecode)) {
-          delete combinedEquipment[key];
-          combinedEquipmentOrder.splice(i, 1);
-        }
-      }
-
-      // Add recalculated items to combined equipment
-      for (const item of singleRoomData.recalcItems) {
-        const baseName = item.name.replace(/\s*\([^)]*\)/g, '').trim();
-        const key = `${item.ecode}|${baseName}`;
-        combinedEquipment[key] = {
-          ecode: item.ecode,
-          name: baseName,
-          quantity: item.quantity,
-          weight: item.weight
-        };
-        combinedEquipmentOrder.push(key);
-      }
-
-      // Recalculate total weight
-      totalCombinedWeight = 0;
-      for (const key of combinedEquipmentOrder) {
-        const item = combinedEquipment[key];
-        if (item && item.quantity > 0) {
-          totalCombinedWeight += item.weight * item.quantity;
-        }
-      }
-
-      // Update recalculated values from single room data
-      combinedAmps = singleRoomData.power.amps;
-      combinedWatts = singleRoomData.power.watts;
-      totalPixelsHorizontal = singleRoomData.totalPixelWidth || totalPixelsHorizontal;
-      totalPixelsVertical = singleRoomData.maxPixelHeight || totalPixelsVertical;
-
-      const summaryContentDiv = document.getElementById('powerWeightSummary');
-      if (summaryContentDiv) {
-        summaryContentDiv.innerHTML = `
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
-            <div class="power-summary">
-              <h4 style="margin-top: 0;">Power Requirements <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
-              <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
-              <div><strong>Total Amperage:</strong> ${(combinedAmps || 0).toFixed(2)}A</div>
-              <div><strong>Total Power:</strong> ${(combinedWatts || 0).toFixed(2)}W</div>
-            </div>
-            <div class="pixel-summary">
-              <h4 style="margin-top: 0;">Total Pixels <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
-              <div><strong>Horizontal:</strong> ${(totalPixelsHorizontal || 0).toLocaleString()} px</div>
-              <div><strong>Vertical:</strong> ${(totalPixelsVertical || 0).toLocaleString()} px</div>
-            </div>
-            <div class="weight-summary">
-              <h4 style="margin-top: 0;">Weight Summary <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
-              <div><strong>Total Equipment Weight:</strong> ${(totalCombinedWeight || 0).toFixed(2)} lbs</div>
-              <div><strong>Est. Shipping Weight:</strong> ${((totalCombinedWeight || 0) * 1.15).toFixed(2)} lbs</div>
-            </div>
-          </div>
-        `;
-      }
-    } catch (err) {
-      console.error('Single Room recalculation failed:', err);
-    }
-  }
-
-  // Add mode description text
-  const modeDescription = document.createElement('p');
-  modeDescription.style.cssText = 'font-size: 12px; color: #666; margin-top: 0; margin-bottom: 10px; font-style: italic;';
-  if (window.screenCombineMode === 'single') {
-    modeDescription.textContent = 'Single Room: All screens treated as one combined system. Processing, power distro, and cables are recalculated for the combined total.';
-  } else {
-    modeDescription.textContent = 'Individual Rooms: Each room\'s processing, power, distro, and cables are calculated independently. Combined total is a simple sum.';
-  }
-  screenEquipmentContainer.appendChild(modeDescription);
-
-  // Add combined totals info block (pixels, power, weight)
-  const combinedTotalsBlock = document.createElement('div');
-  combinedTotalsBlock.style.cssText = `
-    padding: 12px 15px;
-    background-color: #eaf4ff;
-    border: 1px solid #b8d9f5;
-    border-radius: 5px;
-    margin-bottom: 15px;
-  `;
-  const singleRoomLabel = window.screenCombineMode === 'single'
-    ? ' <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span>' : '';
-  combinedTotalsBlock.innerHTML = `
-    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-      <div>
-        <h4 style="margin: 0 0 5px 0;">Total Pixels${singleRoomLabel}</h4>
-        <div><strong>Horizontal:</strong> ${(totalPixelsHorizontal || 0).toLocaleString()} px</div>
-        <div><strong>Vertical:</strong> ${(totalPixelsVertical || 0).toLocaleString()} px</div>
-      </div>
-      <div>
-        <h4 style="margin: 0 0 5px 0;">Total Power${singleRoomLabel}</h4>
-        <div><strong>Amperage:</strong> ${(combinedAmps || 0).toFixed(2)}A</div>
-        <div><strong>Watts:</strong> ${(combinedWatts || 0).toFixed(2)}W</div>
-        <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
-      </div>
-      <div>
-        <h4 style="margin: 0 0 5px 0;">Total Weight</h4>
-        <div><strong>Equipment:</strong> ${(totalCombinedWeight || 0).toFixed(2)} lbs</div>
-        <div><strong>Est. Shipping:</strong> ${((totalCombinedWeight || 0) * 1.15).toFixed(2)} lbs</div>
-      </div>
-    </div>
-  `;
-  screenEquipmentContainer.appendChild(combinedTotalsBlock);
+  combineButtonsContainer.appendChild(combineDistroBtn);
+  combineButtonsContainer.appendChild(combineProcessingBtn);
+  screenEquipmentContainer.appendChild(combineButtonsContainer);
 
   // Create combined table
   const combinedTable = document.createElement('table');
@@ -1102,7 +934,7 @@ window.generateAllEquipment = function() {
 
   // Add combined equipment to table
   for (const item of consolidatedEquipment) {
-    if (item && item.quantity > 0) {
+    if (item.quantity > 0) {
       const row = document.createElement('tr');
       row.innerHTML = `
         <td>${item.ecode || ''}</td>
@@ -1171,8 +1003,7 @@ window.displayEstShippingWeight = function(weight) {
 window.displayTotalPixels = function(pixels) {
   const totalPixelsDiv = document.getElementById('totalPixels');
   if (!totalPixelsDiv) return;
-  const px = pixels || 0;
-  totalPixelsDiv.innerHTML = `<strong>Total Pixels:</strong><br>${px.toLocaleString()} px`;
+  totalPixelsDiv.innerHTML = `<strong>Total Pixels:</strong><br>${pixels.toLocaleString()} px`;
 };
 
 window.displayTotalPower = function(voltage, amps, watts) {
@@ -1870,9 +1701,8 @@ window.generateScreenSizesFromTileQuantity = function() {
     return;
   }
 
-  // Get tile dimensions and limits based on product type and support type
+  // Get tile dimensions and limits based on product type
   let tileWidthFeet, tileHeightFeet, maxVertical;
-  const flownSupport = document.getElementById('flownSupport')?.checked;
 
   // Use constants or defaults if CONSTANTS is not defined
   const limits = (typeof CONSTANTS !== 'undefined' && CONSTANTS.MAX_VERTICAL_TILES) ? CONSTANTS.MAX_VERTICAL_TILES : {};
@@ -1880,16 +1710,16 @@ window.generateScreenSizesFromTileQuantity = function() {
   if (productType === 'ROEGP26Full') {
     tileWidthFeet = 1.64; // 500mm
     tileHeightFeet = 3.28; // 1000mm
-    maxVertical = flownSupport ? 12 : (limits.ROEGP26Full || 7);
+    maxVertical = limits.ROEGP26Full || 7;
   } else if (productType === 'ROEGP26Half') {
     tileWidthFeet = 1.64; // 500mm
     tileHeightFeet = 1.64; // 500mm
-    maxVertical = flownSupport ? 20 : (limits.ROEGP26Half || 13);
+    maxVertical = limits.ROEGP26Half || 13;
   } else {
     // Default for Absen, BP2, Theatrixx (all 500x500mm)
     tileWidthFeet = 1.64;
     tileHeightFeet = 1.64;
-    maxVertical = flownSupport ? 20 : (limits[productType] || 13);
+    maxVertical = limits[productType] || 13;
   }
 
   // Find all factor pairs (width × height = quantity)
