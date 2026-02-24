@@ -106,15 +106,27 @@ const ExportManager = {
 
     // Check if in multiple screen mode
     const multipleScreens = window.multiScreenInitialized &&
-                            document.getElementById('multipleScreenManagementCheckbox')?.checked &&
-                            window.screenConfigurations &&
-                            window.screenConfigurations.length > 1;
+      document.getElementById('multipleScreenManagementCheckbox')?.checked &&
+      window.screenConfigurations &&
+      window.screenConfigurations.length > 1;
+
+    // Save current screen config so active screen data is included
+    if (multipleScreens && window.MultiScreenManager) {
+      window.MultiScreenManager.saveCurrentScreenConfig();
+    }
+
+    // Helper: build a stable merge key (strips parenthetical suffixes, null-safe)
+    const makeMergeKey = (ecode, name) => {
+      const e = (ecode || '').trim();
+      const n = (name || '').replace(/\s*\([^)]*\)/g, '').trim();
+      return `${e}|${n}`;
+    };
 
     // Build order map from first screen
     if (multipleScreens && window.screenConfigurations.length > 0) {
       const firstScreenEquipment = this.getEquipmentForScreen(window.screenConfigurations[0]);
       firstScreenEquipment.forEach(item => {
-        const key = `${item.ecode}|${item.name}`;
+        const key = makeMergeKey(item.ecode, item.name);
         if (!(key in equipmentOrderMap)) {
           equipmentOrderMap[key] = orderIndex++;
         }
@@ -137,8 +149,8 @@ const ExportManager = {
               const ecodes = item.ecode || '';
               const equipmentName = item.name || '';
               const qtyOrdered = typeof item.quantity === 'number' ?
-                                 item.quantity.toString() :
-                                 Number(item.quantity).toString();
+                item.quantity.toString() :
+                Number(item.quantity).toString();
 
               data.push([ecodes, ecodes, ecodes, qtyOrdered, equipmentName, sortOrder++]);
             }
@@ -152,11 +164,8 @@ const ExportManager = {
 
         // Add combined equipment totals section
         data.push(['', '', '', '', '', sortOrder++]); // Empty row
-        const isSingleRoom = window.screenCombineMode === 'single';
-        const combinedLabel = isSingleRoom
-          ? '===== COMBINED EQUIPMENT TOTALS (SINGLE ROOM) ====='
-          : '===== COMBINED EQUIPMENT TOTALS =====';
-        data.push(['', '', '', '', combinedLabel, sortOrder++]);
+        const modeLabel = window.screenCombineMode === 'single' ? 'SINGLE ROOM' : 'INDIVIDUAL ROOMS';
+        data.push(['', '', '', '', `===== COMBINED EQUIPMENT TOTALS (${modeLabel}) =====`, sortOrder++]);
 
         // Create map to combine quantities
         const combinedEquipment = {};
@@ -167,11 +176,13 @@ const ExportManager = {
           screenEquipment.forEach(item => {
             const qty = Number(item.quantity);
             if (qty > 0) {
-              const key = `${item.ecode.trim()}|${item.name.trim()}`;
+              const key = makeMergeKey(item.ecode, item.name);
               if (!combinedEquipment[key]) {
+                // Use the base name (parenthetical text stripped) for display
+                const baseName = (item.name || '').replace(/\s*\([^)]*\)/g, '').trim();
                 combinedEquipment[key] = {
-                  ecode: item.ecode,
-                  name: item.name,
+                  ecode: item.ecode || '',
+                  name: baseName,
                   quantity: 0,
                   order: key in equipmentOrderMap ? equipmentOrderMap[key] : 999999
                 };
@@ -181,36 +192,6 @@ const ExportManager = {
           });
         });
 
-        // If Single Room mode, recalculate processing/distro/cables
-        if (isSingleRoom && typeof window.calculateSingleRoomEquipment === 'function' &&
-            window.MultiScreenManager) {
-          const singleRoomData = window.calculateSingleRoomEquipment();
-
-          // Remove items that will be recalculated
-          Object.keys(combinedEquipment).forEach(key => {
-            const item = combinedEquipment[key];
-            if (item && window.MultiScreenManager.isSingleRoomRecalcItem(item.ecode)) {
-              delete combinedEquipment[key];
-            }
-          });
-
-          // Add recalculated items
-          let maxOrder = 0;
-          Object.values(combinedEquipment).forEach(item => {
-            if (item.order > maxOrder && item.order < 999999) maxOrder = item.order;
-          });
-          for (const item of singleRoomData.recalcItems) {
-            const baseName = item.name.replace(/\s*\([^)]*\)/g, '').trim();
-            const key = `${item.ecode}|${baseName}`;
-            combinedEquipment[key] = {
-              ecode: item.ecode,
-              name: baseName,
-              quantity: item.quantity,
-              order: key in equipmentOrderMap ? equipmentOrderMap[key] : ++maxOrder
-            };
-          }
-        }
-
         // Validate quantities are numbers
         Object.values(combinedEquipment).forEach(item => {
           if (typeof item.quantity !== 'number' || isNaN(item.quantity)) {
@@ -218,6 +199,39 @@ const ExportManager = {
             item.quantity = 0;
           }
         });
+
+        // If Single Room mode, replace processing/distro/cables with recalculated values
+        const isSingleRoom = window.screenCombineMode === 'single';
+        if (isSingleRoom && typeof window.calculateSingleRoomEquipment === 'function') {
+          const singleRoomData = window.calculateSingleRoomEquipment();
+
+          // Remove existing processing/distro/cable items from combined equipment
+          const recalcEcodes = new Set([
+            'SX40', 'XD10', 'S8', 'MX40PRO',
+            'CUBEDIST', 'TP1', 'L2130T1FB', 'SOCA6XTRU1', 'TXT32SOCA',
+            'CAT5ES005', 'ECON010C6', 'ECON050C6', 'ECON100C6', 'ECON1M',
+            'TRUE125FT', 'T11M', 'EDT110M', 'TXT32ED6', 'TXT32T125'
+          ]);
+
+          Object.keys(combinedEquipment).forEach(key => {
+            if (recalcEcodes.has(combinedEquipment[key].ecode)) {
+              delete combinedEquipment[key];
+            }
+          });
+
+          // Add recalculated items
+          singleRoomData.recalcItems.forEach(item => {
+            if (item.quantity > 0) {
+              const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
+              combinedEquipment[key] = {
+                ecode: item.ecode,
+                name: item.name,
+                quantity: item.quantity,
+                order: key in equipmentOrderMap ? equipmentOrderMap[key] : 999999
+              };
+            }
+          });
+        }
 
         // Sort combined equipment by original order
         const consolidatedEquipment = Object.values(combinedEquipment);
@@ -228,8 +242,8 @@ const ExportManager = {
           const ecodes = item.ecode || '';
           const equipmentName = item.name || '';
           const qtyOrdered = typeof item.quantity === 'number' ?
-                             item.quantity.toString() :
-                             Number(item.quantity).toString();
+            item.quantity.toString() :
+            Number(item.quantity).toString();
 
           // Skip invalid quantities
           if (item.quantity <= 0 || isNaN(item.quantity)) {
@@ -241,8 +255,10 @@ const ExportManager = {
         });
 
       } catch (error) {
-        console.error('Error in multiple screen export:', error);
-        alert('There was an error exporting multiple screen equipment. Falling back to single screen export.');
+        const errorMsg = error.message || String(error);
+        const errorStack = error.stack || '(no stack)';
+        console.error('Error in multiple screen export:', errorMsg, '\nStack:', errorStack);
+        alert('There was an error exporting multiple screen equipment. Falling back to single screen export.\n\nError: ' + errorMsg + '\n\nStack trace:\n' + errorStack);
 
         // Fallback to single screen export
         this.exportSingleScreen(table, data, sortOrder);
@@ -309,16 +325,18 @@ const ExportManager = {
   },
 
   /**
-   * Build a map from equipment code to image file path
-   * Uses the EQUIPMENT constants which store image filenames
-   * @returns {Object} Map of ecode -> image path
+   * Build a map from equipment code to image base path (without extension).
+   * The loader will try SVG first, then fall back to PNG.
+   * @returns {Object} Map of ecode -> base path (e.g. 'static/images/equipment/PL25BB1')
    */
   buildImageMap() {
     const imageMap = {};
     if (typeof EQUIPMENT !== 'undefined') {
       Object.values(EQUIPMENT).forEach(item => {
         if (item.image) {
-          imageMap[item.code] = 'static/images/equipment/' + item.image;
+          // Strip extension to get base path — loader will try .svg then .png
+          const baseName = item.image.replace(/\.\w+$/, '');
+          imageMap[item.code] = 'static/images/equipment/' + baseName;
         }
       });
     }
@@ -326,24 +344,97 @@ const ExportManager = {
   },
 
   /**
-   * Load an image and return it as a base64 data URL
-   * @param {string} src - Image file path
-   * @returns {Promise<string|null>} Base64 data URL or null if load fails
+   * Load an equipment image, trying SVG first (for crisp vector line art)
+   * then falling back to PNG. Returns a base64 data URL.
+   * SVGs render at 600px (10× cell = ~600dpi), PNGs at 180px (3× cell = ~216dpi).
+   * @param {string} basePath - Base path without extension
+   * @returns {Promise<string|null>} Base64 data URL or null if both fail
    */
-  loadImageAsBase64(src) {
+  loadEquipmentImage(basePath) {
+    if (!basePath) return Promise.resolve(null);
+
+    // Try SVG first (vector — razor-sharp for line drawings)
+    return this.loadImageAsBase64(basePath + '.svg', true).then(result => {
+      if (result) return result;
+      // Fall back to PNG
+      return this.loadImageAsBase64(basePath + '.png', false);
+    });
+  },
+
+  /**
+   * Load logo image preserving its actual aspect ratio.
+   * Returns { dataUrl, naturalWidth, naturalHeight } or null.
+   */
+  loadLogoImage(src) {
     return new Promise((resolve) => {
       if (!src) { resolve(null); return; }
       const img = new Image();
       img.crossOrigin = 'anonymous';
-      img.onload = function() {
+      img.onload = function () {
+        const SCALE = 2; // 2× for crispness
         const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
+        canvas.width = img.naturalWidth * SCALE;
+        canvas.height = img.naturalHeight * SCALE;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve({
+          dataUrl: canvas.toDataURL('image/png'),
+          naturalWidth: img.naturalWidth,
+          naturalHeight: img.naturalHeight
+        });
       };
-      img.onerror = function() {
+      img.onerror = function () { resolve(null); };
+      img.src = src;
+    });
+  },
+
+  /**
+   * Load an image and return it as a base64 data URL, normalized to a
+   * consistent square thumbnail for PDF insertion.
+   * Scales to fit (aspect-ratio preserved), centered on a white background.
+   * @param {string} src - Image file path
+   * @param {boolean} isSvg - If true, render at higher resolution for vector crispness
+   * @returns {Promise<string|null>} Base64 data URL or null if load fails
+   */
+  loadImageAsBase64(src, isSvg = false) {
+    return new Promise((resolve) => {
+      if (!src) { resolve(null); return; }
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function () {
+        // Higher resolution = more detail preserved when downscaling
+        // SVG: 10× cell (600px); PNG: 5× cell (300px ≈ 300dpi)
+        const TARGET = isSvg ? 600 : 300;
+        const canvas = document.createElement('canvas');
+        canvas.width = TARGET;
+        canvas.height = TARGET;
+        const ctx = canvas.getContext('2d');
+
+        // White background (so transparent images don't look odd)
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, TARGET, TARGET);
+
+        // Scale to fit within TARGET×TARGET, preserving aspect ratio, centered
+        const scale = Math.min(TARGET / img.naturalWidth, TARGET / img.naturalHeight);
+        const drawW = img.naturalWidth * scale;
+        const drawH = img.naturalHeight * scale;
+        const offsetX = (TARGET - drawW) / 2;
+        const offsetY = (TARGET - drawH) / 2;
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+
+        // PNG for line art (lossless, sharp edges); JPEG for photos
+        if (isSvg) {
+          resolve(canvas.toDataURL('image/png'));
+        } else {
+          resolve(canvas.toDataURL('image/png'));
+        }
+      };
+      img.onerror = function () {
         resolve(null);
       };
       img.src = src;
@@ -357,9 +448,9 @@ const ExportManager = {
    */
   getCurrentEquipmentData() {
     const multipleScreens = window.multiScreenInitialized &&
-                            document.getElementById('multipleScreenManagementCheckbox')?.checked &&
-                            window.screenConfigurations &&
-                            window.screenConfigurations.length > 1;
+      document.getElementById('multipleScreenManagementCheckbox')?.checked &&
+      window.screenConfigurations &&
+      window.screenConfigurations.length > 1;
 
     if (multipleScreens) {
       // Combine equipment from all screens
@@ -494,16 +585,22 @@ const ExportManager = {
       // Preload all equipment images
       const uniqueEcodes = [...new Set(equipmentItems.map(item => item.ecode))];
       await Promise.all(uniqueEcodes.map(async (ecode) => {
-        const imagePath = imageMap[ecode];
-        if (imagePath) {
-          imageCache[ecode] = await this.loadImageAsBase64(imagePath);
+        const basePath = imageMap[ecode];
+        if (basePath) {
+          imageCache[ecode] = await this.loadEquipmentImage(basePath);
         }
       }));
 
-      // Load Rentex logo
+      // Load Rentex logo preserving actual aspect ratio
       let logoData = null;
+      let logoNaturalW = 0, logoNaturalH = 0;
       try {
-        logoData = await this.loadImageAsBase64('static/images/rentexLogo.png');
+        const logoResult = await this.loadLogoImage('static/images/rentexLogo.png');
+        if (logoResult) {
+          logoData = logoResult.dataUrl;
+          logoNaturalW = logoResult.naturalWidth;
+          logoNaturalH = logoResult.naturalHeight;
+        }
       } catch (e) {
         console.warn('Could not load Rentex logo for PDF');
       }
@@ -511,9 +608,13 @@ const ExportManager = {
       // --- Draw PDF Header ---
       let yPos = margin;
 
-      // Logo
+      // Logo — fit within 140×50 pt, preserving aspect ratio
       if (logoData) {
-        doc.addImage(logoData, 'PNG', margin, yPos, 120, 38);
+        const maxLogoW = 140, maxLogoH = 50;
+        const logoScale = Math.min(maxLogoW / logoNaturalW, maxLogoH / logoNaturalH);
+        const logoW = logoNaturalW * logoScale;
+        const logoH = logoNaturalH * logoScale;
+        doc.addImage(logoData, 'PNG', margin, yPos, logoW, logoH);
       }
 
       // Order info on the right
@@ -522,8 +623,8 @@ const ExportManager = {
       const location = document.getElementById('location')?.value || '';
       const productTypeSelect = document.getElementById('productType');
       const productTypeName = productTypeSelect ?
-                              productTypeSelect.options[productTypeSelect.selectedIndex].text :
-                              '';
+        productTypeSelect.options[productTypeSelect.selectedIndex].text :
+        '';
 
       doc.setFontSize(10);
       doc.setTextColor(100);
@@ -627,9 +728,16 @@ const ExportManager = {
               if (!item) return;
               const imgData = imageCache[item.ecode];
               if (imgData) {
-                const cellX = data.cell.x + rowPadding;
-                const cellY = data.cell.y + rowPadding;
-                doc.addImage(imgData, 'PNG', cellX, cellY, imgCellSize, imgCellSize);
+                // Center image within actual cell dimensions (handles rows taller than minimum)
+                const cellW = data.cell.width;
+                const cellH = data.cell.height;
+                const imgOffsetX = (cellW - imgCellSize) / 2;
+                const imgOffsetY = (cellH - imgCellSize) / 2;
+                const cellX = data.cell.x + imgOffsetX;
+                const cellY = data.cell.y + imgOffsetY;
+                // Auto-detect format from data URL prefix
+                const fmt = imgData.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+                doc.addImage(imgData, fmt, cellX, cellY, imgCellSize, imgCellSize);
               }
             } catch (e) {
               console.warn('Could not draw image for row', data.row.index, e);
@@ -802,65 +910,65 @@ const ExportManager = {
         });
       }
     })
-    .then((canvas) => {
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          alert('Failed to create image blob.');
-          return;
-        }
-
-        // For iOS: download, for others: copy to clipboard
-        if (isIOS()) {
-          fallbackDownload(blob);
-        } else {
-          try {
-            const clipboardItem = new ClipboardItem({ [blob.type]: blob });
-            await navigator.clipboard.write([clipboardItem]);
-            alert('Screenshot Captured, please paste in email');
-          } catch (clipboardError) {
-            console.error('Clipboard copy error:', clipboardError);
-            fallbackDownload(blob);
+      .then((canvas) => {
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            alert('Failed to create image blob.');
+            return;
           }
-        }
 
-        // Prepare email with quote information
-        const blocksHor = parseInt(document.getElementById('blocksHor')?.value || 0, 10);
-        const blocksVer = parseInt(document.getElementById('blocksVer')?.value || 0, 10);
-        const totalTiles = blocksHor * blocksVer;
-        const orderNumber = document.getElementById('orderNumber')?.value || 'Unknown';
-        const location = document.getElementById('location')?.value || 'Not provided';
-        const orderDate = document.getElementById('orderDate')?.value || 'Not provided';
-        const productTypeSelect = document.getElementById('productType');
-        const productTypeName = productTypeSelect ?
-                                productTypeSelect.options[productTypeSelect.selectedIndex].text :
-                                'Unknown';
+          // For iOS: download, for others: copy to clipboard
+          if (isIOS()) {
+            fallbackDownload(blob);
+          } else {
+            try {
+              const clipboardItem = new ClipboardItem({ [blob.type]: blob });
+              await navigator.clipboard.write([clipboardItem]);
+              alert('Screenshot Captured, please paste in email');
+            } catch (clipboardError) {
+              console.error('Clipboard copy error:', clipboardError);
+              fallbackDownload(blob);
+            }
+          }
 
-        const emailSubject = `LED Quote Approval - Order# ${orderNumber}`;
-        const emailBody = encodeURIComponent(
-          'Dates: ' + orderDate + '\n\n' +
-          'Location: ' + location + '\n\n' +
-          'LED Walls\n\n' +
-          'Make/Model: ' + productTypeName + '\n\n' +
-          'Can they use any other make/model: \n\n' +
-          '# tiles: ' + totalTiles + '\n\n' +
-          'x tiles wide: ' + blocksHor + '\n\n' +
-          'y tiles tall: ' + blocksVer
-        );
+          // Prepare email with quote information
+          const blocksHor = parseInt(document.getElementById('blocksHor')?.value || 0, 10);
+          const blocksVer = parseInt(document.getElementById('blocksVer')?.value || 0, 10);
+          const totalTiles = blocksHor * blocksVer;
+          const orderNumber = document.getElementById('orderNumber')?.value || 'Unknown';
+          const location = document.getElementById('location')?.value || 'Not provided';
+          const orderDate = document.getElementById('orderDate')?.value || 'Not provided';
+          const productTypeSelect = document.getElementById('productType');
+          const productTypeName = productTypeSelect ?
+            productTypeSelect.options[productTypeSelect.selectedIndex].text :
+            'Unknown';
 
-        // Open email client
-        window.location.href = `mailto:LEDPanel@rentex.com?subject=${emailSubject}&body=${emailBody}`;
+          const emailSubject = `LED Quote Approval - Order# ${orderNumber}`;
+          const emailBody = encodeURIComponent(
+            'Dates: ' + orderDate + '\n\n' +
+            'Location: ' + location + '\n\n' +
+            'LED Walls\n\n' +
+            'Make/Model: ' + productTypeName + '\n\n' +
+            'Can they use any other make/model: \n\n' +
+            '# tiles: ' + totalTiles + '\n\n' +
+            'x tiles wide: ' + blocksHor + '\n\n' +
+            'y tiles tall: ' + blocksVer
+          );
 
-        // Restore original zoom level
+          // Open email client
+          window.location.href = `mailto:LEDPanel@rentex.com?subject=${emailSubject}&body=${emailBody}`;
+
+          // Restore original zoom level
+          htmlElement.style.zoom = originalZoom || '90%';
+        });
+      })
+      .catch((error) => {
+        console.error('Canvas capture error:', error);
+        alert('Screenshot capture failed. Check console for details.');
+
+        // Restore original zoom level even on error
         htmlElement.style.zoom = originalZoom || '90%';
       });
-    })
-    .catch((error) => {
-      console.error('Canvas capture error:', error);
-      alert('Screenshot capture failed. Check console for details.');
-
-      // Restore original zoom level even on error
-      htmlElement.style.zoom = originalZoom || '90%';
-    });
   }
 };
 
