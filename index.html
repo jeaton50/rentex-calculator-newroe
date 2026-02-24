@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <!-- LED Wall Configuration - Wall Background Image Feature Active -->
   <meta charset="UTF-8">
@@ -38,13 +39,19 @@
   <script defer src="js/export.js?v=20260224b"></script>
 
   <!-- Non-critical external libraries - Load async -->
-  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css"></noscript>
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" media="print"
+    onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+  </noscript>
   <script defer src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 
   <!-- Font Awesome - Load async with media trick -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print"
+    onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  </noscript>
 
   <!-- Export libraries - Load async as they're only used on demand -->
   <script async src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -53,16 +60,18 @@
   <!-- jsPDF loaded on-demand by export.js when PDF export is triggered -->
 
 </head>
+
 <body>
   <!-- Header Section -->
   <header>
     <a href="https://www.rentex.com" target="_blank" rel="noopener noreferrer">
-      <img id="rentexLogo" src="static/images/rentexLogo.png" alt="Rentex Logo" loading="lazy" width="200" height="64" style="max-height:40px;">
+      <img id="rentexLogo" src="static/images/rentexLogo.png" alt="Rentex Logo" loading="lazy" width="200" height="64"
+        style="max-height:40px;">
     </a>
     <div id="orderNumberContainer">
       <label for="orderNumber">Order #:</label>
-<input type="text" id="orderNumber" placeholder="Enter order number" size="15"
-  style="margin-left: -120px; margin-top: 0px; font-size: 14px; padding: 5px;">
+      <input type="text" id="orderNumber" placeholder="Enter order number" size="15"
+        style="margin-left: -120px; margin-top: 0px; font-size: 14px; padding: 5px;">
       <input type="date" id="orderDate" style="margin-left: 10px; margin-top: 0px;">
       <label for="location" style="margin-left: 10px; margin-top: 0px;">Location:</label>
       <input type="text" id="location" placeholder="Enter location" style="margin-left: -110px; margin-top: 0px;">
@@ -71,12 +80,17 @@
     <!-- Action Buttons -->
     <div id="headerButtons" style="display: flex; gap: 8px; margin-left: 20px;">
       <button type="button" onclick="captureEntireScreen()">Email</button>
-      <button type="button" onclick="exportEquipmentPDF()" style="background-color: #28a745; color: white; font-weight: bold;">Export PDF</button>
+      <button type="button" onclick="exportToExcel()"
+        style="background-color: #217346; color: white; font-weight: bold;">Export Excel</button>
+      <button type="button" onclick="exportEquipmentPDF()"
+        style="background-color: #28a745; color: white; font-weight: bold;">Export PDF</button>
       <button type="button" onclick="zoomIn()">Zoom In</button>
       <button type="button" onclick="zoomOut()">Zoom Out</button>
       <button type="button" onclick="resetScreen()">Reset</button>
-      <button type="button" onclick="openScreenViews()" style="background-color: #0066cc; color: white; font-weight: bold;">Screen Views</button>
-      <button type="button" onclick="openTechnicalView()" style="background-color: #dc3545; color: white; font-weight: bold;">Technical</button>
+      <button type="button" onclick="openScreenViews()"
+        style="background-color: #0066cc; color: white; font-weight: bold;">Screen Views</button>
+      <button type="button" onclick="openTechnicalView()"
+        style="background-color: #dc3545; color: white; font-weight: bold;">Technical</button>
     </div>
   </header>
 
@@ -214,21 +228,25 @@
           <input type="checkbox" id="roeGraphicMix" name="roeGraphicMix">
           <label for="roeGraphicMix">
             <strong>ROE Graphite Mix</strong>
-            <span class="info-icon" title="Use to mix full and half panels" style="cursor: help; color: #0066cc; margin-left: 5px; font-size: 14px;">ℹ️</span>
+            <span class="info-icon" title="Use to mix full and half panels"
+              style="cursor: help; color: #0066cc; margin-left: 5px; font-size: 14px;">ℹ️</span>
           </label>
 
           <!-- Mixed tile inputs (shown when ROE Graphite Mix is enabled) -->
-          <div id="mixedTileInputs" style="display:none; margin-top:10px; padding:10px; border:1px solid #ddd; border-radius:5px; background-color:#f9f9f9;">
+          <div id="mixedTileInputs"
+            style="display:none; margin-top:10px; padding:10px; border:1px solid #ddd; border-radius:5px; background-color:#f9f9f9;">
             <div style="margin-bottom:10px;">
               <label><strong>ROE GP2.6 Half Tiles (Bottom):</strong></label>
               <div style="display:flex; gap:10px; margin-top:5px;">
                 <div>
                   <label for="halfHorizontal">Horizontal:</label>
-                  <input type="number" id="halfHorizontal" name="halfHorizontal" min="1" max="20" value="5" style="width:60px;">
+                  <input type="number" id="halfHorizontal" name="halfHorizontal" min="1" max="20" value="5"
+                    style="width:60px;">
                 </div>
                 <div>
                   <label for="halfVertical">Vertical:</label>
-                  <input type="number" id="halfVertical" name="halfVertical" min="1" max="20" value="3" style="width:60px;">
+                  <input type="number" id="halfVertical" name="halfVertical" min="1" max="20" value="3"
+                    style="width:60px;">
                 </div>
               </div>
             </div>
@@ -238,11 +256,13 @@
               <div style="display:flex; gap:10px; margin-top:5px;">
                 <div>
                   <label for="fullHorizontal">Horizontal:</label>
-                  <input type="number" id="fullHorizontal" name="fullHorizontal" min="1" max="20" value="5" style="width:60px;">
+                  <input type="number" id="fullHorizontal" name="fullHorizontal" min="1" max="20" value="5"
+                    style="width:60px;">
                 </div>
                 <div>
                   <label for="fullVertical">Vertical:</label>
-                  <input type="number" id="fullVertical" name="fullVertical" min="1" max="20" value="3" style="width:60px;">
+                  <input type="number" id="fullVertical" name="fullVertical" min="1" max="20" value="3"
+                    style="width:60px;">
                 </div>
               </div>
             </div>
@@ -266,19 +286,22 @@
 
         <!-- Block inputs -->
         <div id="blockInputs">
-  <label for="blocksHor">Horizontal/Vertical</label><br>
-  <input type="number" id="blocksHor" name="blocksHor" min="1" value="5" style="width: 80px; margin-right: 10px;">
-  <input type="number" id="blocksVer" name="blocksVer" min="1" step="1" value="5" style="width: 80px;">
-  <span id="halfRowHint" style="font-size: 11px; color: #666; margin-left: 5px; display: none;">(.5 = half row)</span>
-</div>
+          <label for="blocksHor">Horizontal/Vertical</label><br>
+          <input type="number" id="blocksHor" name="blocksHor" min="1" value="5"
+            style="width: 80px; margin-right: 10px;">
+          <input type="number" id="blocksVer" name="blocksVer" min="1" step="any" value="5" style="width: 80px;">
+          <span id="halfRowHint" style="font-size: 11px; color: #666; margin-left: 5px; display: none;">(.5 = half
+            row)</span>
+        </div>
 
         <!-- Dimension inputs -->
-<div id="dimensionInputs">
-  <label for="widthFeet">Width and Height:</label><br>
-  <input type="number" id="widthFeet" name="widthFeet" min="0" step="any" value="1" style="width: 80px; margin-right: 10px;">
-  <input type="number" id="heightFeet" name="heightFeet" min="0" step="any" value="1" style="width: 80px;">
-  <div id="dimensionVerticalWarning" class="warning"></div>
-</div>
+        <div id="dimensionInputs">
+          <label for="widthFeet">Width and Height:</label><br>
+          <input type="number" id="widthFeet" name="widthFeet" min="0" step="any" value="1"
+            style="width: 80px; margin-right: 10px;">
+          <input type="number" id="heightFeet" name="heightFeet" min="0" step="any" value="1" style="width: 80px;">
+          <div id="dimensionVerticalWarning" class="warning"></div>
+        </div>
 
         <!-- Add a new checkbox for Multiple Screen Management above the Advanced Options -->
         <div id="multipleScreenManagementContainer" style="margin-top:0px;">
@@ -350,8 +373,8 @@
         </div>
 
         <!-- Source Signals -->
-        <div id="powerDistroOptions">
-          <label for="powerDistroType"># of Source Signals:</label>
+        <div id="sourceSignalsContainer">
+          <label for="sourceSignals"># of Source Signals:</label>
           <input type="number" id="sourceSignals" name="sourceSignals" value="1" min="1" max="15">
         </div>
 
@@ -431,7 +454,7 @@
             <option value="Single Header">Single Header</option>
             <option value="Double Header" selected>Double Header</option>
           </select>
-		  <div id="IBoltWarning" style="display: none; color: red; font-weight: bold; margin-top: 8px;"></div>
+          <div id="IBoltWarning" style="display: none; color: red; font-weight: bold; margin-top: 8px;"></div>
 
         </div>
         <br>
@@ -480,7 +503,7 @@
               </span>
             </div>
           </div>
-          
+
           <!-- Options to show only when "Multiple Screens" is selected -->
           <div id="multipleScreensOptions" style="display:none; margin-top:10px;">
             <div id="screenMultiplier" style="display: flex; align-items: center; gap: 5px;">
@@ -492,7 +515,7 @@
                 <option value="4">4</option>
               </select>
             </div>
-            
+
             <!-- Checkboxes for keeping quantities fixed -->
             <div id="removeOptionsContainer" style="display: flex; gap: 50px; margin-top:10px;">
               <div>
@@ -532,21 +555,23 @@
         <div id="totalPixels"></div>
         <canvas id="wallCanvas2D"></canvas>
         <div id="captureButtonContainer">
-          <button type="button" class="capture-diagram-button" id="captureWiringButton" style="display: none;">📸 Capture Wiring Diagram</button>
+          <button type="button" class="capture-diagram-button" id="captureWiringButton" style="display: none;">📸
+            Capture Wiring Diagram</button>
         </div>
         <div id="totalWallWeight"></div>
         <div id="totalWeight"></div>
         <div id="totalPower"></div>
         <div id="dataPortsNeeded"></div>
+        <div id="circuitsInfo"></div>
 
 
-         <!-- NEW: Hidden message that we'll show for Absen/ROE/Theatrixx -->
+        <!-- NEW: Hidden message that we'll show for Absen/ROE/Theatrixx -->
         <div id="cannotProcessMsg" style="display: block; color: red; margin-top: 10px;">
-    WDC, Boston, Ft. Lauderdale, Nashville &amp; Phoenix cannot process LED tiles.
-  </div>
-  <div id="ledTeamContactMsg" style="display: block; color: blue; margin-top: 5px;">
-    Reach out to the LED Team for questions about power and processing requirements.
-  </div>
+          WDC, Boston, Ft. Lauderdale, Nashville &amp; Phoenix cannot process LED tiles.
+        </div>
+        <div id="ledTeamContactMsg" style="display: block; color: blue; margin-top: 5px;">
+          Reach out to the LED Team for questions about power and processing requirements.
+        </div>
       </div>
     </div> <!-- End topSection -->
 
@@ -561,88 +586,88 @@
 
 
 
-  <script>
-    // Hidden GP2 Half product activation via Alt+S keyboard shortcut
-    // Make it globally accessible so main.js can sync the flag when auto-restoring
-    window.gp2HalfActivated = false;
+    <script>
+      // Hidden GP2 Half product activation via Alt+S keyboard shortcut
+      // Make it globally accessible so main.js can sync the flag when auto-restoring
+      window.gp2HalfActivated = false;
 
-    // Wait for DOM to be ready
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('GP2 Half keyboard shortcut listener initialized. Press Alt+S to activate.');
+      // Wait for DOM to be ready
+      document.addEventListener('DOMContentLoaded', function () {
+        console.log('GP2 Half keyboard shortcut listener initialized. Press Alt+S to activate.');
 
-      document.addEventListener('keydown', function(event) {
-        // More robust key detection - check multiple properties
-        const isAltPressed = event.altKey;
-        const isSKey = event.key === 's' || event.key === 'S' ||
-                       event.code === 'KeyS' ||
-                       event.keyCode === 83;
+        document.addEventListener('keydown', function (event) {
+          // More robust key detection - check multiple properties
+          const isAltPressed = event.altKey;
+          const isSKey = event.key === 's' || event.key === 'S' ||
+            event.code === 'KeyS' ||
+            event.keyCode === 83;
 
-        if (isAltPressed && isSKey) {
-          console.log('Alt+S detected!');
-          event.preventDefault(); // Prevent default browser behavior
+          if (isAltPressed && isSKey) {
+            console.log('Alt+S detected!');
+            event.preventDefault(); // Prevent default browser behavior
 
-          const productSelect = document.getElementById('productType');
-          const existingOption = document.getElementById('gp2HalfProductOption'); // Changed to unique ID
+            const productSelect = document.getElementById('productType');
+            const existingOption = document.getElementById('gp2HalfProductOption'); // Changed to unique ID
 
-          console.log('DEBUG - productSelect found:', productSelect !== null);
-          console.log('DEBUG - existingOption found:', existingOption !== null);
-          console.log('DEBUG - gp2HalfActivated:', window.gp2HalfActivated);
-          console.log('DEBUG - Condition check: !gp2HalfActivated =', !window.gp2HalfActivated, '&& !existingOption =', !existingOption);
+            console.log('DEBUG - productSelect found:', productSelect !== null);
+            console.log('DEBUG - existingOption found:', existingOption !== null);
+            console.log('DEBUG - gp2HalfActivated:', window.gp2HalfActivated);
+            console.log('DEBUG - Condition check: !gp2HalfActivated =', !window.gp2HalfActivated, '&& !existingOption =', !existingOption);
 
-          if (!window.gp2HalfActivated && !existingOption) {
-            console.log('DEBUG - Adding GP2 Half option now...');
+            if (!window.gp2HalfActivated && !existingOption) {
+              console.log('DEBUG - Adding GP2 Half option now...');
 
-            // Preserve current selection
-            const currentValue = productSelect.value;
-            console.log('DEBUG - Current productType value:', currentValue);
+              // Preserve current selection
+              const currentValue = productSelect.value;
+              console.log('DEBUG - Current productType value:', currentValue);
 
-            // Add the option
-            const option = document.createElement('option');
-            option.value = 'ROEGP26Half';
-            option.id = 'gp2HalfProductOption'; // Changed to unique ID
-            option.textContent = 'ROE GP2.6 Half';
-            productSelect.appendChild(option);
+              // Add the option
+              const option = document.createElement('option');
+              option.value = 'ROEGP26Half';
+              option.id = 'gp2HalfProductOption'; // Changed to unique ID
+              option.textContent = 'ROE GP2.6 Half';
+              productSelect.appendChild(option);
 
-            // Restore previous selection to prevent triggering change events
-            if (currentValue) {
-              productSelect.value = currentValue;
+              // Restore previous selection to prevent triggering change events
+              if (currentValue) {
+                productSelect.value = currentValue;
+              }
+
+              window.gp2HalfActivated = true;
+
+              console.log('✓ GP2 Half option activated!');
+              console.log('DEBUG - Option added. Select now has', productSelect.options.length, 'options');
+              console.log('DEBUG - Last option:', productSelect.options[productSelect.options.length - 1].textContent);
+
+              // Show a brief notification to the user
+              const notification = document.createElement('div');
+              notification.textContent = '✓ GP2 Half option activated';
+              notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 5px; z-index: 10000; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+              document.body.appendChild(notification);
+              setTimeout(() => notification.remove(), 2500);
+            } else if (window.gp2HalfActivated && existingOption) {
+              console.log('DEBUG - Removing GP2 Half option...');
+
+              // Remove the option
+              existingOption.remove();
+              window.gp2HalfActivated = false;
+              console.log('GP2 Half option deactivated');
+
+              // Show notification
+              const notification = document.createElement('div');
+              notification.textContent = 'GP2 Half option deactivated';
+              notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff9800; color: white; padding: 15px 20px; border-radius: 5px; z-index: 10000; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+              document.body.appendChild(notification);
+              setTimeout(() => notification.remove(), 2500);
+            } else {
+              console.log('DEBUG - No action taken. Current state does not match any condition.');
             }
-
-            window.gp2HalfActivated = true;
-
-            console.log('✓ GP2 Half option activated!');
-            console.log('DEBUG - Option added. Select now has', productSelect.options.length, 'options');
-            console.log('DEBUG - Last option:', productSelect.options[productSelect.options.length - 1].textContent);
-
-            // Show a brief notification to the user
-            const notification = document.createElement('div');
-            notification.textContent = '✓ GP2 Half option activated';
-            notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 15px 20px; border-radius: 5px; z-index: 10000; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 2500);
-          } else if (window.gp2HalfActivated && existingOption) {
-            console.log('DEBUG - Removing GP2 Half option...');
-
-            // Remove the option
-            existingOption.remove();
-            window.gp2HalfActivated = false;
-            console.log('GP2 Half option deactivated');
-
-            // Show notification
-            const notification = document.createElement('div');
-            notification.textContent = 'GP2 Half option deactivated';
-            notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ff9800; color: white; padding: 15px 20px; border-radius: 5px; z-index: 10000; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 2500);
-          } else {
-            console.log('DEBUG - No action taken. Current state does not match any condition.');
           }
-        }
+        });
       });
-    });
-  </script>
+    </script>
 
   <script src="js/main.js?v=20260224b"></script>
 </body>
-</html>
 
+</html>
