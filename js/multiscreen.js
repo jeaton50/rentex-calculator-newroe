@@ -191,6 +191,7 @@ const MultiScreenManager = {
         amps110: processing.totalAmps110,
         amps208: processing.totalAmps208
       },
+      distro: distro,
       recalcItems
     };
   },
@@ -793,13 +794,18 @@ const MultiScreenManager = {
     // Determine processor requirements based on total data ports
     // SX40 can handle up to 16 outputs
     // S8 can handle up to 8 outputs
-    if (totalDataPorts <= 8) {
+    const needsXD10 = totalDataPorts > 4; // Reference: XD10 is used if more than 4 ports are needed for SX40
+
+    if (totalDataPorts <= 8 && !productTypes.has('BP2B1') && !productTypes.has('BP2B2') && !productTypes.has('BP2V2')) {
+      // Small system, not Brompton flagship
       processorRequirements.S8 = 1;
-    } else if (totalDataPorts <= 16) {
-      processorRequirements.SX40 = 1;
     } else {
-      // Need multiple processors
+      // Brompton SX40 system
       processorRequirements.SX40 = Math.ceil(totalDataPorts / 16);
+      if (needsXD10) {
+        // SX40 has 4 local ports, then needs XD10 for additional ports (up to 10 per XD10)
+        processorRequirements.XD10 = Math.ceil((totalDataPorts - 0) / 10);
+      }
     }
 
     return {

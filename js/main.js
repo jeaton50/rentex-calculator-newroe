@@ -1030,6 +1030,12 @@ window.generateAllEquipment = function () {
   // Update power/weight summary for both modes
   if (summaryContent) {
     if (window.screenCombineMode === 'single') {
+      // Get distro info from the data
+      const distro = singleRoomData.distro || {};
+      let distroText = 'None';
+      if (distro.TP1 > 0) distroText = `TP1 (400A) x${distro.TP1}`;
+      else if (distro.CUBEDIST > 0) distroText = `Cube Distro (200A) x${distro.CUBEDIST}`;
+
       // Simplified "Single Room" summary block
       summaryContent.innerHTML = `
         <div style="padding: 15px; background-color: #e7f3ff; border: 1px solid #b3d7ff; border-radius: 6px; margin-bottom: 20px;">
@@ -1041,7 +1047,7 @@ window.generateAllEquipment = function () {
             </div>
             <div class="power-summary">
               <div style="margin-bottom: 5px;"><strong>Total Combined Power:</strong> ${combinedWatts.toFixed(2)}W</div>
-              <div style="font-size: 0.85em; color: #555;">Requirement: ${combinedAmps.toFixed(2)}A @ ${combinedVoltage.join('/')}V</div>
+              <div style="font-size: 0.85em; color: #555;">Distro: ${distroText} | Requirement: ${combinedAmps.toFixed(2)}A @ ${combinedVoltage.join('/')}V</div>
             </div>
           </div>
         </div>
