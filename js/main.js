@@ -1063,9 +1063,19 @@ window.generateAllEquipment = function () {
 
   const combinedTbody = combinedTable.querySelector('tbody');
 
-  // Use natural equipment order (tiles → processors → structural → cables → power distro)
-  // instead of alphabetical sort, matching the single-screen equipment table order
-  const consolidatedEquipment = combinedEquipmentOrder.map(key => combinedEquipment[key]);
+  // Use natural equipment order from CANONICAL_EQUIPMENT_ORDER if available
+  const consolidatedEquipment = Object.values(combinedEquipment);
+  consolidatedEquipment.sort((a, b) => {
+    const ecodeA = (a.ecode || '').trim();
+    const ecodeB = (b.ecode || '').trim();
+    const indexA = CANONICAL_EQUIPMENT_ORDER.indexOf(ecodeA);
+    const indexB = CANONICAL_EQUIPMENT_ORDER.indexOf(ecodeB);
+
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return (a.name || '').localeCompare(b.name || '');
+  });
 
   // Add combined equipment to table
   for (const item of consolidatedEquipment) {

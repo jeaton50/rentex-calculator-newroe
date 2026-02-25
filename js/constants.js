@@ -194,13 +194,42 @@ const EQUIPMENT = {
   ECON050C6: { code: 'ECON050C6', name: "Ethercon (CAT6) 50'", weight: 3, image: 'ECON050C6.png' },
   ECON100C6: { code: 'ECON100C6', name: "Ethercon (CAT6) 100'", weight: 6, image: 'ECON100C6.png' },
   ECON1M: { code: 'ECON1M', name: "Ethercon to Ethercon 1m", weight: 0.25, image: 'ECON1M.png' },
-  TRUE125FT: { code: 'TRUE125FT', name: "True1 to True1 cable, 25'", weight: 4, image: 'TRUE125FT.png' },
+  T1025: { code: 'T1025', name: "True1 power cable 25'", weight: 4, image: 'TRUE125FT.png' },
   EDT110M: { code: 'EDT110M', name: "Edison to True1 power cable, 10 meter", weight: 3.2, image: 'EDT110M.png' },
   T11M: { code: 'T11M', name: "True1 power cable 1M (3')", weight: 0.44, image: 'T11M.png' },
 
   // Misc
   SANDBAG25: { code: 'SANDBAG25', name: 'Sand Bag 25 lbs.', weight: 25, image: 'SANDBAG25.png' }
 };
+
+// Canonical equipment display order
+const CANONICAL_EQUIPMENT_ORDER = [
+  // Tile packages/cases
+  '8PPL25', '8PBP2B1', '8PBP2B2', '8PBP2V2', '6GP2FULL', '6GP2HALF', '10PTXNOMAD',
+  'PL25CASE', 'BP2V2CASE', 'CATXLED', 'BP2DTCASE',
+
+  // Tiles
+  'PL25', 'BP2B1', 'BP2B2', 'BP2V2', 'ROEGP26FULL', 'ROEGP26HALF', 'TXNOMAD26', 'BP2DT',
+
+  // Processors
+  'SX40', 'XD10', 'S8', 'MX40PRO',
+
+  // Structural (Headers, Bases, Truss, etc)
+  'PL25HEAD1', 'PL25HEAD2', 'BPBOHEAD1', 'BPBOHEAD2', 'GP2HEAD1', 'GP2HEAD2', 'TXDBLHEAD', 'TXSNGLHEAD',
+  'PL25BB1', 'PL25BB2', 'BPBOBB1', 'BPBOBB2', 'GP2BASE1', 'GP2BASE2', 'TXBASE1W', 'TXBASE2W',
+  'BPGPUBT', 'BPGPREAR05', 'BPGPREAR1', 'BPGPBRIDGE',
+  'TXSKIFRAME', 'TXSTAKEXT', 'TXLADDER', 'TXBRACKETS', 'TXVERTSPRT', 'TXSKIFTSNG', 'TXBRACKETC', 'TXM10B',
+  'PL25OUT', 'PL25LAD1M', 'PL25CLAMP', 'PL25BEAM50', 'PL25BEAM1K', 'PL25BEAMAD', 'PL25PLAT',
+  'BP25DGREE', 'BP2BBOLT', 'LED4FTS40', '15PIPECPL',
+  'SANDBAG25',
+
+  // Cables
+  'CAT5ES005', 'ECON010C6', 'ECON050C6', 'ECON100C6', 'ECON1M', 'TXT92TXT9', 'TXT92ETRCN',
+  'T1016', 'T1025', 'TXT32T125', 'T11M', 'TXT3POWER', 'EDT110M', 'TXT32ED6',
+
+  // Power Distro
+  'CUBEDIST', 'TP1', 'L2130T1FB', 'SOCA6XTRU1', 'TXT32SOCA'
+];
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {

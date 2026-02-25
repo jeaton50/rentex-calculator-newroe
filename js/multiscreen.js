@@ -43,7 +43,7 @@ const MultiScreenManager = {
 
     // Specific True1 cables to keep (not filter out)
     const keepItems = [
-      { ecode: 'TRUE125FT', name: "True1 to True1 cable, 25'" },
+      { ecode: 'T1025', name: "True1 power cable 25'" },
       { ecode: 'T11M', name: "True1 power cable 1M (3')" }
     ];
 
@@ -105,7 +105,7 @@ const MultiScreenManager = {
   isCableEquipment(ecode, name) {
     const cableEcodes = [
       'CAT5ES005', 'ECON010C6', 'ECON050C6', 'ECON100C6', 'ECON1M',
-      'TRUE125FT', 'T11M', 'EDT110M', 'TXT32ED6', 'TXT32T125'
+      'T1025', 'T11M', 'EDT110M', 'TXT32ED6', 'TXT32T125'
     ];
     return cableEcodes.includes(ecode);
   },
@@ -125,7 +125,7 @@ const MultiScreenManager = {
       // Data cables
       'CAT5ES005', 'ECON010C6', 'ECON050C6', 'ECON100C6', 'ECON1M',
       // Power cables
-      'TRUE125FT', 'T11M', 'EDT110M', 'TXT32ED6', 'TXT32T125'
+      'T1025', 'T11M', 'EDT110M', 'TXT32ED6', 'TXT32T125'
     ]);
     return recalcEcodes.has(ecode);
   },
@@ -802,11 +802,29 @@ const MultiScreenManager = {
       MX40PRO: 0
     };
 
+    let totalWatts = 0;
+    let totalAmps110 = 0;
+    let totalAmps208 = 0;
+    let totalPixels = 0;
+
     // Calculate totals from all screens
     window.screenConfigurations.forEach((config) => {
       const screenTiles = config.blocksHor * config.blocksVer;
       totalTiles += screenTiles;
       productTypes.add(config.productType);
+
+      // Calculate pixels sum
+      const p = CONSTANTS.PIXELS_PER_TILE[config.productType] || 200;
+      totalPixels += (config.blocksHor * p) * (config.blocksVer * p);
+
+      // Calculate power sum
+      const power = EquipmentCalculator.calculatePower(config.productType, screenTiles, (config.powerDistroType == '110' ? 110 : 208));
+      totalWatts += power.watts;
+      if (config.powerDistroType == '110') {
+        totalAmps110 += power.amps;
+      } else {
+        totalAmps208 += power.amps;
+      }
 
       // Calculate data ports needed based on product type
       let daisyChainLimit = 10; // Default for Absen and Theatrixx
@@ -832,6 +850,10 @@ const MultiScreenManager = {
     return {
       totalTiles,
       totalDataPorts,
+      totalPixels,
+      totalWatts,
+      totalAmps110,
+      totalAmps208,
       productTypes: Array.from(productTypes),
       processors: processorRequirements
     };
@@ -863,6 +885,8 @@ const MultiScreenManager = {
     let processingHTML = '<h3>Combined Processing Requirements</h3>';
     processingHTML += '<div style="margin-bottom: 15px;">';
     processingHTML += `<p><strong>Total Tiles:</strong> ${processingReqs.totalTiles}</p>`;
+    processingHTML += `<p><strong>Total Screen Pixels:</strong> ${processingReqs.totalPixels.toLocaleString()} px</p>`;
+    processingHTML += `<p><strong>Total Power:</strong> ${processingReqs.totalWatts.toFixed(2)}W (${(processingReqs.totalAmps110 + processingReqs.totalAmps208).toFixed(2)}A)</p>`;
     processingHTML += `<p><strong>Total Data Ports Needed:</strong> ${processingReqs.totalDataPorts}</p>`;
     processingHTML += `<p><strong>Product Types:</strong> ${processingReqs.productTypes.join(', ')}</p>`;
     processingHTML += '</div>';
