@@ -240,6 +240,40 @@ const ExportManager = {
           data.push([ecodes, ecodes, ecodes, qtyOrdered, equipmentName, sortOrder++]);
         });
 
+        // Add performance totals for the combined system
+        data.push(['', '', '', '', '', sortOrder++]); // Spacer
+        data.push(['', '', '', '', '===== SYSTEM PERFORMANCE TOTALS =====', sortOrder++]);
+
+        let totalCombinedPixels = 0;
+        let totalCombinedWatts = 0;
+        let totalCombinedAmps = 0;
+        let totalCombinedHorPixels = 0;
+        let totalCombinedVerPixels = 0;
+
+        if (window.screenCombineMode === 'single' && typeof window.calculateSingleRoomEquipment === 'function') {
+          const singleRoomData = window.calculateSingleRoomEquipment();
+          totalCombinedPixels = singleRoomData.totalPixels || 0;
+          totalCombinedHorPixels = singleRoomData.totalHorPixels || 0;
+          totalCombinedVerPixels = singleRoomData.totalVerPixels || 0;
+          totalCombinedWatts = singleRoomData.power.watts || 0;
+          totalCombinedAmps = singleRoomData.power.amps || 0;
+        } else {
+          if (typeof MultiScreenManager !== 'undefined' && MultiScreenManager.calculateCombinedProcessing) {
+            const processingResults = MultiScreenManager.calculateCombinedProcessing();
+            totalCombinedPixels = processingResults.totalPixels || 0;
+            totalCombinedHorPixels = processingResults.totalHorPixels || 0;
+            totalCombinedVerPixels = processingResults.totalVerPixels || 0;
+            totalCombinedWatts = processingResults.totalWatts || 0;
+            totalCombinedAmps = processingResults.totalAmps110 + processingResults.totalAmps208;
+          }
+        }
+
+        data.push(['', '', '', '', `Total Screen Pixels: ${totalCombinedPixels.toLocaleString()} px`, sortOrder++]);
+        data.push(['', '', '', '', `Total Horizontal Pixels: ${totalCombinedHorPixels.toLocaleString()} px`, sortOrder++]);
+        data.push(['', '', '', '', `Total Vertical Pixels: ${totalCombinedVerPixels.toLocaleString()} px`, sortOrder++]);
+        data.push(['', '', '', '', `Total Power: ${totalCombinedWatts.toFixed(2)}W`, sortOrder++]);
+        data.push(['', '', '', '', `Total Amperage: ${totalCombinedAmps.toFixed(2)}A`, sortOrder++]);
+
       } catch (error) {
         console.error('Error in multiple screen export:', error);
         alert('There was an error exporting multiple screen equipment. Falling back to single screen export.');

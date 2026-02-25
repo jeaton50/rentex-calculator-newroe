@@ -1028,10 +1028,9 @@ window.generateAllEquipment = function () {
   }
 
   // Update power/weight summary for both modes
-  summaryContentDiv = document.getElementById('powerWeightSummary');
-  if (summaryContentDiv) {
+  if (summaryContent) {
     const modeLabel = (window.screenCombineMode === 'single') ? 'Single Room' : 'Individual Rooms';
-    summaryContentDiv.innerHTML = `
+    summaryContent.innerHTML = `
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
         <div class="power-summary">
           <h4 style="margin-top: 0;">System Performance <span style="color: #007bff; font-size: 0.85em;">(${modeLabel})</span></h4>
