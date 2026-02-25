@@ -710,15 +710,14 @@ const EquipmentCalculator = {
       const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows;
 
       // GP2 Half: round up to next full case — no forced extra spare case
-      const { totalTiles: gp2HalfWithSpares } = calcCasesAndSpares(gp2HalfTilesNeeded, 12);
+      const { totalCases: halfCasesForCables, totalTiles: gp2HalfWithSpares } = calcCasesAndSpares(gp2HalfTilesNeeded, 12);
 
       totalTilesWithSparesIncludingHalf = totalTilesWithSpares + gp2HalfWithSpares;
 
       console.log('GP2 cable calculation - tiles with spares:', {
         gp2FullWithSpares: totalTilesWithSpares,
         gp2HalfTiles: gp2HalfTilesNeeded,
-        gp2HalfActiveCases: halfActiveCases,
-        gp2HalfTotalCases: halfTotalCases,
+        gp2HalfCases: halfCasesForCables,
         gp2HalfWithSpares,
         totalWithSpares: totalTilesWithSparesIncludingHalf
       });
