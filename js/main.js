@@ -448,7 +448,6 @@ function generateWall() {
 
     // Calculate spares for each type (always add at least 1 spare case if tiles exist)
     // GP2 Half: packages of 12
-    const halfPackageSize = 12;
     let halfTilesWithSpares = 0;
     let halfSpares = 0;
     if (halfTiles > 0) {
@@ -459,7 +458,6 @@ function generateWall() {
     }
 
     // GP2 Full: packages of 6
-    const fullPackageSize = 6;
     let fullTilesWithSpares = 0;
     let fullSpares = 0;
     if (fullTiles > 0) {

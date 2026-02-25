@@ -168,6 +168,39 @@ function calculateGP26Sandbags(productType, horizontalBlocks, verticalBlocks, gp
    ORIGINAL HELPERS & CALCULATOR NAMESPACE
    ============================================================================ */
 
+/* ============================================================================
+   GP2 CASE/SPARE HELPER
+   Single source of truth for GP2 Full (packageSize=6) and GP2 Half (packageSize=12).
+   Rule: round up to the next full case — NO forced extra spare case.
+   ============================================================================ */
+
+/**
+ * @param {number} activeTiles  - Active (needed) tiles for this product type
+ * @param {number} packageSize  - Tiles per case (6 = GP2 Full, 12 = GP2 Half)
+ * @returns {{ totalCases: number, totalTiles: number, spareTiles: number }}
+ */
+function calcCasesAndSpares(activeTiles, packageSize) {
+  const totalCases = Math.ceil(activeTiles / packageSize);
+  const totalTiles = totalCases * packageSize;
+  const spareTiles = totalTiles - activeTiles;
+  return { totalCases, totalTiles, spareTiles };
+}
+window.calcCasesAndSpares = calcCasesAndSpares;
+
+// Dev verification — repro case: 2 wide × 2.5 tall
+(function _verifyCasesAndSpares() {
+  const full = calcCasesAndSpares(4, 6);   // GP2 Full: 4 active tiles
+  const half = calcCasesAndSpares(2, 12);  // GP2 Half: 2 active tiles
+  console.assert(full.totalCases === 1  && full.totalTiles === 6  && full.spareTiles === 2,
+    '[calcCasesAndSpares] GP2 Full 4-tile assertion FAILED', full);
+  console.assert(half.totalCases === 1  && half.totalTiles === 12 && half.spareTiles === 10,
+    '[calcCasesAndSpares] GP2 Half 2-tile assertion FAILED', half);
+  if (full.totalCases === 1 && full.totalTiles === 6  && full.spareTiles === 2 &&
+      half.totalCases === 1 && half.totalTiles === 12 && half.spareTiles === 10) {
+    console.log('[calcCasesAndSpares] ✓ Repro OK: GP2Full(4)→{cases:1,tiles:6,spare:2} | GP2Half(2)→{cases:1,tiles:12,spare:10}');
+  }
+}());
+
 function addEquipmentRow(ecode, name, weight, quantity, tbody) {
   if (!tbody || !Number.isFinite(quantity) || quantity <= 0) return;
 
@@ -676,11 +709,8 @@ const EquipmentCalculator = {
     if (productType === "ROEGP26Full" && gp2HalfBottomRow && gp2HalfRows > 0) {
       const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows;
 
-      // GP2 Half: Use package-based spare calculation (round up to next full case)
-      const packageSize = 12;
-      const halfActiveCases = Math.ceil(gp2HalfTilesNeeded / packageSize);
-      const halfTotalCases = halfActiveCases;
-      const gp2HalfWithSpares = halfTotalCases * packageSize;
+      // GP2 Half: round up to next full case — no forced extra spare case
+      const { totalTiles: gp2HalfWithSpares } = calcCasesAndSpares(gp2HalfTilesNeeded, 12);
 
       totalTilesWithSparesIncludingHalf = totalTilesWithSpares + gp2HalfWithSpares;
 
@@ -1272,14 +1302,14 @@ function addROEGP26Equipment(config, tbody) {
   }
 
   if (productType === "ROEGP26Full") {
-    const packageCount = Math.ceil(totalTilesWithSpares / 6);
-    const activeCases = Math.ceil(totalTiles / 6);
-    const spareCases = packageCount - activeCases;
+    const { totalCases: packageCount, spareTiles: fullSpareTiles } = calcCasesAndSpares(totalTiles, 6);
+    const activeCases = packageCount; // all cases are active; spare tiles live within the rounded-up case(s)
+    const spareCases = 0;            // no forced extra spare case
 
     addEquipmentRow("6GP2FULL", `ROE GP2.6 Full 6x tile package (${activeCases} active + ${spareCases} spare)`, 0, packageCount, tbody);
     addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm", 19.84, totalTiles, tbody);
-    if (totalSpareTiles > 0) {
-      addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm **SPARE**", 19.84, totalSpareTiles, tbody);
+    if (fullSpareTiles > 0) {
+      addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm **SPARE**", 19.84, fullSpareTiles, tbody);
     }
 
     // Add GP2 Half tiles for fractional input (e.g., 4.5 = 4 Full + 1 Half)
@@ -1287,13 +1317,11 @@ function addROEGP26Equipment(config, tbody) {
       console.log('Adding GP2 Half equipment - rows:', gp2HalfRows, 'horizontalBlocks:', horizontalBlocks);
       const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows;
 
-      // GP2 Half: Round up to next full case
-      const packageSize = 12;
-      const halfActiveCases = Math.ceil(gp2HalfTilesNeeded / packageSize);
-      const halfTotalCases = halfActiveCases;
-      const gp2HalfWithSpare = halfTotalCases * packageSize;
-      const gp2HalfSpareTiles = gp2HalfWithSpare - gp2HalfTilesNeeded;
-      const halfSpareCases = halfTotalCases - halfActiveCases;
+      // GP2 Half: round up to next full case — no forced extra spare case
+      const { totalCases: halfTotalCases, totalTiles: gp2HalfWithSpare, spareTiles: gp2HalfSpareTiles } =
+        calcCasesAndSpares(gp2HalfTilesNeeded, 12);
+      const halfActiveCases = halfTotalCases;
+      const halfSpareCases = 0;
 
       console.log('GP2 Half spare calculation:', {
         tilesNeeded: gp2HalfTilesNeeded,
@@ -1314,14 +1342,14 @@ function addROEGP26Equipment(config, tbody) {
       console.log('NOT adding GP2 Half equipment - gp2HalfBottomRow:', gp2HalfBottomRow, 'gp2HalfRows:', gp2HalfRows);
     }
   } else {
-    const packageCount = Math.ceil(totalTilesWithSpares / 12);
-    const activeCases = Math.ceil(totalTiles / 12);
-    const spareCases = packageCount - activeCases;
+    const { totalCases: packageCount, spareTiles: halfSpareTiles } = calcCasesAndSpares(totalTiles, 12);
+    const activeCases = packageCount; // all cases are active; spare tiles live within the rounded-up case(s)
+    const spareCases = 0;            // no forced extra spare case
 
     addEquipmentRow("6GP2HALF", `ROE GP2.6 Half 12x tile package (${activeCases} active + ${spareCases} spare)`, 0, packageCount, tbody);
     addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm", 11.44, totalTiles, tbody);
-    if (totalSpareTiles > 0) {
-      addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm **SPARE**", 11.44, totalSpareTiles, tbody);
+    if (halfSpareTiles > 0) {
+      addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm **SPARE**", 11.44, halfSpareTiles, tbody);
     }
   }
 
@@ -1399,19 +1427,17 @@ function addROEGP26Equipment(config, tbody) {
     if (typeof displayWallWeight === "function") displayWallWeight(totalWeight);
 
     let caseWeight = totalWeight;
-    const packageCount =
-      productType === "ROEGP26Full"
-        ? Math.ceil(totalTilesWithSpares / 6)
-        : Math.ceil(totalTilesWithSpares / 12);
+    const packageCount = productType === "ROEGP26Full"
+      ? calcCasesAndSpares(totalTiles, 6).totalCases
+      : calcCasesAndSpares(totalTiles, 12).totalCases;
 
     caseWeight += 161.12 * packageCount;
 
     // Add GP2 Half package weight if present
     if (gp2HalfBottomRow && gp2HalfRows > 0) {
       const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows;
-      const gp2HalfWithSpare = Math.ceil(gp2HalfTilesNeeded * 1.08);
-      const gp2HalfPackageCount = Math.ceil(gp2HalfWithSpare / 12);
-      const gp2HalfSpareTiles = gp2HalfWithSpare - gp2HalfTilesNeeded;
+      const { totalCases: gp2HalfPackageCount, spareTiles: gp2HalfSpareTiles } =
+        calcCasesAndSpares(gp2HalfTilesNeeded, 12);
       caseWeight += 161.12 * gp2HalfPackageCount; // GP2 Half uses 12x packages
       caseWeight += 11.44 * gp2HalfSpareTiles; // Add spare tile weight
       console.log('Adding GP2 Half package weight:', gp2HalfPackageCount, 'packages');
@@ -1682,9 +1708,9 @@ function addROEGraphiteMixEquipment(config, tbody) {
 
   // Add GP2 Half tiles and packages
   if (halfTiles > 0) {
-    const halfPackageCount = Math.ceil(halfTilesWithSpares / 12); // 12 tiles per package
-    const halfActiveCases = Math.ceil(halfTiles / 12);
-    const halfSpareCases = halfPackageCount - halfActiveCases;
+    const { totalCases: halfPackageCount } = calcCasesAndSpares(halfTiles, 12);
+    const halfActiveCases = halfPackageCount;
+    const halfSpareCases = 0;
 
     addEquipmentRow("6GP2HALF", `ROE GP2.6 Half 12x tile package (${halfActiveCases} active + ${halfSpareCases} spare) (Graphite Mix)`, 0, halfPackageCount, tbody);
     addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm", 11.44, halfTiles, tbody);
@@ -1695,9 +1721,9 @@ function addROEGraphiteMixEquipment(config, tbody) {
 
   // Add GP2 Full tiles and packages
   if (fullTiles > 0) {
-    const fullPackageCount = Math.ceil(fullTilesWithSpares / 6); // 6 tiles per package
-    const fullActiveCases = Math.ceil(fullTiles / 6);
-    const fullSpareCases = fullPackageCount - fullActiveCases;
+    const { totalCases: fullPackageCount } = calcCasesAndSpares(fullTiles, 6);
+    const fullActiveCases = fullPackageCount;
+    const fullSpareCases = 0;
 
     addEquipmentRow("6GP2FULL", `ROE GP2.6 Full 6x tile package (${fullActiveCases} active + ${fullSpareCases} spare) (Graphite Mix)`, 0, fullPackageCount, tbody);
     addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm", 19.84, fullTiles, tbody);
@@ -1746,9 +1772,9 @@ function addROEGraphiteMixEquipment(config, tbody) {
     // Add spare tile weight
     caseWeight += halfTileWeight * halfSpares;
     caseWeight += fullTileWeight * fullSpares;
-    // Add package weight
-    const halfPackageCount = Math.ceil(halfTilesWithSpares / 12);
-    const fullPackageCount = Math.ceil(fullTilesWithSpares / 6);
+    // Add package weight (use shared helper for consistency with tile/case display)
+    const halfPackageCount = calcCasesAndSpares(halfTiles, 12).totalCases;
+    const fullPackageCount = calcCasesAndSpares(fullTiles, 6).totalCases;
     caseWeight += 161.12 * (halfPackageCount * 0.5); // Estimate: half packages weigh less
     caseWeight += 161.12 * fullPackageCount;
     caseWeight += 210 * (singleBases || 0);
