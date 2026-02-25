@@ -733,7 +733,7 @@ const EquipmentCalculator = {
 
       // Power cables / circuits
       EDT110M: adjustedPowerCables, // shown only on 120V in display logic
-      TRUE125FT: adjustedCircuits,  // this is your "number of circuits" output
+      T1025: adjustedCircuits,  // this is your "number of circuits" output
       T11M: totalTilesWithSparesIncludingHalf,
     };
   },
@@ -1077,7 +1077,7 @@ function addAbsenEquipment(config, tbody) {
   if (cables.ECON050C6 > 0) addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
   if (cables.ECON100C6 > 0) addEquipmentRow("ECON100C6", "Ethercon (CAT6) 100'", 6, cables.ECON100C6, tbody);
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
-  if (cables.TRUE125FT > 0) addEquipmentRow("TRUE125FT", "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
+  if (cables.T1025 > 0) addEquipmentRow("T1025", "True1 power cable 25'", 4, cables.T1025, tbody);
   if (cables.EDT110M > 0 && normalizeVoltage(voltage) === 120) addEquipmentRow("EDT110M", "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
   if (cables.T11M > 0) addEquipmentRow("T11M", "True1 power cable 1M (3')", 0.44, cables.T11M, tbody);
 
@@ -1218,7 +1218,7 @@ function addROEEquipment(config, tbody) {
   if (cables.ECON050C6 > 0) addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
   if (cables.ECON100C6 > 0) addEquipmentRow("ECON100C6", "Ethercon (CAT6) 100'", 6, cables.ECON100C6, tbody);
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
-  if (cables.TRUE125FT > 0) addEquipmentRow("TRUE125FT", "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
+  if (cables.T1025 > 0) addEquipmentRow("T1025", "True1 power cable 25'", 4, cables.T1025, tbody);
   if (cables.EDT110M > 0 && normalizeVoltage(voltage) === 120) addEquipmentRow("EDT110M", "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
   if (cables.T11M > 0) addEquipmentRow("T11M", "True1 power cable 1M (3')", 0.44, cables.T11M, tbody);
 
@@ -1413,7 +1413,7 @@ function addROEGP26Equipment(config, tbody) {
   if (cables.ECON050C6 > 0 && productType !== "ROEGP26Full") addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
   if (cables.ECON100C6 > 0) addEquipmentRow("ECON100C6", "Ethercon (CAT6) 100'", 6, cables.ECON100C6, tbody);
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
-  if (cables.TRUE125FT > 0) addEquipmentRow("TRUE125FT", "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
+  if (cables.T1025 > 0) addEquipmentRow("T1025", "True1 power cable 25'", 4, cables.T1025, tbody);
   if (cables.EDT110M > 0 && normalizeVoltage(voltage) === 120) addEquipmentRow("EDT110M", "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
   if (cables.T11M > 0) addEquipmentRow("T11M", "True1 power cable 1M (3')", 0.44, cables.T11M, tbody);
 
@@ -1755,7 +1755,7 @@ function addROEGraphiteMixEquipment(config, tbody) {
   if (cables.ECON050C6 > 0) addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
   if (cables.T1016 > 0) addEquipmentRow("T1016", "True1 Power Cable 16' (5m)", 2, cables.T1016, tbody);
-  if (cables.TRUE125FT > 0) addEquipmentRow("TRUE125FT", "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
+  if (cables.T1025 > 0) addEquipmentRow("T1025", "True1 power cable 25'", 4, cables.T1025, tbody);
 
   // Add power distribution
   if (powerDistro.CUBEDIST > 0) addEquipmentRow("CUBEDIST", "Indu Electric 200A Cube Distro", 177, powerDistro.CUBEDIST, tbody);

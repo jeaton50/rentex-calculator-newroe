@@ -43,7 +43,7 @@ const MultiScreenManager = {
 
     // Specific True1 cables to keep (not filter out)
     const keepItems = [
-      { ecode: 'TRUE125FT', name: "True1 to True1 cable, 25'" },
+      { ecode: 'T1025', name: "True1 power cable 25'" },
       { ecode: 'T11M', name: "True1 power cable 1M (3')" }
     ];
 
@@ -105,7 +105,7 @@ const MultiScreenManager = {
   isCableEquipment(ecode, name) {
     const cableEcodes = [
       'CAT5ES005', 'ECON010C6', 'ECON050C6', 'ECON100C6', 'ECON1M',
-      'TRUE125FT', 'T11M', 'EDT110M', 'TXT32ED6', 'TXT32T125'
+      'T1025', 'T11M', 'EDT110M', 'TXT32ED6', 'TXT32T125'
     ];
     return cableEcodes.includes(ecode);
   },
@@ -125,7 +125,7 @@ const MultiScreenManager = {
       // Data cables
       'CAT5ES005', 'ECON010C6', 'ECON050C6', 'ECON100C6', 'ECON1M',
       // Power cables
-      'TRUE125FT', 'T11M', 'EDT110M', 'TXT32ED6', 'TXT32T125'
+      'T1025', 'T11M', 'EDT110M', 'TXT32ED6', 'TXT32T125'
     ]);
     return recalcEcodes.has(ecode);
   },
