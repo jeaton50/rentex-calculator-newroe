@@ -993,15 +993,21 @@ window.generateAllEquipment = function () {
     }
 
     // Add recalculated items to combined equipment
+    console.log('Single Room Recalc Items:', singleRoomData.recalcItems);
     for (const item of singleRoomData.recalcItems) {
-      const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
-      combinedEquipment[key] = {
-        ecode: item.ecode,
-        name: item.name,
-        quantity: item.quantity,
-        weight: item.weight
-      };
-      combinedEquipmentOrder.push(key);
+      if (item.quantity > 0) {
+        const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
+        console.log(`Adding ${key} to combined equipment with qty ${item.quantity}`);
+        combinedEquipment[key] = {
+          ecode: item.ecode,
+          name: item.name,
+          quantity: item.quantity,
+          weight: item.weight
+        };
+        if (!combinedEquipmentOrder.includes(key)) {
+          combinedEquipmentOrder.push(key);
+        }
+      }
     }
 
     combinedAmps = singleRoomData.power.amps;

@@ -173,10 +173,20 @@ const MultiScreenManager = {
     if (processing.processors.MX40PRO > 0) recalcItems.push({ ecode: 'MX40PRO', name: 'Brompton MX40 Pro Processor', weight: 15, quantity: processing.processors.MX40PRO });
 
     // Add recalculated distro
-    if (distro.CUBEDIST > 0) recalcItems.push({ ecode: 'CUBEDIST', name: 'Indu Electric 200A Cube Distro', weight: 177, quantity: distro.CUBEDIST });
-    if (distro.TP1 > 0) recalcItems.push({ ecode: 'TP1', name: 'Indu Electric 400A Power Distro w/ (4) 208v Soca', weight: 197, quantity: distro.TP1 });
+    console.log('Distro calculated requirements:', distro);
+    if (distro.CUBEDIST > 0) {
+      console.log('Adding CUBEDIST to recalcItems');
+      recalcItems.push({ ecode: 'CUBEDIST', name: 'Indu Electric 200A Cube Distro', weight: 177, quantity: distro.CUBEDIST });
+    }
+    if (distro.TP1 > 0) {
+      console.log('Adding TP1 to recalcItems');
+      recalcItems.push({ ecode: 'TP1', name: 'Indu Electric 400A Power Distro w/ (4) 208v Soca', weight: 197, quantity: distro.TP1 });
+    }
     if (distro.L2130T1FB > 0) recalcItems.push({ ecode: 'L2130T1FB', name: 'L2130 floor box to 3x True1 with pass through', weight: 7.5, quantity: distro.L2130T1FB });
-    if (distro.SOCA6XTRU1 > 0) recalcItems.push({ ecode: 'SOCA6XTRU1', name: '19 Pin Socapex to 6x True1 Power Cable', weight: 5, quantity: distro.SOCA6XTRU1 });
+    if (distro.SOCA6XTRU1 > 0) {
+      console.log('Adding SOCA6XTRU1 to recalcItems');
+      recalcItems.push({ ecode: 'SOCA6XTRU1', name: '19 Pin Socapex to 6x True1 Power Cable', weight: 5, quantity: distro.SOCA6XTRU1 });
+    }
     if (distro.TXT32SOCA > 0) recalcItems.push({ ecode: 'TXT32SOCA', name: 'Theatrixx Nomad XVT3 to Socapex', weight: 22, quantity: distro.TXT32SOCA });
     if (distro.EDT110M > 0) recalcItems.push({ ecode: 'EDT110M', name: 'Edison to True1 power cable, 10 meter', weight: 3.2, quantity: distro.EDT110M });
 
@@ -511,11 +521,13 @@ const MultiScreenManager = {
 
       if (totalAmps208 <= 200) {
         CUBEDIST = 1;
+        TP1 = 0; // Ensure TP1 is 0 if CubeDist is used
         // Floor boxes: 3 circuits per box
         L2130T1FB = Math.ceil(totalTiles / 16 / 3);
       } else {
         // Larger distro for >200A
         TP1 = Math.ceil(totalAmps208 / 400);
+        CUBEDIST = 0; // Ensure CubeDist is 0 if TP1 is used
         // Soca breakouts: 6 circuits per breakout
         SOCA6XTRU1 = Math.ceil(totalTiles / 16 / 6);
 
