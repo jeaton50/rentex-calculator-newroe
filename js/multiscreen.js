@@ -476,13 +476,17 @@ const MultiScreenManager = {
       totalTiles += screenTiles;
       productTypes.add(config.productType);
 
+      // Resolve voltage string to a number for calculation
+      // 'Auto', 'CUBEDIST', 'TP1', '208' all maps to 208
+      // '110' maps to 110
+      let voltageInput = (config.powerDistroType == '110') ? 110 : 208;
+
       // Use EquipmentCalculator for precise power metrics if available
       let screenPower;
       if (typeof EquipmentCalculator !== 'undefined' && EquipmentCalculator.calculatePower) {
-        screenPower = EquipmentCalculator.calculatePower(config.productType, screenTiles, config.powerDistroType, config);
+        screenPower = EquipmentCalculator.calculatePower(config.productType, screenTiles, voltageInput, config);
       } else {
         // Fallback calculation logic (keep existing as baseline)
-        let voltage = (config.powerDistroType == '110') ? 110 : 208;
         let amps110 = 0, amps208 = 0, watts = 0;
 
         if (config.productType === 'absen') {
@@ -498,18 +502,18 @@ const MultiScreenManager = {
           amps208 = (screenTiles * 865.38461) / 1000;
           watts = screenTiles * 190;
         }
-        screenPower = { amps: (voltage === 110 ? amps110 : amps208), watts: watts };
+        screenPower = { amps: (voltageInput === 110 ? amps110 : amps208), watts: watts };
       }
 
-      // Add to totals based on configured voltage
-      if (config.powerDistroType == '110') {
+      // Add to totals based on resolved voltage
+      if (voltageInput === 110) {
         combinedPowerRequirements.voltage110 = true;
-        combinedPowerRequirements.totalAmps110 += screenPower.amps;
+        combinedPowerRequirements.totalAmps110 += (screenPower.amps || 0);
       } else {
         combinedPowerRequirements.voltage208 = true;
-        combinedPowerRequirements.totalAmps208 += screenPower.amps;
+        combinedPowerRequirements.totalAmps208 += (screenPower.amps || 0);
       }
-      combinedPowerRequirements.totalWatts += screenPower.watts;
+      combinedPowerRequirements.totalWatts += (screenPower.watts || 0);
     });
 
     // Calculate distribution requirements
