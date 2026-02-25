@@ -1029,25 +1029,44 @@ window.generateAllEquipment = function () {
 
   // Update power/weight summary for both modes
   if (summaryContent) {
-    const modeLabel = (window.screenCombineMode === 'single') ? 'Single Room' : 'Individual Rooms';
-    summaryContent.innerHTML = `
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-        <div class="power-summary">
-          <h4 style="margin-top: 0;">System Performance <span style="color: #007bff; font-size: 0.85em;">(${modeLabel})</span></h4>
-          <div><strong>Total Screen Pixels:</strong> ${(window.combinedPixels || 0).toLocaleString()} px</div>
-          <div><strong>Total Horizontal Pixels:</strong> ${(window.combinedHorPixels || 0).toLocaleString()} px</div>
-          <div><strong>Total Vertical Pixels:</strong> ${(window.combinedVerPixels || 0).toLocaleString()} px</div>
-          <div><strong>Total Power:</strong> ${combinedWatts.toFixed(2)}W</div>
-          <div><strong>Total Amperage:</strong> ${combinedAmps.toFixed(2)}A</div>
-          <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
+    if (window.screenCombineMode === 'single') {
+      // Simplified "Single Room" summary block
+      summaryContent.innerHTML = `
+        <div style="padding: 15px; background-color: #e7f3ff; border: 1px solid #b3d7ff; border-radius: 6px; margin-bottom: 20px;">
+          <h4 style="margin-top: 0; color: #0056b3; border-bottom: 1px solid #b3d7ff; padding-bottom: 8px;">Single Room System Summary</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 1.1em;">
+            <div class="pixel-summary">
+              <div style="margin-bottom: 5px;"><strong>Total Combined Pixels:</strong> ${(window.combinedPixels || 0).toLocaleString()} px</div>
+              <div style="font-size: 0.85em; color: #555;">Resolution: ${window.combinedHorPixels || 0}W × ${window.combinedVerPixels || 0}H</div>
+            </div>
+            <div class="power-summary">
+              <div style="margin-bottom: 5px;"><strong>Total Combined Power:</strong> ${combinedWatts.toFixed(2)}W</div>
+              <div style="font-size: 0.85em; color: #555;">Requirement: ${combinedAmps.toFixed(2)}A @ ${combinedVoltage.join('/')}V</div>
+            </div>
+          </div>
         </div>
-        <div class="weight-summary">
-          <h4 style="margin-top: 0;">Weight Summary <span style="color: #007bff; font-size: 0.85em;">(${modeLabel})</span></h4>
-          <div><strong>Total Equipment Weight:</strong> ${totalCombinedWeight.toFixed(2)} lbs</div>
-          <div><strong>Est. Shipping Weight:</strong> ${(totalCombinedWeight * 1.15).toFixed(2)} lbs</div>
+      `;
+    } else {
+      // Standard "Individual Rooms" detailed summary
+      summaryContent.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div class="power-summary">
+            <h4 style="margin-top: 0;">System Performance <span style="color: #007bff; font-size: 0.85em;">(Individual Rooms)</span></h4>
+            <div><strong>Total Screen Pixels:</strong> ${(window.combinedPixels || 0).toLocaleString()} px</div>
+            <div><strong>Total Horizontal Pixels:</strong> ${(window.combinedHorPixels || 0).toLocaleString()} px</div>
+            <div><strong>Total Vertical Pixels:</strong> ${(window.combinedVerPixels || 0).toLocaleString()} px</div>
+            <div><strong>Total Power:</strong> ${combinedWatts.toFixed(2)}W</div>
+            <div><strong>Total Amperage:</strong> ${combinedAmps.toFixed(2)}A</div>
+            <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
+          </div>
+          <div class="weight-summary">
+            <h4 style="margin-top: 0;">Weight Summary <span style="color: #007bff; font-size: 0.85em;">(Individual Rooms)</span></h4>
+            <div><strong>Total Equipment Weight:</strong> ${totalCombinedWeight.toFixed(2)} lbs</div>
+            <div><strong>Est. Shipping Weight:</strong> ${(totalCombinedWeight * 1.15).toFixed(2)} lbs</div>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    }
   }
 
   // Add mode description text

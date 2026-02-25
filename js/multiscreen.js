@@ -465,33 +465,40 @@ const MultiScreenManager = {
       totalTiles += screenTiles;
       productTypes.add(config.productType);
 
-      // Calculate power requirements based on product type
-      let voltage = (config.powerDistroType == '110') ? 110 : 208;
-      let amps110 = 0, amps208 = 0, watts = 0;
+      // Use EquipmentCalculator for precise power metrics if available
+      let screenPower;
+      if (typeof EquipmentCalculator !== 'undefined' && EquipmentCalculator.calculatePower) {
+        screenPower = EquipmentCalculator.calculatePower(config.productType, screenTiles, config.powerDistroType, config);
+      } else {
+        // Fallback calculation logic (keep existing as baseline)
+        let voltage = (config.powerDistroType == '110') ? 110 : 208;
+        let amps110 = 0, amps208 = 0, watts = 0;
 
-      if (config.productType === 'absen') {
-        amps110 = screenTiles * 0.59;
-        amps208 = screenTiles * 0.312;
-        watts = screenTiles * 192;
-      } else if (['BP2B1', 'BP2B2', 'BP2V2'].includes(config.productType)) {
-        amps110 = (screenTiles * 95) / 110;
-        amps208 = (screenTiles * 95) / 208;
-        watts = screenTiles * 190;
-      } else if (config.productType === 'theatrixx') {
-        amps110 = screenTiles * 1.63636;
-        amps208 = (screenTiles * 865.38461) / 1000;
-        watts = screenTiles * 190;
+        if (config.productType === 'absen') {
+          amps110 = screenTiles * 0.59;
+          amps208 = screenTiles * 0.312;
+          watts = screenTiles * 192;
+        } else if (['BP2B1', 'BP2B2', 'BP2V2'].includes(config.productType)) {
+          amps110 = (screenTiles * 95) / 110;
+          amps208 = (screenTiles * 95) / 208;
+          watts = screenTiles * 190;
+        } else if (config.productType === 'theatrixx') {
+          amps110 = screenTiles * 1.63636;
+          amps208 = (screenTiles * 865.38461) / 1000;
+          watts = screenTiles * 190;
+        }
+        screenPower = { amps: (voltage === 110 ? amps110 : amps208), watts: watts };
       }
 
       // Add to totals based on configured voltage
-      if (voltage === 110) {
+      if (config.powerDistroType == '110') {
         combinedPowerRequirements.voltage110 = true;
-        combinedPowerRequirements.totalAmps110 += amps110;
+        combinedPowerRequirements.totalAmps110 += screenPower.amps;
       } else {
         combinedPowerRequirements.voltage208 = true;
-        combinedPowerRequirements.totalAmps208 += amps208;
+        combinedPowerRequirements.totalAmps208 += screenPower.amps;
       }
-      combinedPowerRequirements.totalWatts += watts;
+      combinedPowerRequirements.totalWatts += screenPower.watts;
     });
 
     // Calculate distribution requirements
@@ -503,9 +510,12 @@ const MultiScreenManager = {
 
       if (totalAmps208 <= 200) {
         CUBEDIST = 1;
+        // Floor boxes: 3 circuits per box
         L2130T1FB = Math.ceil(totalTiles / 16 / 3);
       } else {
+        // Larger distro for >200A
         TP1 = Math.ceil(totalAmps208 / 400);
+        // Soca breakouts: 6 circuits per breakout
         SOCA6XTRU1 = Math.ceil(totalTiles / 16 / 6);
 
         if (productTypes.has('theatrixx')) {
@@ -535,11 +545,6 @@ const MultiScreenManager = {
         let O25 = Math.ceil(totalBlocksWithSpares / 2.409);
         EDT110M = Math.ceil((O25 / 8.302) * 2);
       } else {
-        let O32 = Math.ceil(totalTiles / divisor);
-        EDT110M = Math.ceil(O32 + (O32 * 0.05));
-      }
-
-      if (!productTypes.has('theatrixx')) {
         let O32 = Math.ceil(totalTiles / divisor);
         EDT110M = Math.ceil(O32 + (O32 * 0.05));
       }
