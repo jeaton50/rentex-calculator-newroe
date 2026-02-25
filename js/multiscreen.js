@@ -523,46 +523,71 @@ const MultiScreenManager = {
     if (combinedPowerRequirements.voltage208) {
       let totalAmps208 = combinedPowerRequirements.totalAmps208;
 
-      // Determine number of Soca breakouts needed (6 circuits per breakout)
-      SOCA6XTRU1 = Math.ceil(totalTiles / 16 / 6);
-      if (productTypes.has('theatrixx')) {
-        TXT32SOCA = SOCA6XTRU1;
-        SOCA6XTRU1 = 0;
+      // Calculate total circuits needed for the system
+      let circuits = 0;
+      if (productTypes.has('ROEGP26Full')) {
+        // Use global function from equipment.js if available
+        if (typeof roeGp26FullCircuitCount === 'function') {
+          // Estimate half tiles for combined count if needed
+          let totalHalfTiles = 0;
+          if (productTypes.has('ROEGP26Half')) {
+            window.screenConfigurations.forEach(c => {
+              if (c.productType === 'ROEGP26Half') totalHalfTiles += (c.blocksHor * c.blocksVer);
+            });
+          }
+          circuits = roeGp26FullCircuitCount(totalTiles, 208, totalHalfTiles);
+        } else {
+          circuits = Math.ceil(totalTiles / 16); // Fallback
+        }
+      } else {
+        circuits = Math.ceil(totalTiles / 16);
       }
 
-      const totalBreakouts = SOCA6XTRU1 + TXT32SOCA;
+      // Base calculation on 400A/4-port TP1 units
+      let unitsByAmps = Math.ceil(totalAmps208 / 400);
 
-      // Logic: 
-      // TP1 = 400A, 4 Soca ports
-      // CUBE = 200A, 2 Soca ports
-      if (totalAmps208 <= 200 && totalBreakouts <= 2) {
-        CUBEDIST = 1;
-        TP1 = 0;
-        // Floor boxes: 3 circuits per box
-        L2130T1FB = Math.ceil(totalTiles / 16 / 3);
+      // We need to estimate Socas needed to check port capacity
+      let socasNeeded = Math.ceil(circuits / 6);
+      let unitsByPorts = Math.ceil(socasNeeded / 4);
+
+      TP1 = Math.max(unitsByAmps, unitsByPorts);
+      CUBEDIST = 0;
+
+      // Efficiency check: if the last unit's load can fit in a 200A/2-port Cube Distro
+      if (TP1 > 0) {
+        let remainingAmps = totalAmps208 - ((TP1 - 1) * 400);
+        let remainingSocas = socasNeeded - ((TP1 - 1) * 4);
+
+        // Cube distro can handle 200A or 2 Soca-equivalentPortages (which handle 12 circuits)
+        if (remainingAmps <= 200 && remainingSocas <= 2) {
+          TP1--;
+          CUBEDIST = 1;
+        }
+      }
+
+      // Now partition the cables based on final TP1 and CUBEDIST counts
+      // 1. Assign as many circuits as possible to the TP1 (max 4 Soca ports per TP1)
+      let maxSocaPorts = TP1 * 4;
+      let socaPortCount = Math.min(maxSocaPorts, Math.ceil(circuits / 6));
+
+      if (productTypes.has('theatrixx')) {
+        TXT32SOCA = socaPortCount;
+        SOCA6XTRU1 = 0;
       } else {
-        // Base calculation on 400A/4-port TP1 units
-        let unitsByAmps = Math.ceil(totalAmps208 / 400);
-        let unitsByPorts = Math.ceil(totalBreakouts / 4);
+        SOCA6XTRU1 = socaPortCount;
+        TXT32SOCA = 0;
+      }
 
-        TP1 = Math.max(unitsByAmps, unitsByPorts);
-        CUBEDIST = 0;
+      // 2. Remaining circuits go to CUBEDIST via L2130 Floor Boxes (3 circuits each)
+      // Note: CubeDist handles circuits that didn't fit in TP1 Soca ports
+      let circuitsHandledBySoca = SOCA6XTRU1 * 6;
+      let remainingCircuits = Math.max(0, circuits - circuitsHandledBySoca);
 
-        // Efficiency check: if the last unit's load can fit in a 200A/2-port Cube Distro
-        if (TP1 > 0) {
-          let remainingAmps = totalAmps208 - ((TP1 - 1) * 400);
-          let remainingPorts = totalBreakouts - ((TP1 - 1) * 4);
-
-          if (remainingAmps <= 200 && remainingPorts <= 2) {
-            TP1--;
-            CUBEDIST = 1;
-          }
-        }
-
-        // Floor boxes for minor requirements or if no Soca is used
-        if (totalBreakouts === 0) {
-          L2130T1FB = Math.ceil(totalTiles / 16 / 3);
-        }
+      if (CUBEDIST > 0 || remainingCircuits > 0) {
+        L2130T1FB = Math.ceil(remainingCircuits / 3);
+        // If we have remaining circuits but no CUBEDIST yet (and no TP1 capacity), 
+        // we should ensure at least one CUBEDIST is added if not already covered.
+        if (CUBEDIST === 0 && TP1 === 0) CUBEDIST = 1;
       }
     } else if (combinedPowerRequirements.voltage110) {
       // For 110V-only systems, still use a Cube Distro if the load is significant
