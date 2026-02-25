@@ -978,8 +978,9 @@ window.generateAllEquipment = function () {
   screenEquipmentContainer.appendChild(modeToggleContainer);
 
   // If Single Room mode, recalculate processing/distro/cables for the combined system
+  let singleRoomData = null;
   if (window.screenCombineMode === 'single' && typeof window.calculateSingleRoomEquipment === 'function') {
-    const singleRoomData = window.calculateSingleRoomEquipment();
+    singleRoomData = window.calculateSingleRoomEquipment();
 
     // Remove existing processing/distro/cable items from combined equipment
     for (let i = combinedEquipmentOrder.length - 1; i >= 0; i--) {
@@ -1029,7 +1030,7 @@ window.generateAllEquipment = function () {
 
   // Update power/weight summary for both modes
   if (summaryContent) {
-    if (window.screenCombineMode === 'single') {
+    if (window.screenCombineMode === 'single' && singleRoomData) {
       // Get distro info from the data
       const distro = singleRoomData.distro || {};
       let distroText = 'None';
