@@ -926,8 +926,63 @@ window.generateAllEquipment = function() {
 
   const combinedTbody = combinedTable.querySelector('tbody');
 
-  // Use natural equipment order (tiles → processors → structural → cables → power distro)
-  // instead of alphabetical sort, matching the single-screen equipment table order
+  // Canonical sort order matching single-screen equipment sheets:
+  // tiles/packages → processors → headers → bases → structural → sandbags → cables → power distro
+  const EQUIP_SORT = {
+    // Tile packages
+    '8PPL25': 10, '6GP2FULL': 11, '6GP2HALF': 12, '10PTXNOMAD': 13,
+    '8PBP2B1': 14, '8PBP2B2': 15, '8PBP2V2': 16,
+    // Individual tiles
+    'PL25': 20, 'ROEGP26FULL': 21, 'ROEGP26HALF': 22, 'TXNOMAD26': 23,
+    'BP2B1': 24, 'BP2B2': 25, 'BP2V2': 26,
+    // Cases
+    'PL25CASE': 30, 'CATXLED': 31, 'BP2V2CASE': 32, 'BP2DT': 33, 'BP2DTCASE': 34,
+    // Processors
+    'SX40': 40, 'XD10': 41, 'S8': 42, 'MX40PRO': 43,
+    // Support headers
+    'PL25HEAD1': 50, 'PL25HEAD2': 51, 'GP2HEAD1': 52, 'GP2HEAD2': 53,
+    'BPBOHEAD1': 54, 'BPBOHEAD2': 55, 'TXSNGLHEAD': 56, 'TXDBLHEAD': 57,
+    // Support bases
+    'PL25BB1': 60, 'PL25BB2': 61, 'GP2BASE1': 62, 'GP2BASE2': 63,
+    'BPBOBB1': 64, 'BPBOBB2': 65, 'TXBASE1W': 66, 'TXBASE2W': 67,
+    // Outriggers / ladders / clamps / beams / platforms
+    'PL25OUT': 70, 'PL25LAD1M': 71, 'PL25CLAMP': 72,
+    'PL25BEAM50': 73, 'PL25BEAM1K': 74, 'PL25BEAMAD': 75, 'PL25PLAT': 76,
+    // Trusses & rear support
+    'BPGPUBT': 80, 'BPGPREAR05': 81, 'BPGPREAR1': 82, 'BPGPBRIDGE': 83,
+    // Theatrixx stacking / structural
+    'TXSKIFRAME': 85, 'TXSTAKEXT': 86, 'TXLADDER': 87, 'TXBRACKETS': 88,
+    'TXVERTSPRT': 89, 'TXSKIFTSNG': 90, 'TXBRACKETC': 91, 'TXM10B': 92,
+    // Curved brackets
+    'BP25DGREE': 95, 'BP2BBOLT': 96,
+    // Sandbags
+    'SANDBAG25': 100,
+    // Lateral support
+    'LED4FTS40': 110, '15PIPECPL': 111,
+    // Data cables
+    'ECON100C6': 120, 'CAT5ES005': 121, 'ECON010C6': 122,
+    'ECON050C6': 123, 'ECON1M': 124, 'TXT92TXT9': 125,
+    // Power cables
+    'T1016': 130, 'T1025': 131, 'EDT110M': 132, 'T11M': 133,
+    'TXT32ED6': 134, 'TXT32T125': 135, 'TXT3POWER': 136,
+    // Adapters
+    'TXT92ETRCN': 140,
+    // Power distribution
+    'CUBEDIST': 150, 'TP1': 151, 'SOCA6XTRU1': 152, 'L2130T1FB': 153, 'TXT32SOCA': 154
+  };
+
+  function equipSortKey(mergeKey) {
+    const ecode = (mergeKey.split('|')[0] || '').trim();
+    const name = (mergeKey.split('|')[1] || '');
+    let base = EQUIP_SORT[ecode] !== undefined ? EQUIP_SORT[ecode] : 999;
+    // Spare tiles sort immediately after their active counterpart
+    if (/\*\*\s*spare/i.test(name) || /\bspare\b/i.test(name)) base += 0.5;
+    return base;
+  }
+
+  // Sort combined equipment to match single-screen sheet order
+  combinedEquipmentOrder.sort((a, b) => equipSortKey(a) - equipSortKey(b));
+
   const consolidatedEquipment = combinedEquipmentOrder.map(key => combinedEquipment[key]);
 
   // Add combined equipment to table
