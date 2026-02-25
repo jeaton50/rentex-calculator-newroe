@@ -1006,12 +1006,16 @@ window.generateAllEquipment = function () {
     combinedAmps = singleRoomData.power.amps;
     combinedWatts = singleRoomData.power.watts;
     window.combinedPixels = singleRoomData.totalPixels;
+    window.combinedHorPixels = singleRoomData.totalHorPixels;
+    window.combinedVerPixels = singleRoomData.totalVerPixels;
   } else {
     // Individual Rooms mode: Calculate project-wide totals for the summary
     const processingResults = MultiScreenManager.calculateCombinedProcessing();
     combinedAmps = processingResults.totalAmps110 + processingResults.totalAmps208;
     combinedWatts = processingResults.totalWatts;
     window.combinedPixels = processingResults.totalPixels;
+    window.combinedHorPixels = processingResults.totalHorPixels;
+    window.combinedVerPixels = processingResults.totalVerPixels;
   }
 
   // Recalculate total weight after mode-specific processing
@@ -1032,6 +1036,8 @@ window.generateAllEquipment = function () {
         <div class="power-summary">
           <h4 style="margin-top: 0;">System Performance <span style="color: #007bff; font-size: 0.85em;">(${modeLabel})</span></h4>
           <div><strong>Total Screen Pixels:</strong> ${(window.combinedPixels || 0).toLocaleString()} px</div>
+          <div><strong>Total Horizontal Pixels:</strong> ${(window.combinedHorPixels || 0).toLocaleString()} px</div>
+          <div><strong>Total Vertical Pixels:</strong> ${(window.combinedVerPixels || 0).toLocaleString()} px</div>
           <div><strong>Total Power:</strong> ${combinedWatts.toFixed(2)}W</div>
           <div><strong>Total Amperage:</strong> ${combinedAmps.toFixed(2)}A</div>
           <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>

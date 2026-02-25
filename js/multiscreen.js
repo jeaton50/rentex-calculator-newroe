@@ -183,6 +183,8 @@ const MultiScreenManager = {
     return {
       totalTiles: processing.totalTiles,
       totalPixels: processing.totalPixels,
+      totalHorPixels: processing.totalHorPixels,
+      totalVerPixels: processing.totalVerPixels,
       power: {
         watts: processing.totalWatts,
         amps: processing.totalAmps110 + processing.totalAmps208,
@@ -748,6 +750,8 @@ const MultiScreenManager = {
     let totalAmps110 = 0;
     let totalAmps208 = 0;
     let totalPixels = 0;
+    let totalHorPixels = 0;
+    let totalVerPixels = 0;
 
     // Calculate totals from all screens
     window.screenConfigurations.forEach((config) => {
@@ -757,7 +761,11 @@ const MultiScreenManager = {
 
       // Calculate pixels sum
       const p = CONSTANTS.PIXELS_PER_TILE[config.productType] || 200;
-      totalPixels += (config.blocksHor * p) * (config.blocksVer * p);
+      const screenHorPixels = config.blocksHor * p;
+      const screenVerPixels = config.blocksVer * p;
+      totalPixels += screenHorPixels * screenVerPixels;
+      totalHorPixels += screenHorPixels;
+      totalVerPixels += screenVerPixels;
 
       // Calculate power sum
       const power = EquipmentCalculator.calculatePower(config.productType, screenTiles, (config.powerDistroType == '110' ? 110 : 208));
@@ -793,6 +801,8 @@ const MultiScreenManager = {
       totalTiles,
       totalDataPorts,
       totalPixels,
+      totalHorPixels,
+      totalVerPixels,
       totalWatts,
       totalAmps110,
       totalAmps208,
