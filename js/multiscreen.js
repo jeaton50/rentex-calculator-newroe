@@ -523,21 +523,45 @@ const MultiScreenManager = {
     if (combinedPowerRequirements.voltage208) {
       let totalAmps208 = combinedPowerRequirements.totalAmps208;
 
-      if (totalAmps208 <= 200) {
+      // Determine number of Soca breakouts needed (6 circuits per breakout)
+      SOCA6XTRU1 = Math.ceil(totalTiles / 16 / 6);
+      if (productTypes.has('theatrixx')) {
+        TXT32SOCA = SOCA6XTRU1;
+        SOCA6XTRU1 = 0;
+      }
+
+      const totalBreakouts = SOCA6XTRU1 + TXT32SOCA;
+
+      // Logic: 
+      // TP1 = 400A, 4 Soca ports
+      // CUBE = 200A, 2 Soca ports
+      if (totalAmps208 <= 200 && totalBreakouts <= 2) {
         CUBEDIST = 1;
-        TP1 = 0; // Ensure TP1 is 0 if CubeDist is used
+        TP1 = 0;
         // Floor boxes: 3 circuits per box
         L2130T1FB = Math.ceil(totalTiles / 16 / 3);
       } else {
-        // Larger distro for >200A
-        TP1 = Math.ceil(totalAmps208 / 400);
-        CUBEDIST = 0; // Ensure CubeDist is 0 if TP1 is used
-        // Soca breakouts: 6 circuits per breakout
-        SOCA6XTRU1 = Math.ceil(totalTiles / 16 / 6);
+        // Base calculation on 400A/4-port TP1 units
+        let unitsByAmps = Math.ceil(totalAmps208 / 400);
+        let unitsByPorts = Math.ceil(totalBreakouts / 4);
 
-        if (productTypes.has('theatrixx')) {
-          TXT32SOCA = SOCA6XTRU1;
-          SOCA6XTRU1 = 0;
+        TP1 = Math.max(unitsByAmps, unitsByPorts);
+        CUBEDIST = 0;
+
+        // Efficiency check: if the last unit's load can fit in a 200A/2-port Cube Distro
+        if (TP1 > 0) {
+          let remainingAmps = totalAmps208 - ((TP1 - 1) * 400);
+          let remainingPorts = totalBreakouts - ((TP1 - 1) * 4);
+
+          if (remainingAmps <= 200 && remainingPorts <= 2) {
+            TP1--;
+            CUBEDIST = 1;
+          }
+        }
+
+        // Floor boxes for minor requirements or if no Soca is used
+        if (totalBreakouts === 0) {
+          L2130T1FB = Math.ceil(totalTiles / 16 / 3);
         }
       }
     } else if (combinedPowerRequirements.voltage110) {

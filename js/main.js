@@ -1039,9 +1039,10 @@ window.generateAllEquipment = function () {
     if (window.screenCombineMode === 'single' && singleRoomData) {
       // Get distro info from the data
       const distro = singleRoomData.distro || {};
-      let distroText = 'None';
-      if (distro.TP1 > 0) distroText = `TP1 (400A) x${distro.TP1}`;
-      else if (distro.CUBEDIST > 0) distroText = `Cube Distro (200A) x${distro.CUBEDIST}`;
+      let distroParts = [];
+      if (distro.TP1 > 0) distroParts.push(`TP1 (400A) x${distro.TP1}`);
+      if (distro.CUBEDIST > 0) distroParts.push(`Cube Distro (200A) x${distro.CUBEDIST}`);
+      let distroText = distroParts.join(', ') || 'None';
 
       // Get processing info from recalcItems
       const processors = (singleRoomData.recalcItems || []).filter(item =>
