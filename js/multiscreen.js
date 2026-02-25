@@ -524,6 +524,10 @@ const MultiScreenManager = {
           SOCA6XTRU1 = 0;
         }
       }
+    } else if (combinedPowerRequirements.voltage110) {
+      // For 110V-only systems, still use a Cube Distro if the load is significant
+      // or as a default for combined rooms to handle the circuits
+      CUBEDIST = 1;
     }
 
     // For 110V calculations
@@ -804,7 +808,7 @@ const MultiScreenManager = {
       processorRequirements.SX40 = Math.ceil(totalDataPorts / 16);
       if (needsXD10) {
         // SX40 has 4 local ports, then needs XD10 for additional ports (up to 10 per XD10)
-        processorRequirements.XD10 = Math.ceil((totalDataPorts - 0) / 10);
+        processorRequirements.XD10 = Math.ceil((totalDataPorts - 4) / 10);
       }
     }
 

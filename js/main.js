@@ -1037,6 +1037,16 @@ window.generateAllEquipment = function () {
       if (distro.TP1 > 0) distroText = `TP1 (400A) x${distro.TP1}`;
       else if (distro.CUBEDIST > 0) distroText = `Cube Distro (200A) x${distro.CUBEDIST}`;
 
+      // Get processing info from recalcItems
+      const processors = (singleRoomData.recalcItems || []).filter(item =>
+        MultiScreenManager.isProcessingEquipment(item.ecode, item.name)
+      );
+      let processingText = processors.map(p => {
+        // Shorten names for summary
+        let shortName = p.name.replace('Processor', 'Proc').replace('Brompton ', '');
+        return `${shortName} x${p.quantity}`;
+      }).join(', ') || 'None';
+
       // Simplified "Single Room" summary block
       summaryContent.innerHTML = `
         <div style="padding: 15px; background-color: #e7f3ff; border: 1px solid #b3d7ff; border-radius: 6px; margin-bottom: 20px;">
@@ -1045,6 +1055,7 @@ window.generateAllEquipment = function () {
             <div class="pixel-summary">
               <div style="margin-bottom: 5px;"><strong>Total Combined Pixels:</strong> ${(window.combinedPixels || 0).toLocaleString()} px</div>
               <div style="font-size: 0.85em; color: #555;">Resolution: ${window.combinedHorPixels || 0}W × ${window.combinedVerPixels || 0}H</div>
+              <div style="font-size: 0.85em; color: #555; margin-top: 3px;">Processing: ${processingText}</div>
             </div>
             <div class="power-summary">
               <div style="margin-bottom: 5px;"><strong>Total Combined Power:</strong> ${combinedWatts.toFixed(2)}W</div>
