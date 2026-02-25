@@ -137,116 +137,58 @@ const MultiScreenManager = {
    * @returns {Object} Recalculated equipment data
    */
   calculateSingleRoomEquipment() {
-    let totalTiles = 0;
-    let totalSpares = 0;
-    let totalTilesWithSpares = 0;
-    const productTypeTiles = {};
+    const processing = this.calculateCombinedProcessing();
+    const distro = this.calculateCombinedDistro();
 
-    // Sum per-screen processing, cables, and distro by collecting each screen's equipment
-    const summedEquipment = {};
+    const recalcItems = [];
 
-    // Read global settings from DOM (same as displayEquipment does)
-    const redundancyType = document.getElementById('redundancy')?.value || 'None';
-    const sourceSignalCount = parseInt(document.getElementById('sourceSignals')?.value || 1, 10);
-    const selectedDistroType = document.getElementById('powerDistroType')?.value || 'Auto';
-    const companyLabel = document.getElementById('companyName')?.value || 'Rentex';
-
-    // Gather combined data and per-screen equipment
+    // Add summed cable items (excluding distro/processing which we recalculate)
+    const cableItems = {};
     window.screenConfigurations.forEach(config => {
-      const tiles = config.blocksHor * config.blocksVer;
-      totalTiles += tiles;
-
-      // Calculate spares per screen
-      const sparePercentage = config.productType === 'theatrixx' ? 10 : 8;
-      const spareFactor = config.productType === 'theatrixx' ? 2 : 1.5;
-      let spares;
-      if (typeof Calculator !== 'undefined' && Calculator.calculateSpares) {
-        spares = Calculator.calculateSpares(tiles, sparePercentage, spareFactor);
-      } else if (typeof calcSpares === 'function') {
-        spares = calcSpares(tiles, sparePercentage, spareFactor);
-      } else {
-        spares = Math.ceil(tiles * (sparePercentage / 100));
-      }
-      totalSpares += spares;
-      totalTilesWithSpares += tiles + spares;
-
-      if (!productTypeTiles[config.productType]) productTypeTiles[config.productType] = 0;
-      productTypeTiles[config.productType] += tiles;
-
-      // Get this screen's individual equipment via getEquipmentForScreen
       const screenEquipment = ExportManager.getEquipmentForScreen(config);
       screenEquipment.forEach(item => {
-        if (item.quantity > 0 && this.isSingleRoomRecalcItem(item.ecode)) {
-          const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
-          if (!summedEquipment[key]) {
-            summedEquipment[key] = {
-              ecode: item.ecode,
-              name: item.name,
-              weight: item.weight || 0,
-              quantity: 0
-            };
+        if (item.quantity > 0 && this.isCableEquipment(item.ecode, item.name)) {
+          // We only want the basic cables here, not the "distro" cables like SOCA6XTRU1 or TXT32SOCA
+          // which are added by calculateCombinedDistro
+          const distroCables = new Set(['SOCA6XTRU1', 'TXT32SOCA', 'EDT110M', 'L2130T1FB']);
+          if (!distroCables.has(item.ecode)) {
+            const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
+            if (!cableItems[key]) {
+              cableItems[key] = { ...item, quantity: 0 };
+            }
+            cableItems[key].quantity += item.quantity;
           }
-          summedEquipment[key].quantity += (typeof item.quantity === 'number' ? item.quantity : Number(item.quantity));
         }
       });
     });
 
-    // Use dominant product type (most tiles) for power calculation
-    const dominantProduct = Object.entries(productTypeTiles)
-      .sort((a, b) => b[1] - a[1])[0][0];
-
-    // Use first screen's settings for voltage
-    const firstConfig = window.screenConfigurations[0];
-    const voltage = (firstConfig.powerDistroType == '110') ? 110 : 208;
-
-    // Calculate total power based on total tiles
-    const power = EquipmentCalculator.calculatePower(dominantProduct, totalTiles, voltage);
-
-    // Calculate unified power distro based on total combined power/tiles
-    const distro = EquipmentCalculator.calculatePowerDistribution({
-      productType: dominantProduct,
-      totalTiles: totalTiles,
-      voltage: voltage,
-      selectedDistroType: selectedDistroType,
-      companyLabel: companyLabel,
-      gp2HalfBottomRow: false,
-      gp2HalfRows: 0,
-      horizontalBlocks: 0,
+    Object.values(cableItems).forEach(item => {
+      recalcItems.push(item);
     });
 
-    // Build recalculated equipment items array from summed per-screen values
-    const recalcItems = [];
+    // Add recalculated processing
+    if (processing.processors.SX40 > 0) recalcItems.push({ ecode: 'SX40', name: 'Brompton SX40 Processor', weight: 12, quantity: processing.processors.SX40 });
+    if (processing.processors.S8 > 0) recalcItems.push({ ecode: 'S8', name: 'Brompton S8 Processor', weight: 8, quantity: processing.processors.S8 });
+    if (processing.processors.XD10 > 0) recalcItems.push({ ecode: 'XD10', name: 'Brompton XD10 Processor', weight: 10, quantity: processing.processors.XD10 });
+    if (processing.processors.MX40PRO > 0) recalcItems.push({ ecode: 'MX40PRO', name: 'Brompton MX40 Pro Processor', weight: 15, quantity: processing.processors.MX40PRO });
 
-    // Add summed processing and cable items (from per-screen calculations)
-    Object.values(summedEquipment).forEach(item => {
-      // Skip distro items - we'll use the unified distro calculation instead
-      const distroEcodes = new Set(['CUBEDIST', 'TP1', 'L2130T1FB', 'SOCA6XTRU1', 'TXT32SOCA']);
-      if (!distroEcodes.has(item.ecode) && item.quantity > 0) {
-        recalcItems.push({
-          ecode: item.ecode,
-          name: item.name,
-          weight: item.weight,
-          quantity: item.quantity
-        });
-      }
-    });
-
-    // Add unified power distribution items (recalculated from total power)
+    // Add recalculated distro
     if (distro.CUBEDIST > 0) recalcItems.push({ ecode: 'CUBEDIST', name: 'Indu Electric 200A Cube Distro', weight: 177, quantity: distro.CUBEDIST });
     if (distro.TP1 > 0) recalcItems.push({ ecode: 'TP1', name: 'Indu Electric 400A Power Distro w/ (4) 208v Soca', weight: 197, quantity: distro.TP1 });
     if (distro.L2130T1FB > 0) recalcItems.push({ ecode: 'L2130T1FB', name: 'L2130 floor box to 3x True1 with pass through', weight: 7.5, quantity: distro.L2130T1FB });
     if (distro.SOCA6XTRU1 > 0) recalcItems.push({ ecode: 'SOCA6XTRU1', name: '19 Pin Socapex to 6x True1 Power Cable', weight: 5, quantity: distro.SOCA6XTRU1 });
     if (distro.TXT32SOCA > 0) recalcItems.push({ ecode: 'TXT32SOCA', name: 'Theatrixx Nomad XVT3 to Socapex', weight: 22, quantity: distro.TXT32SOCA });
+    if (distro.EDT110M > 0) recalcItems.push({ ecode: 'EDT110M', name: 'Edison to True1 power cable, 10 meter', weight: 3.2, quantity: distro.EDT110M });
 
     return {
-      totalTiles,
-      totalTilesWithSpares,
-      dominantProduct,
-      voltage,
-      processors: null,
-      power,
-      distro,
-      cables: null,
+      totalTiles: processing.totalTiles,
+      totalPixels: processing.totalPixels,
+      power: {
+        watts: processing.totalWatts,
+        amps: processing.totalAmps110 + processing.totalAmps208,
+        amps110: processing.totalAmps110,
+        amps208: processing.totalAmps208
+      },
       recalcItems
     };
   },

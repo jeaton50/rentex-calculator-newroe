@@ -881,7 +881,7 @@ window.generateAllEquipment = function () {
   });
 
   // Fill in the combined power and weight summary
-  const summaryContentDiv = document.getElementById('powerWeightSummary');
+  let summaryContentDiv = document.getElementById('powerWeightSummary');
   if (summaryContentDiv) {
     summaryContentDiv.innerHTML = `
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -929,7 +929,7 @@ window.generateAllEquipment = function () {
   modeLabel.style.cssText = 'font-weight: bold; margin-right: 10px; font-size: 14px;';
   modeToggleContainer.appendChild(modeLabel);
 
-  const isIndividual = (window.screenCombineMode || 'individual') === 'individual';
+  const isIndividualMode = (window.screenCombineMode || 'individual') === 'individual';
 
   const individualBtn = document.createElement('button');
   individualBtn.type = 'button';
@@ -937,13 +937,13 @@ window.generateAllEquipment = function () {
   individualBtn.title = 'Each room keeps its own independent processing, power distribution, and cable calculations. The combined total is a simple sum of all rooms.';
   individualBtn.style.cssText = `
     padding: 8px 16px;
-    background-color: ${isIndividual ? '#007bff' : '#e9ecef'};
-    color: ${isIndividual ? 'white' : '#333'};
-    border: 1px solid ${isIndividual ? '#007bff' : '#ccc'};
+    background-color: ${isIndividualMode ? '#007bff' : '#e9ecef'};
+    color: ${isIndividualMode ? 'white' : '#333'};
+    border: 1px solid ${isIndividualMode ? '#007bff' : '#ccc'};
     border-radius: 4px 0 0 4px;
     cursor: pointer;
     font-size: 14px;
-    font-weight: ${isIndividual ? 'bold' : 'normal'};
+    font-weight: ${isIndividualMode ? 'bold' : 'normal'};
   `;
   individualBtn.onclick = () => {
     if (window.screenCombineMode !== 'individual') {
@@ -958,13 +958,13 @@ window.generateAllEquipment = function () {
   singleRoomBtn.title = 'Treat all screens as one combined wall/system. Recalculates processing, power distribution, and cables based on the combined total pixels and power draw.';
   singleRoomBtn.style.cssText = `
     padding: 8px 16px;
-    background-color: ${!isIndividual ? '#007bff' : '#e9ecef'};
-    color: ${!isIndividual ? 'white' : '#333'};
-    border: 1px solid ${!isIndividual ? '#007bff' : '#ccc'};
+    background-color: ${!isIndividualMode ? '#007bff' : '#e9ecef'};
+    color: ${!isIndividualMode ? 'white' : '#333'};
+    border: 1px solid ${!isIndividualMode ? '#007bff' : '#ccc'};
     border-radius: 0 4px 4px 0;
     cursor: pointer;
     font-size: 14px;
-    font-weight: ${!isIndividual ? 'bold' : 'normal'};
+    font-weight: ${!isIndividualMode ? 'bold' : 'normal'};
   `;
   singleRoomBtn.onclick = () => {
     if (window.screenCombineMode !== 'single') {
@@ -1003,36 +1003,46 @@ window.generateAllEquipment = function () {
       combinedEquipmentOrder.push(key);
     }
 
-    // Recalculate total weight
-    totalCombinedWeight = 0;
-    for (const key of combinedEquipmentOrder) {
-      const item = combinedEquipment[key];
-      if (item && item.quantity > 0) {
-        totalCombinedWeight += item.weight * item.quantity;
-      }
-    }
-
-    // Update power summary with recalculated values
     combinedAmps = singleRoomData.power.amps;
     combinedWatts = singleRoomData.power.watts;
-    const summaryContentDiv = document.getElementById('powerWeightSummary');
-    if (summaryContentDiv) {
-      summaryContentDiv.innerHTML = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-          <div class="power-summary">
-            <h4 style="margin-top: 0;">Power Requirements <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
-            <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
-            <div><strong>Total Amperage:</strong> ${combinedAmps.toFixed(2)}A</div>
-            <div><strong>Total Power:</strong> ${combinedWatts.toFixed(2)}W</div>
-          </div>
-          <div class="weight-summary">
-            <h4 style="margin-top: 0;">Weight Summary <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span></h4>
-            <div><strong>Total Equipment Weight:</strong> ${totalCombinedWeight.toFixed(2)} lbs</div>
-            <div><strong>Est. Shipping Weight:</strong> ${(totalCombinedWeight * 1.15).toFixed(2)} lbs</div>
-          </div>
-        </div>
-      `;
+    window.combinedPixels = singleRoomData.totalPixels;
+  } else {
+    // Individual Rooms mode: Calculate project-wide totals for the summary
+    const processingResults = MultiScreenManager.calculateCombinedProcessing();
+    combinedAmps = processingResults.totalAmps110 + processingResults.totalAmps208;
+    combinedWatts = processingResults.totalWatts;
+    window.combinedPixels = processingResults.totalPixels;
+  }
+
+  // Recalculate total weight after mode-specific processing
+  totalCombinedWeight = 0;
+  for (const key of combinedEquipmentOrder) {
+    const item = combinedEquipment[key];
+    if (item && item.quantity > 0) {
+      totalCombinedWeight += item.weight * item.quantity;
     }
+  }
+
+  // Update power/weight summary for both modes
+  summaryContentDiv = document.getElementById('powerWeightSummary');
+  if (summaryContentDiv) {
+    const modeLabel = (window.screenCombineMode === 'single') ? 'Single Room' : 'Individual Rooms';
+    summaryContentDiv.innerHTML = `
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="power-summary">
+          <h4 style="margin-top: 0;">System Performance <span style="color: #007bff; font-size: 0.85em;">(${modeLabel})</span></h4>
+          <div><strong>Total Screen Pixels:</strong> ${(window.combinedPixels || 0).toLocaleString()} px</div>
+          <div><strong>Total Power:</strong> ${combinedWatts.toFixed(2)}W</div>
+          <div><strong>Total Amperage:</strong> ${combinedAmps.toFixed(2)}A</div>
+          <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
+        </div>
+        <div class="weight-summary">
+          <h4 style="margin-top: 0;">Weight Summary <span style="color: #007bff; font-size: 0.85em;">(${modeLabel})</span></h4>
+          <div><strong>Total Equipment Weight:</strong> ${totalCombinedWeight.toFixed(2)} lbs</div>
+          <div><strong>Est. Shipping Weight:</strong> ${(totalCombinedWeight * 1.15).toFixed(2)} lbs</div>
+        </div>
+      </div>
+    `;
   }
 
   // Add mode description text
