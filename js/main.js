@@ -450,25 +450,23 @@ function generateWall() {
     const halfTiles = halfHorizontal * halfVertical;
     const fullTiles = fullHorizontal * fullVertical;
 
-    // Calculate spares for each type (round up to next full case)
+    // Calculate spares — shared helper: round up to next full case, no forced extra spare case
     // GP2 Half: packages of 12
-    const halfPackageSize = 12;
     let halfTilesWithSpares = 0;
     let halfSpares = 0;
     if (halfTiles > 0) {
-      const halfTotalCases = Math.ceil(halfTiles / halfPackageSize);
-      halfTilesWithSpares = halfTotalCases * halfPackageSize;
-      halfSpares = halfTilesWithSpares - halfTiles;
+      const _h = window.calcCasesAndSpares(halfTiles, 12);
+      halfTilesWithSpares = _h.totalTiles;
+      halfSpares = _h.spareTiles;
     }
 
     // GP2 Full: packages of 6
-    const fullPackageSize = 6;
     let fullTilesWithSpares = 0;
     let fullSpares = 0;
     if (fullTiles > 0) {
-      const fullTotalCases = Math.ceil(fullTiles / fullPackageSize);
-      fullTilesWithSpares = fullTotalCases * fullPackageSize;
-      fullSpares = fullTilesWithSpares - fullTiles;
+      const _f = window.calcCasesAndSpares(fullTiles, 6);
+      fullTilesWithSpares = _f.totalTiles;
+      fullSpares = _f.spareTiles;
     }
 
     // Store Graphite Mix data
@@ -495,21 +493,17 @@ function generateWall() {
     const actualVerticalBlocks = (productType === 'ROEGP26Full' && gp2HalfBottomRow) ? gp2FullVerticalBlocks : blocksVer;
     totalBlocks = blocksHor * actualVerticalBlocks;
 
-    // GP2 products use package-based spare calculation (round up to next full case)
+    // GP2 products: shared helper — round up to next full case, no forced extra spare case
     if (productType === 'ROEGP26Full') {
       // GP2 Full: packages of 6
-      const packageSize = 6;
-      const totalCases = Math.ceil(totalBlocks / packageSize);
-      const roundedTotal = totalCases * packageSize;
-      totalSpares = roundedTotal - totalBlocks;
-      totalBlocksWithSpares = roundedTotal;
+      const _gf = window.calcCasesAndSpares(totalBlocks, 6);
+      totalSpares = _gf.spareTiles;
+      totalBlocksWithSpares = _gf.totalTiles;
     } else if (productType === 'ROEGP26Half') {
       // GP2 Half: packages of 12
-      const packageSize = 12;
-      const totalCases = Math.ceil(totalBlocks / packageSize);
-      const roundedTotal = totalCases * packageSize;
-      totalSpares = roundedTotal - totalBlocks;
-      totalBlocksWithSpares = roundedTotal;
+      const _gh = window.calcCasesAndSpares(totalBlocks, 12);
+      totalSpares = _gh.spareTiles;
+      totalBlocksWithSpares = _gh.totalTiles;
     } else {
       // Black Pearl, Theatrixx, etc: use original calcSpares function
       totalSpares = calcSpares(totalBlocks, productType === "theatrixx" ? 10 : 8, productType === "theatrixx" ? 2 : 1.5);
