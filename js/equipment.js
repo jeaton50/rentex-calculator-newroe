@@ -949,9 +949,13 @@ const EquipmentCalculator = {
     } else if (CUBEDIST > 0) {
       // 3 circuits per floor box (existing intent)
       L2130T1FB = Math.ceil(circuits / 3);
+      // Enforce physical CUBEDIST port limit (max 6 floor boxes per CUBEDIST)
+      CUBEDIST = Math.max(CUBEDIST, Math.ceil(L2130T1FB / 6));
     } else if (TP1 > 0) {
       // 6 circuits per soca->true1 breakout (existing intent)
       SOCA6XTRU1 = Math.ceil(circuits / 6);
+      // Enforce physical TP1 port limit (max 4 Soca ports per TP1)
+      TP1 = Math.max(TP1, Math.ceil(SOCA6XTRU1 / 4));
     }
 
     return {

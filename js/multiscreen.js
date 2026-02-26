@@ -558,8 +558,8 @@ const MultiScreenManager = {
         let remainingAmps = totalAmps208 - ((TP1 - 1) * 400);
         let remainingSocas = socasNeeded - ((TP1 - 1) * 4);
 
-        // Cube distro can handle 200A or 2 Soca-equivalentPortages (which handle 12 circuits)
-        if (remainingAmps <= 200 && remainingSocas <= 2) {
+        // Cube distro can handle 200A or 3 Soca-equivalentPortages (which handle 18 circuits/6 floorboxes)
+        if (remainingAmps <= 200 && remainingSocas <= 3) {
           TP1--;
           CUBEDIST = 1;
         }
@@ -588,6 +588,9 @@ const MultiScreenManager = {
         // If we have remaining circuits but no CUBEDIST yet (and no TP1 capacity), 
         // we should ensure at least one CUBEDIST is added if not already covered.
         if (CUBEDIST === 0 && TP1 === 0) CUBEDIST = 1;
+
+        // NEW ENFORCEMENT logic: Max 6 floor boxes per CUBEDIST
+        CUBEDIST = Math.max(CUBEDIST, Math.ceil(L2130T1FB / 6));
       }
     } else if (combinedPowerRequirements.voltage110) {
       // For 110V-only systems, still use a Cube Distro if the load is significant
