@@ -170,7 +170,7 @@ const MultiScreenManager = {
     if (processing.processors.SX40 > 0) recalcItems.push({ ecode: 'SX40', name: 'Brompton SX40 Processor', weight: 12, quantity: processing.processors.SX40 });
     if (processing.processors.S8 > 0) recalcItems.push({ ecode: 'S8', name: 'Brompton S8 Processor', weight: 8, quantity: processing.processors.S8 });
     if (processing.processors.XD10 > 0) recalcItems.push({ ecode: 'XD10', name: 'Brompton XD10 Processor', weight: 10, quantity: processing.processors.XD10 });
-    if (processing.processors.MX40PRO > 0) recalcItems.push({ ecode: 'MX40PRO', name: 'Brompton MX40 Pro Processor', weight: 15, quantity: processing.processors.MX40PRO });
+    if (processing.processors.MX40PRO > 0) recalcItems.push({ ecode: 'MX40PRO', name: 'Novastar MX40 PRO', weight: 17, quantity: processing.processors.MX40PRO });
 
     // Add recalculated distro
     console.log('Distro calculated requirements:', distro);
@@ -828,6 +828,10 @@ const MultiScreenManager = {
     let totalHorPixels = 0;
     let totalVerPixels = 0;
 
+    let bromptonDataPorts = 0;
+    let theatrixxPixels = 0;
+    let theatrixxFullyRedundant = false;
+
     // Calculate totals from all screens
     window.screenConfigurations.forEach((config) => {
       const screenTiles = config.blocksHor * config.blocksVer;
@@ -858,23 +862,43 @@ const MultiScreenManager = {
       }
       const screenDataPorts = Math.ceil(screenTiles / daisyChainLimit);
       totalDataPorts += screenDataPorts;
+
+      if (config.productType === 'theatrixx') {
+        theatrixxPixels += screenHorPixels * screenVerPixels;
+        if (config.redundancy === 'Fully Redundant') {
+          theatrixxFullyRedundant = true;
+        }
+      } else {
+        bromptonDataPorts += screenDataPorts;
+      }
     });
 
     // Determine processor requirements based on total data ports
-    // SX40 can handle up to 16 outputs
-    // S8 can handle up to 8 outputs
-    const needsXD10 = totalDataPorts > 4; // Reference: XD10 is used if more than 4 ports are needed for SX40
 
-    if (totalDataPorts <= 8 && !productTypes.has('BP2B1') && !productTypes.has('BP2B2') && !productTypes.has('BP2V2')) {
-      // Small system, not Brompton flagship
-      processorRequirements.S8 = 1;
-    } else {
-      // Brompton SX40 system
-      processorRequirements.SX40 = Math.ceil(totalDataPorts / 16);
-      if (needsXD10) {
-        // SX40 has 4 local ports, then needs XD10 for additional ports (up to 10 per XD10)
-        processorRequirements.XD10 = Math.ceil((totalDataPorts - 4) / 10);
+    // Brompton Processors
+    if (bromptonDataPorts > 0) {
+      const needsXD10 = bromptonDataPorts > 4; // Reference: XD10 is used if more than 4 ports are needed for SX40
+      const hasBP2 = productTypes.has('BP2B1') || productTypes.has('BP2B2') || productTypes.has('BP2V2');
+      if (bromptonDataPorts <= 8 && !hasBP2) {
+        // Small system, not Brompton flagship
+        processorRequirements.S8 = 1;
+      } else {
+        // Brompton SX40 system
+        processorRequirements.SX40 = Math.ceil(bromptonDataPorts / 16);
+        if (needsXD10) {
+          // SX40 has 4 local ports, then needs XD10 for additional ports (up to 10 per XD10)
+          processorRequirements.XD10 = Math.ceil((bromptonDataPorts - 4) / 10);
+        }
       }
+    }
+
+    // Theatrixx Processors
+    if (theatrixxPixels > 0) {
+      let mx40Count = Math.ceil(theatrixxPixels / 9000000);
+      if (theatrixxFullyRedundant) {
+        mx40Count *= 2;
+      }
+      processorRequirements.MX40PRO = mx40Count;
     }
 
     return {
@@ -937,7 +961,7 @@ const MultiScreenManager = {
       processingHTML += `<tr><td style="border: 1px solid #ccc; padding: 8px;">Brompton XD10 Processor</td><td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${processingReqs.processors.XD10}</td></tr>`;
     }
     if (processingReqs.processors.MX40PRO > 0) {
-      processingHTML += `<tr><td style="border: 1px solid #ccc; padding: 8px;">Brompton MX40 Pro Processor</td><td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${processingReqs.processors.MX40PRO}</td></tr>`;
+      processingHTML += `<tr><td style="border: 1px solid #ccc; padding: 8px;">Novastar MX40 PRO</td><td style="border: 1px solid #ccc; padding: 8px; text-align: center;">${processingReqs.processors.MX40PRO}</td></tr>`;
     }
 
     processingHTML += '</table>';
@@ -1009,7 +1033,7 @@ const MultiScreenManager = {
       { ecode: 'SX40', name: 'Brompton SX40 Processor', weight: 12, quantity: processingReqs.processors.SX40 },
       { ecode: 'S8', name: 'Brompton S8 Processor', weight: 8, quantity: processingReqs.processors.S8 },
       { ecode: 'XD10', name: 'Brompton XD10 Processor', weight: 10, quantity: processingReqs.processors.XD10 },
-      { ecode: 'MX40PRO', name: 'Brompton MX40 Pro Processor', weight: 15, quantity: processingReqs.processors.MX40PRO }
+      { ecode: 'MX40PRO', name: 'Novastar MX40 PRO', weight: 17, quantity: processingReqs.processors.MX40PRO }
     ];
 
     processingItems.forEach(item => {
