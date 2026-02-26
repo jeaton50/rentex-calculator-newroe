@@ -1446,7 +1446,7 @@ function addTheatrixxEquipment(config, tbody) {
     heightWarning,
   } = config;
 
-  totalWeight = 17.6 * totalTiles;
+  totalWeight = 24 * totalTiles;
   const totalPixels = horizontalBlocks * 192 * (verticalBlocks * 192);
 
   // Tile packages (10 tiles per package) - reference uses casesNeeded which is totalTilesWithSpares / 10
@@ -1454,11 +1454,11 @@ function addTheatrixxEquipment(config, tbody) {
   addEquipmentRow('10PTXNOMAD', 'Theatrixx Nomad 2.6 10x package', 0, tilePackages, tbody);
 
   // Tiles (reference uses B5 = totalTiles)
-  addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm', 17.6, totalTiles, tbody);
+  addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm', 24, totalTiles, tbody);
 
   // Spare tiles (reference uses I13 = totalSpares for Theatrixx)
   if (totalSpareTiles > 0) {
-    addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm ** Spare Tiles **', 17.6, totalSpareTiles, tbody);
+    addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm ** Spare Tiles **', 24, totalSpareTiles, tbody);
   }
 
   // Cases (10 tiles per case)
@@ -1605,7 +1605,7 @@ function addTheatrixxEquipment(config, tbody) {
 
   // Calculate shipping weight per reference code
   let caseWeight = totalWeight;
-  caseWeight += 17.6 * totalSpareTiles;
+  caseWeight += 24 * totalSpareTiles;
   caseWeight += 187 * tilePackages;
   caseWeight += 114 * singleBases;
   caseWeight += 115 * doubleBases;
@@ -1621,6 +1621,7 @@ function addTheatrixxEquipment(config, tbody) {
     displayEstShippingWeight(caseWeight);
   }
 
+  if (typeof displayWallWeight === "function") displayWallWeight(totalWeight);
   if (typeof displayTotalPixels === "function") displayTotalPixels(totalPixels);
   if (typeof displayDataPortsNeeded === "function") displayDataPortsNeeded("theatrixx", totalTiles);
 }
