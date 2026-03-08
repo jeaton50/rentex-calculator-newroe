@@ -755,8 +755,6 @@ window.generateAllEquipment = function () {
   let combinedVoltage = [];
   let combinedAmps = 0;
   let combinedWatts = 0;
-  let totalPixelsHorizontal = 0;
-  let totalPixelsVertical = 0;
 
   // Loop through each screen and generate its equipment
   window.screenConfigurations.forEach((config, index) => {
@@ -782,18 +780,6 @@ window.generateAllEquipment = function () {
     } else if (productType === "theatrixx") {
       amps = (voltage == 110) ? totalBlocks * 1.63636 : (totalBlocks * 865.38461) / 1000;
       watts = totalBlocks * 190;
-    } else if (productType === "ROEGP26Full") {
-      let fullWatts = totalBlocks * 320;
-      let halfWatts = 0;
-      if (config.gp2HalfEnabled && config.gp2HalfCount > 0) {
-        const gp2HalfTiles = config.blocksHor * config.gp2HalfCount;
-        halfWatts = gp2HalfTiles * 160;
-      }
-      watts = fullWatts + halfWatts;
-      amps = voltage ? watts / voltage : 0;
-    } else if (productType === "ROEGP26Half") {
-      watts = totalBlocks * 160;
-      amps = voltage ? watts / voltage : 0;
     } else {
       amps = 0;
       watts = 0;
@@ -805,27 +791,12 @@ window.generateAllEquipment = function () {
     combinedAmps += amps;
     combinedWatts += watts;
 
-    // Calculate pixel dimensions for this screen using known pixel-per-tile values
-    const pixelLookup = { absen: [200,200], theatrixx: [192,192], ROEGP26Full: [192,384], ROEGP26Half: [192,192], BP2B1: [176,176], BP2B2: [176,176], BP2V2: [176,176] };
-    const pxTile = pixelLookup[productType] || [176, 176];
-    let screenPixelsH = config.blocksHor * pxTile[0];
-    let screenPixelsV = config.blocksVer * pxTile[1];
-
-    // Account for GP2 Half rows on this screen
-    if (productType === 'ROEGP26Full' && config.gp2HalfEnabled && config.gp2HalfCount > 0) {
-      screenPixelsV = config.blocksVer * 384 + config.gp2HalfCount * 192;
-    }
-
-    totalPixelsHorizontal += screenPixelsH;
-    totalPixelsVertical += screenPixelsV;
-
     screenSection.innerHTML = `
       <h3>Screen ${config.id} Equipment</h3>
       <div class="screen-power-summary" style="margin-bottom: 15px; padding: 8px; background-color: #f0f0f0; border-radius: 5px;">
         <div><strong>Product Type:</strong> ${productType}</div>
         <div><strong>Dimensions:</strong> ${config.blocksHor} x ${config.blocksVer} tiles</div>
         <div><strong>Size:</strong> ${(config.blocksHor * 1.64).toFixed(2)}' x ${(config.blocksVer * 1.64).toFixed(2)}'</div>
-        <div><strong>Pixels:</strong> ${screenPixelsH} x ${screenPixelsV}</div>
         <div><strong>Voltage:</strong> ${voltage}V</div>
         <div><strong>Amperage:</strong> ${amps.toFixed(2)}A</div>
         <div><strong>Power:</strong> ${watts.toFixed(2)}W</div>
@@ -913,17 +884,12 @@ window.generateAllEquipment = function () {
   let summaryContentDiv = document.getElementById('powerWeightSummary');
   if (summaryContentDiv) {
     summaryContentDiv.innerHTML = `
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
         <div class="power-summary">
           <h4 style="margin-top: 0;">Power Requirements</h4>
           <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
           <div><strong>Total Amperage:</strong> ${combinedAmps.toFixed(2)}A</div>
           <div><strong>Total Power:</strong> ${combinedWatts.toFixed(2)}W</div>
-        </div>
-        <div class="pixel-summary">
-          <h4 style="margin-top: 0;">Total Pixels</h4>
-          <div><strong>Horizontal:</strong> ${(totalPixelsHorizontal || 0).toLocaleString()} px</div>
-          <div><strong>Vertical:</strong> ${(totalPixelsVertical || 0).toLocaleString()} px</div>
         </div>
         <div class="weight-summary">
           <h4 style="margin-top: 0;">Weight Summary</h4>
@@ -1024,6 +990,7 @@ window.generateAllEquipment = function () {
         delete combinedEquipment[key];
         combinedEquipmentOrder.splice(i, 1);
       }
+    }
 
     // Add recalculated items to combined equipment
     console.log('Single Room Recalc Items:', singleRoomData.recalcItems);
@@ -1041,6 +1008,7 @@ window.generateAllEquipment = function () {
           combinedEquipmentOrder.push(key);
         }
       }
+    }
 
     combinedAmps = singleRoomData.power.amps;
     combinedWatts = singleRoomData.power.watts;
@@ -1121,10 +1089,8 @@ window.generateAllEquipment = function () {
             <div><strong>Total Equipment Weight:</strong> ${totalCombinedWeight.toFixed(2)} lbs</div>
             <div><strong>Est. Shipping Weight:</strong> ${(totalCombinedWeight * 1.15).toFixed(2)} lbs</div>
           </div>
-        `;
-      }
-    } catch (err) {
-      console.error('Single Room recalculation failed:', err);
+        </div>
+      `;
     }
   }
 
@@ -1137,39 +1103,6 @@ window.generateAllEquipment = function () {
     modeDescription.textContent = 'Individual Rooms: Each room\'s processing, power, distro, and cables are calculated independently. Combined total is a simple sum.';
   }
   screenEquipmentContainer.appendChild(modeDescription);
-
-  // Add combined totals info block (pixels, power, weight)
-  const combinedTotalsBlock = document.createElement('div');
-  combinedTotalsBlock.style.cssText = `
-    padding: 12px 15px;
-    background-color: #eaf4ff;
-    border: 1px solid #b8d9f5;
-    border-radius: 5px;
-    margin-bottom: 15px;
-  `;
-  const singleRoomLabel = window.screenCombineMode === 'single'
-    ? ' <span style="color: #007bff; font-size: 0.85em;">(Single Room)</span>' : '';
-  combinedTotalsBlock.innerHTML = `
-    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-      <div>
-        <h4 style="margin: 0 0 5px 0;">Total Pixels${singleRoomLabel}</h4>
-        <div><strong>Horizontal:</strong> ${(totalPixelsHorizontal || 0).toLocaleString()} px</div>
-        <div><strong>Vertical:</strong> ${(totalPixelsVertical || 0).toLocaleString()} px</div>
-      </div>
-      <div>
-        <h4 style="margin: 0 0 5px 0;">Total Power${singleRoomLabel}</h4>
-        <div><strong>Amperage:</strong> ${(combinedAmps || 0).toFixed(2)}A</div>
-        <div><strong>Watts:</strong> ${(combinedWatts || 0).toFixed(2)}W</div>
-        <div><strong>Voltage:</strong> ${combinedVoltage.join(', ')}V</div>
-      </div>
-      <div>
-        <h4 style="margin: 0 0 5px 0;">Total Weight</h4>
-        <div><strong>Equipment:</strong> ${(totalCombinedWeight || 0).toFixed(2)} lbs</div>
-        <div><strong>Est. Shipping:</strong> ${((totalCombinedWeight || 0) * 1.15).toFixed(2)} lbs</div>
-      </div>
-    </div>
-  `;
-  screenEquipmentContainer.appendChild(combinedTotalsBlock);
 
   // Create combined table
   const combinedTable = document.createElement('table');
@@ -1274,8 +1207,7 @@ window.displayEstShippingWeight = function (weight) {
 window.displayTotalPixels = function (pixels) {
   const totalPixelsDiv = document.getElementById('totalPixels');
   if (!totalPixelsDiv) return;
-  const px = pixels || 0;
-  totalPixelsDiv.innerHTML = `<strong>Total Pixels:</strong><br>${px.toLocaleString()} px`;
+  totalPixelsDiv.innerHTML = `<strong>Total Pixels:</strong><br>${pixels.toLocaleString()} px`;
 };
 
 window.displayTotalPower = function (voltage, amps, watts) {
