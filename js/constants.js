@@ -156,18 +156,18 @@ const EQUIPMENT = {
   PL25_BEAM50: { code: 'PL25BEAM50', name: 'Absen PL2.5 support beam, 500 mm', weight: 0, image: 'PL25BEAM50.png' },
 
   // ROE Black Pearl
-  BP2B1: { code: 'BP2B1', name: 'ROE Black Pearl 2 Version 1 LED tile batch 1 (BP2)', weight: 20.61 },
-  BP2B2: { code: 'BP2B2', name: 'ROE Black Pearl 2 Version 1 LED tile batch 2 (BP2)', weight: 20.61 },
-  BP2V2: { code: 'BP2V2', name: 'BP2V2 ROE Black Pearl 2 Version 2.1 LED tile (BP2V2)', weight: 20.61 },
-  BP2V2_CASE: { code: 'BP2V2CASE', name: 'Case, ROE Black Pearl version2, 8x (BP2V2)', weight: 161.12 },
-  BPBO_HEAD1: { code: 'BPBOHEAD1', name: 'ROE Black Pearl header, 1W, 0.5m', weight: 12 },
-  BPBO_HEAD2: { code: 'BPBOHEAD2', name: 'ROE Black Pearl header, 2W, 1m', weight: 19 },
-  BPBO_BB1: { code: 'BPBOBB1', name: 'ROE Black Pearl base bar, 1W, 0.5m', weight: 16 },
-  BPBO_BB2: { code: 'BPBOBB2', name: 'ROE Black Pearl base bar, 2W, 1.0m', weight: 28 },
-  BP25DREE: { code: 'BP25DREE', name: 'ROE Black Pearl 5 Degree Bracket', weight: 0.25 },
-  BPGPUBT: { code: 'BPGPUBT', name: 'ROE Black Pearl universal base truss', weight: 17 },
-  BPGPREAR1: { code: 'BPGPREAR1', name: 'ROE Black Pearl rear truss', weight: 1 },
-  BPGPBRIDGE: { code: 'BPGPBRIDGE', name: 'ROE Black Pearl rear bridge clamp', weight: 1 },
+  BP2B1: { code: 'BP2B1', name: 'ROE Black Pearl 2 Version 1 LED tile batch 1 (BP2)', weight: 20.61, image: 'BP2B1.png' },
+  BP2B2: { code: 'BP2B2', name: 'ROE Black Pearl 2 Version 1 LED tile batch 2 (BP2)', weight: 20.61, image: 'BP2B2.png' },
+  BP2V2: { code: 'BP2V2', name: 'BP2V2 ROE Black Pearl 2 Version 2.1 LED tile (BP2V2)', weight: 20.61, image: 'BP2V2.png' },
+  BP2V2_CASE: { code: 'BP2V2CASE', name: 'Case, ROE Black Pearl version2, 8x (BP2V2)', weight: 161.12, image: 'BP2V2CASE.png' },
+  BPBO_HEAD1: { code: 'BPBOHEAD1', name: 'ROE Black Pearl header, 1W, 0.5m', weight: 12, image: 'BPBOHEAD1.png' },
+  BPBO_HEAD2: { code: 'BPBOHEAD2', name: 'ROE Black Pearl header, 2W, 1m', weight: 19, image: 'BPBOHEAD2.png' },
+  BPBO_BB1: { code: 'BPBOBB1', name: 'ROE Black Pearl base bar, 1W, 0.5m', weight: 16, image: 'BPBOBB1.png' },
+  BPBO_BB2: { code: 'BPBOBB2', name: 'ROE Black Pearl base bar, 2W, 1.0m', weight: 28, image: 'BPBOBB2.png' },
+  BP25DREE: { code: 'BP25DGREE', name: 'ROE Black Pearl 5 Degree Bracket', weight: 0.25, image: 'BP25DGREE.png' },
+  BPGPUBT: { code: 'BPGPUBT', name: 'ROE Black Pearl universal base truss', weight: 17, image: 'BPGPUBT.png' },
+  BPGPREAR1: { code: 'BPGPREAR1', name: 'ROE Black Pearl rear truss', weight: 1, image: 'BPGPREAR1.png' },
+  BPGPBRIDGE: { code: 'BPGPBRIDGE', name: 'ROE Black Pearl rear bridge clamp', weight: 1, image: 'BPGPBRIDGE.png' },
 
   // Theatrixx
   TX_NOMAD26: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm', weight: 24, image: 'TXNOMAD26.png' },
@@ -194,13 +194,42 @@ const EQUIPMENT = {
   ECON050C6: { code: 'ECON050C6', name: "Ethercon (CAT6) 50'", weight: 3, image: 'ECON050C6.png' },
   ECON100C6: { code: 'ECON100C6', name: "Ethercon (CAT6) 100'", weight: 6, image: 'ECON100C6.png' },
   ECON1M: { code: 'ECON1M', name: "Ethercon to Ethercon 1m", weight: 0.25, image: 'ECON1M.png' },
-  TRUE125FT: { code: 'TRUE125FT', name: "True1 to True1 cable, 25'", weight: 4, image: 'TRUE125FT.png' },
+  T1025: { code: 'T1025', name: "True1 power cable 25'", weight: 4, image: 'TRUE125FT.png' },
   EDT110M: { code: 'EDT110M', name: "Edison to True1 power cable, 10 meter", weight: 3.2, image: 'EDT110M.png' },
   T11M: { code: 'T11M', name: "True1 power cable 1M (3')", weight: 0.44, image: 'T11M.png' },
 
   // Misc
   SANDBAG25: { code: 'SANDBAG25', name: 'Sand Bag 25 lbs.', weight: 25, image: 'SANDBAG25.png' }
 };
+
+// Canonical equipment display order
+const CANONICAL_EQUIPMENT_ORDER = [
+  // Tile packages/cases
+  '8PPL25', '8PBP2B1', '8PBP2B2', '8PBP2V2', '6GP2FULL', '6GP2HALF', '10PTXNOMAD',
+  'PL25CASE', 'BP2V2CASE', 'CATXLED', 'BP2DTCASE',
+
+  // Tiles
+  'PL25', 'BP2B1', 'BP2B2', 'BP2V2', 'ROEGP26FULL', 'ROEGP26HALF', 'TXNOMAD26', 'BP2DT',
+
+  // Processors
+  'SX40', 'XD10', 'S8', 'MX40PRO',
+
+  // Structural (Headers, Bases, Truss, etc)
+  'PL25HEAD1', 'PL25HEAD2', 'BPBOHEAD1', 'BPBOHEAD2', 'GP2HEAD1', 'GP2HEAD2', 'TXDBLHEAD', 'TXSNGLHEAD',
+  'PL25BB1', 'PL25BB2', 'BPBOBB1', 'BPBOBB2', 'GP2BASE1', 'GP2BASE2', 'TXBASE1W', 'TXBASE2W',
+  'BPGPUBT', 'BPGPREAR05', 'BPGPREAR1', 'BPGPBRIDGE',
+  'TXSKIFRAME', 'TXSTAKEXT', 'TXLADDER', 'TXBRACKETS', 'TXVERTSPRT', 'TXSKIFTSNG', 'TXBRACKETC', 'TXM10B',
+  'PL25OUT', 'PL25LAD1M', 'PL25CLAMP', 'PL25BEAM50', 'PL25BEAM1K', 'PL25BEAMAD', 'PL25PLAT',
+  'BP25DGREE', 'BP2BBOLT', 'LED4FTS40', '15PIPECPL',
+  'SANDBAG25',
+
+  // Cables
+  'CAT5ES005', 'ECON010C6', 'ECON050C6', 'ECON100C6', 'ECON1M', 'TXT92TXT9', 'TXT92ETRCN',
+  'T1016', 'T1025', 'TXT32T125', 'T11M', 'TXT3POWER', 'EDT110M', 'TXT32ED6',
+
+  // Power Distro
+  'CUBEDIST', 'TP1', 'L2130T1FB', 'SOCA6XTRU1', 'TXT32SOCA'
+];
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {

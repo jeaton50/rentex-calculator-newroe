@@ -22,7 +22,7 @@ const GP26_BALLAST_CONFIG = {
     5.5: { BB: 110, BF: 127 },
     6.0: { BB: 124, BF: 144 }
   },
-   
+
   // PDF Table: Universal Base 100cm, 1.00m bay distance (every-other support for ≤4m height)
   bayDistance100: {
     2.0: { BB: 38, BF: 44 },
@@ -31,7 +31,7 @@ const GP26_BALLAST_CONFIG = {
     3.5: { BB: 120, BF: 140 },
     4.0: { BB: 157, BF: 184 }
   },
-   
+
   // LED panel weight densities (kg/m²)
   // GP2.6 Full: 9.0 kg per 0.5m² panel = 18.0 kg/m²
   // GP2.6 Half: 5.19 kg per 0.25m² panel = 20.76 kg/m²
@@ -39,11 +39,11 @@ const GP26_BALLAST_CONFIG = {
     ROEGP26Full: 18.0,
     ROEGP26Half: 20.76
   },
-   
+
   // Lever arm ratio for front ballast reduction
   // Adjusted to match official ROE calculator output (137 lbs front for 16×5)
-  leverRatio: 1.108,  
-   
+  leverRatio: 1.108,
+
   // Height thresholds
   maxHeightForSparseSupport: 4.0,  // Above this, need support every column
   maxGroundSupportHeight: 6.0      // Maximum height for ground support
@@ -51,15 +51,15 @@ const GP26_BALLAST_CONFIG = {
 
 function interpolateBallast(table, heightM) {
   const heights = Object.keys(table).map(Number).sort((a, b) => a - b);
-   
+
   // Clamp to table range
   if (heightM <= heights[0]) return table[heights[0]];
   if (heightM >= heights[heights.length - 1]) return table[heights[heights.length - 1]];
-   
+
   // Find surrounding heights for interpolation
   let lowerH = heights[0];
   let upperH = heights[heights.length - 1];
-   
+
   for (let i = 0; i < heights.length - 1; i++) {
     if (heightM >= heights[i] && heightM <= heights[i + 1]) {
       lowerH = heights[i];
@@ -67,12 +67,12 @@ function interpolateBallast(table, heightM) {
       break;
     }
   }
-   
+
   // Linear interpolation
   const ratio = (heightM - lowerH) / (upperH - lowerH);
   const lowerVal = table[lowerH];
   const upperVal = table[upperH];
-   
+
   return {
     BB: lowerVal.BB + ratio * (upperVal.BB - lowerVal.BB),
     BF: lowerVal.BF + ratio * (upperVal.BF - lowerVal.BF)
@@ -85,7 +85,7 @@ function interpolateBallast(table, heightM) {
  */
 function calculateGP26Sandbags(productType, horizontalBlocks, verticalBlocks, gp2HalfRows = 0) {
   const config = GP26_BALLAST_CONFIG;
-   
+
   // Calculate wall height in meters
   let heightInMeters;
   if (productType === 'ROEGP26Full') {
@@ -97,18 +97,18 @@ function calculateGP26Sandbags(productType, horizontalBlocks, verticalBlocks, gp
     // Half panels are 0.5m tall each
     heightInMeters = verticalBlocks * 0.5;
   }
-   
+
   // Check maximum ground support height
   if (heightInMeters > config.maxGroundSupportHeight) {
     console.warn(`GP2.6 wall height ${heightInMeters}m exceeds ground support limit of ${config.maxGroundSupportHeight}m`);
     // Still calculate, but wall should be flown
   }
-   
+
   // Determine bay distance and support configuration
   // NOTE: Official ROE calculator ALWAYS uses dense support (0.50m bay, every column)
   // for GP2.6 Full, regardless of height. GP2.6 Half may use sparse support.
   let bayDistance, ballastTable, numSystems;
-   
+
   if (productType === 'ROEGP26Full') {
     // GP2.6 Full: ALWAYS dense support (every column, 0.50m bay)
     bayDistance = 0.50;
@@ -121,27 +121,27 @@ function calculateGP26Sandbags(productType, horizontalBlocks, verticalBlocks, gp
     ballastTable = needsDenseSupport ? config.bayDistance050 : config.bayDistance100;
     numSystems = needsDenseSupport ? horizontalBlocks : Math.ceil((horizontalBlocks + 1) / 2);
   }
-   
+
   // Get base ballast from PDF table (with interpolation)
   const baseBallast = interpolateBallast(ballastTable, heightInMeters);
-   
+
   // Calculate LED weight reduction for front ballast
   // Formula: reduction = gLED × bay × height × leverRatio
   const gLED = config.ledWeightPerM2[productType] || 18.0;
   const reduction = gLED * bayDistance * heightInMeters * config.leverRatio;
-   
+
   // Adjusted front ballast (cannot go below 0)
   const adjustedBF = Math.max(0, baseBallast.BF - reduction);
-   
+
   // Total ballast per system
   const ballastPerSystem = baseBallast.BB + adjustedBF;
-   
+
   // Total ballast for entire wall
   const totalBallastKg = numSystems * ballastPerSystem;
-   
+
   // Convert to 25lb sandbags (25 lbs = 11.34 kg)
   const sandbags = Math.ceil(totalBallastKg / 11.34);
-   
+
   // Debug logging
   console.log('GP2.6 Sandbag Calculation:', {
     productType,
@@ -160,7 +160,7 @@ function calculateGP26Sandbags(productType, horizontalBlocks, verticalBlocks, gp
     totalBallastLbs: (totalBallastKg * 2.205).toFixed(0),
     sandbags
   });
-   
+
   return sandbags;
 }
 
@@ -425,10 +425,10 @@ const EquipmentCalculator = {
       supportType === "Flyware"
         ? 0
         : redundancyType === "Fully Redundant"
-        ? 0
-        : supportType === "Ground" || effectiveTotalTiles <= 100
-        ? s8ProcessorCount
-        : 0;
+          ? 0
+          : supportType === "Ground" || effectiveTotalTiles <= 100
+            ? s8ProcessorCount
+            : 0;
 
     const maxPanels = productType === "absen" ? 80 : 100;
     let S8, SX40, XD10;
@@ -660,8 +660,8 @@ const EquipmentCalculator = {
     const B35 = distributionUnitCount + (distributionUnitCount > 0 && distributionUnitCount < 5
       ? 1
       : distributionUnitCount > 9
-      ? 3
-      : 0);
+        ? 3
+        : 0);
 
     // For Absen/Theatrixx/GP2.6: ECON100C6 += B35 (no SX40 subtraction)
     // For ROE (BP2): ECON100C6 += Math.max(B35 - SX40, 0)
@@ -705,7 +705,7 @@ const EquipmentCalculator = {
 
       // Power cables / circuits
       EDT110M: adjustedPowerCables, // shown only on 120V in display logic
-      TRUE125FT: adjustedCircuits,  // this is your "number of circuits" output
+      T1025: adjustedCircuits,  // this is your "number of circuits" output
       T11M: totalTilesWithSparesIncludingHalf,
     };
   },
@@ -972,9 +972,13 @@ const EquipmentCalculator = {
     } else if (CUBEDIST > 0) {
       // 3 circuits per floor box (existing intent)
       L2130T1FB = Math.ceil(circuits / 3);
+      // Enforce physical CUBEDIST port limit (max 6 floor boxes per CUBEDIST)
+      CUBEDIST = Math.max(CUBEDIST, Math.ceil(L2130T1FB / 6));
     } else if (TP1 > 0) {
       // 6 circuits per soca->true1 breakout (existing intent)
       SOCA6XTRU1 = Math.ceil(circuits / 6);
+      // Enforce physical TP1 port limit (max 4 Soca ports per TP1)
+      TP1 = Math.max(TP1, Math.ceil(SOCA6XTRU1 / 4));
     }
 
     return {
@@ -1049,7 +1053,7 @@ function addAbsenEquipment(config, tbody) {
   if (cables.ECON050C6 > 0) addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
   if (cables.ECON100C6 > 0) addEquipmentRow("ECON100C6", "Ethercon (CAT6) 100'", 6, cables.ECON100C6, tbody);
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
-  if (cables.TRUE125FT > 0) addEquipmentRow("TRUE125FT", "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
+  if (cables.T1025 > 0) addEquipmentRow("T1025", "True1 power cable 25'", 4, cables.T1025, tbody);
   if (cables.EDT110M > 0 && normalizeVoltage(voltage) === 120) addEquipmentRow("EDT110M", "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
   if (cables.T11M > 0) addEquipmentRow("T11M", "True1 power cable 1M (3')", 0.44, cables.T11M, tbody);
 
@@ -1190,7 +1194,7 @@ function addROEEquipment(config, tbody) {
   if (cables.ECON050C6 > 0) addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
   if (cables.ECON100C6 > 0) addEquipmentRow("ECON100C6", "Ethercon (CAT6) 100'", 6, cables.ECON100C6, tbody);
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
-  if (cables.TRUE125FT > 0) addEquipmentRow("TRUE125FT", "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
+  if (cables.T1025 > 0) addEquipmentRow("T1025", "True1 power cable 25'", 4, cables.T1025, tbody);
   if (cables.EDT110M > 0 && normalizeVoltage(voltage) === 120) addEquipmentRow("EDT110M", "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
   if (cables.T11M > 0) addEquipmentRow("T11M", "True1 power cable 1M (3')", 0.44, cables.T11M, tbody);
 
@@ -1387,7 +1391,7 @@ function addROEGP26Equipment(config, tbody) {
   if (cables.ECON050C6 > 0 && productType !== "ROEGP26Full") addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, cables.ECON050C6, tbody);
   if (cables.ECON100C6 > 0) addEquipmentRow("ECON100C6", "Ethercon (CAT6) 100'", 6, cables.ECON100C6, tbody);
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
-  if (cables.TRUE125FT > 0) addEquipmentRow("TRUE125FT", "True1 to True1 cable, 25'", 4, cables.TRUE125FT, tbody);
+  if (cables.T1025 > 0) addEquipmentRow("T1025", "True1 power cable 25'", 4, cables.T1025, tbody);
   if (cables.EDT110M > 0 && normalizeVoltage(voltage) === 120) addEquipmentRow("EDT110M", "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
   if (cables.T11M > 0) addEquipmentRow("T11M", "True1 power cable 1M (3')", 0.44, cables.T11M, tbody);
 
@@ -1465,7 +1469,7 @@ function addTheatrixxEquipment(config, tbody) {
     heightWarning,
   } = config;
 
-  totalWeight = 17.6 * totalTiles;
+  totalWeight = 24 * totalTiles;
   const totalPixels = horizontalBlocks * 192 * (verticalBlocks * 192);
 
   // Tile packages (10 tiles per package) - reference uses casesNeeded which is totalTilesWithSpares / 10
@@ -1473,11 +1477,11 @@ function addTheatrixxEquipment(config, tbody) {
   addEquipmentRow('10PTXNOMAD', 'Theatrixx Nomad 2.6 10x package', 0, tilePackages, tbody);
 
   // Tiles (reference uses B5 = totalTiles)
-  addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm', 17.6, totalTiles, tbody);
+  addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm', 24, totalTiles, tbody);
 
   // Spare tiles (reference uses I13 = totalSpares for Theatrixx)
   if (totalSpareTiles > 0) {
-    addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm ** Spare Tiles **', 17.6, totalSpareTiles, tbody);
+    addEquipmentRow('TXNOMAD26', 'Theatrixx Nomad LED panel 500x500 2.6mm ** Spare Tiles **', 24, totalSpareTiles, tbody);
   }
 
   // Cases (10 tiles per case)
@@ -1624,7 +1628,7 @@ function addTheatrixxEquipment(config, tbody) {
 
   // Calculate shipping weight per reference code
   let caseWeight = totalWeight;
-  caseWeight += 17.6 * totalSpareTiles;
+  caseWeight += 24 * totalSpareTiles;
   caseWeight += 187 * tilePackages;
   caseWeight += 114 * singleBases;
   caseWeight += 115 * doubleBases;
@@ -1640,6 +1644,7 @@ function addTheatrixxEquipment(config, tbody) {
     displayEstShippingWeight(caseWeight);
   }
 
+  if (typeof displayWallWeight === "function") displayWallWeight(totalWeight);
   if (typeof displayTotalPixels === "function") displayTotalPixels(totalPixels);
   if (typeof displayDataPortsNeeded === "function") displayDataPortsNeeded("theatrixx", totalTiles);
 }
@@ -1917,14 +1922,14 @@ function displayEquipment(data) {
          UPDATED GP2.6 SANDBAG LOGIC
          ========================================================= */
       if (productType === "ROEGP26Full" || productType === "ROEGP26Half") {
-         sandbags = calculateGP26Sandbags(
-           productType,
-           horizontalBlocks,
-           // IMPORTANT: GP2.6 Full calculation uses `gp2FullVerticalBlocks` if available
-           // to separate the "Full" part from the "Half" rows.
-           productType === "ROEGP26Full" ? gp2FullVerticalBlocks : verticalBlocks,
-           gp2HalfRows
-         );
+        sandbags = calculateGP26Sandbags(
+          productType,
+          horizontalBlocks,
+          // IMPORTANT: GP2.6 Full calculation uses `gp2FullVerticalBlocks` if available
+          // to separate the "Full" part from the "Half" rows.
+          productType === "ROEGP26Full" ? gp2FullVerticalBlocks : verticalBlocks,
+          gp2HalfRows
+        );
       } else {
         // Fallback for other products (Absen, Theatrixx, old ROE, etc.)
         sandbags = EquipmentCalculator.calculateSandbags(productType, verticalBlocks, baseCount);
@@ -2006,8 +2011,8 @@ function displayEquipment(data) {
         if (typeof showError === "function") {
           showError(
             "Unknown product type: " +
-              productType +
-              " (expected: absen, BP2B1, BP2B2, BP2V2, theatrixx, ROEGP26Full, or ROEGP26Half)"
+            productType +
+            " (expected: absen, BP2B1, BP2B2, BP2V2, theatrixx, ROEGP26Full, or ROEGP26Half)"
           );
         }
     }
