@@ -236,6 +236,23 @@ function roeGp26FullCircuitCount(totalPanels, voltage, gp2HalfTileCount = 0) {
 
 const EquipmentCalculator = {
   /**
+   * Get pixel dimensions per tile for a given product type.
+   * Single source of truth used by both single-screen and multi-screen calculations.
+   */
+  getPixelsPerTile(productType) {
+    switch (productType) {
+      case 'absen':     return { width: 200, height: 200 };
+      case 'theatrixx': return { width: 192, height: 192 };
+      case 'ROEGP26Full': return { width: 192, height: 384 };
+      case 'ROEGP26Half': return { width: 192, height: 192 };
+      case 'BP2B1':
+      case 'BP2B2':
+      case 'BP2V2':
+      default:          return { width: 176, height: 176 };
+    }
+  },
+
+  /**
    * Calculate processor requirements (Brompton or Novastar)
    */
   calculateProcessors(config) {
@@ -250,6 +267,8 @@ const EquipmentCalculator = {
       gp2HalfBottomRow,
       gp2HalfRows,
       gp2FullVerticalBlocks,
+      overridePixelWidth,
+      overridePixelHeight,
     } = config;
 
     let pixelsPerTileWidth, pixelsPerTileHeight;
@@ -303,7 +322,11 @@ const EquipmentCalculator = {
 
     // Calculate pixel dimensions - account for mixed GP2 Full + GP2 Half configurations
     let pixelsHeight, pixelsWidth;
-    if (productType === "ROEGP26Full" && gp2HalfBottomRow && gp2HalfRows > 0) {
+    if (overridePixelWidth !== undefined && overridePixelHeight !== undefined) {
+      // Use pre-computed pixel dimensions (for multi-screen combined calculations)
+      pixelsWidth = overridePixelWidth;
+      pixelsHeight = overridePixelHeight;
+    } else if (productType === "ROEGP26Full" && gp2HalfBottomRow && gp2HalfRows > 0) {
       // Mixed configuration: GP2 Full (384px tall) + GP2 Half (192px tall)
       // Use gp2FullVerticalBlocks for actual GP2 Full tiles count
       const actualFullBlocks = gp2FullVerticalBlocks || verticalBlocks;
