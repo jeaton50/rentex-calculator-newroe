@@ -11,8 +11,11 @@ class ScreenConfig {
   constructor(id) {
     this.id = id;
     this.productType = 'absen';
-    this.blocksHor = 10;
-    this.blocksVer = 10;
+    this.blocksHor = 0;
+    this.blocksVer = 0;
+    this.inputType = 'blocks';
+    this.widthFeet = 0;
+    this.heightFeet = 0;
     this.wallType = 'Flat';
     this.supportType = 'groundSupport';
     this.supportOption = 'Single Base';
@@ -314,8 +317,13 @@ const MultiScreenManager = {
       const config = window.screenConfigurations[window.activeScreenIndex];
 
       config.productType = document.getElementById('productType')?.value || 'absen';
-      config.blocksHor = parseInt(document.getElementById('blocksHor')?.value || 10, 10);
-      config.blocksVer = parseInt(document.getElementById('blocksVer')?.value || 10, 10);
+      config.blocksHor = parseInt(document.getElementById('blocksHor')?.value || 0, 10);
+      config.blocksVer = parseInt(document.getElementById('blocksVer')?.value || 0, 10);
+
+      const inputTypeRadio = document.querySelector('input[name="inputType"]:checked');
+      config.inputType = inputTypeRadio ? inputTypeRadio.value : 'blocks';
+      config.widthFeet = parseFloat(document.getElementById('widthFeet')?.value || 0);
+      config.heightFeet = parseFloat(document.getElementById('heightFeet')?.value || 0);
 
       const wallTypeRadios = document.querySelectorAll('input[name="wallType"]');
       for (const radio of wallTypeRadios) {
@@ -448,6 +456,23 @@ const MultiScreenManager = {
 
       // Power distro type (re-apply in case change event reset it)
       if (powerDistroTypeEl) powerDistroTypeEl.value = config.powerDistroType;
+
+      // Restore input type toggle (Input Tiles vs Input Dimensions) per screen
+      const inputType = config.inputType || 'blocks';
+      const blockInputRadio = document.getElementById('blockInput');
+      const dimensionInputRadio = document.getElementById('dimensionInput');
+      const blockInputsDiv = document.getElementById('blockInputs');
+      const dimensionInputsDiv = document.getElementById('dimensionInputs');
+      if (blockInputRadio) blockInputRadio.checked = (inputType === 'blocks');
+      if (dimensionInputRadio) dimensionInputRadio.checked = (inputType === 'dimensions');
+      if (blockInputsDiv) blockInputsDiv.style.display = (inputType === 'blocks') ? 'block' : 'none';
+      if (dimensionInputsDiv) dimensionInputsDiv.style.display = (inputType === 'dimensions') ? 'block' : 'none';
+
+      // Restore dimension inputs per screen
+      const widthFeetEl = document.getElementById('widthFeet');
+      const heightFeetEl = document.getElementById('heightFeet');
+      if (widthFeetEl) widthFeetEl.value = config.widthFeet != null ? config.widthFeet : 0;
+      if (heightFeetEl) heightFeetEl.value = config.heightFeet != null ? config.heightFeet : 0;
     } finally {
       // Always clear the guard flag, even if an error occurs
       window.isLoadingScreenConfig = false;
