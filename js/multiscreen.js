@@ -8,11 +8,17 @@
  * Represents a single screen with all its properties
  */
 class ScreenConfig {
-  constructor(id) {
+  constructor(id, opts) {
     this.id = id;
     this.productType = 'absen';
-    this.blocksHor = 10;
-    this.blocksVer = 10;
+    // Tile counts — default to 0 for new screens so they start blank
+    this.blocksHor = 0;
+    this.blocksVer = 0;
+    // Dimension inputs (feet) — independent per screen
+    this.widthFeet = 0;
+    this.heightFeet = 0;
+    // Input mode: 'blocks' (Input Tiles) or 'dimensions' (Input Dimensions)
+    this.inputMode = 'blocks';
     this.wallType = 'Flat';
     this.supportType = 'groundSupport';
     this.supportOption = 'Single Base';
@@ -24,6 +30,10 @@ class ScreenConfig {
     this.gp2HalfEnabled = false;
     this.gp2HalfCount = 1;
     this.gp2HalfPosition = 'bottom';
+    // Allow overriding defaults (used for the initial Screen 1)
+    if (opts) {
+      Object.assign(this, opts);
+    }
   }
 }
 
@@ -408,8 +418,16 @@ const MultiScreenManager = {
       const config = window.screenConfigurations[window.activeScreenIndex];
 
       config.productType = document.getElementById('productType')?.value || 'absen';
-      config.blocksHor = parseInt(document.getElementById('blocksHor')?.value || 10, 10);
-      config.blocksVer = parseInt(document.getElementById('blocksVer')?.value || 10, 10);
+      config.blocksHor = parseInt(document.getElementById('blocksHor')?.value || 0, 10);
+      config.blocksVer = parseInt(document.getElementById('blocksVer')?.value || 0, 10);
+
+      // Save dimension inputs (feet) — independent per screen
+      config.widthFeet = parseFloat(document.getElementById('widthFeet')?.value || 0);
+      config.heightFeet = parseFloat(document.getElementById('heightFeet')?.value || 0);
+
+      // Save input mode (tiles vs dimensions)
+      const dimensionRadio = document.getElementById('dimensionInput');
+      config.inputMode = (dimensionRadio && dimensionRadio.checked) ? 'dimensions' : 'blocks';
 
       const wallTypeRadios = document.querySelectorAll('input[name="wallType"]');
       for (const radio of wallTypeRadios) {
@@ -463,6 +481,29 @@ const MultiScreenManager = {
       const redundancyEl = document.getElementById('redundancy');
       const sourceSignalsEl = document.getElementById('sourceSignals');
 
+      // Restore input mode (tiles vs dimensions)
+      const blockInputRadio = document.getElementById('blockInput');
+      const dimensionInputRadio = document.getElementById('dimensionInput');
+      const blockInputsDiv = document.getElementById('blockInputs');
+      const dimensionInputsDiv = document.getElementById('dimensionInputs');
+      if (config.inputMode === 'dimensions') {
+        if (dimensionInputRadio) dimensionInputRadio.checked = true;
+        if (blockInputRadio) blockInputRadio.checked = false;
+        if (blockInputsDiv) blockInputsDiv.style.display = 'none';
+        if (dimensionInputsDiv) dimensionInputsDiv.style.display = 'block';
+      } else {
+        if (blockInputRadio) blockInputRadio.checked = true;
+        if (dimensionInputRadio) dimensionInputRadio.checked = false;
+        if (blockInputsDiv) blockInputsDiv.style.display = 'block';
+        if (dimensionInputsDiv) dimensionInputsDiv.style.display = 'none';
+      }
+
+      // Restore dimension inputs (feet)
+      const widthFeetEl = document.getElementById('widthFeet');
+      const heightFeetEl = document.getElementById('heightFeet');
+      if (widthFeetEl) widthFeetEl.value = config.widthFeet || 0;
+      if (heightFeetEl) heightFeetEl.value = config.heightFeet || 0;
+
       // Set product type first (without triggering change yet)
       if (productTypeEl) productTypeEl.value = config.productType;
       if (blocksHorEl) blocksHorEl.value = config.blocksHor;
@@ -513,6 +554,21 @@ const MultiScreenManager = {
       // Blocks (handler may round blocksVer based on product-specific limits)
       if (blocksHorEl) blocksHorEl.value = config.blocksHor;
       if (blocksVerEl) blocksVerEl.value = config.blocksVer;
+
+      // Re-apply dimension inputs and input mode after change event
+      if (widthFeetEl) widthFeetEl.value = config.widthFeet || 0;
+      if (heightFeetEl) heightFeetEl.value = config.heightFeet || 0;
+      if (config.inputMode === 'dimensions') {
+        if (dimensionInputRadio) dimensionInputRadio.checked = true;
+        if (blockInputRadio) blockInputRadio.checked = false;
+        if (blockInputsDiv) blockInputsDiv.style.display = 'none';
+        if (dimensionInputsDiv) dimensionInputsDiv.style.display = 'block';
+      } else {
+        if (blockInputRadio) blockInputRadio.checked = true;
+        if (dimensionInputRadio) dimensionInputRadio.checked = false;
+        if (blockInputsDiv) blockInputsDiv.style.display = 'block';
+        if (dimensionInputsDiv) dimensionInputsDiv.style.display = 'none';
+      }
 
       // Dummy tiles
       const dummyTilesCheckbox = document.getElementById('dummyTilesCheckbox');
@@ -1204,7 +1260,10 @@ function toggleMultiScreenManagement() {
 if (typeof window !== 'undefined') {
   // Initialize global variables
   if (!window.screenConfigurations) {
-    window.screenConfigurations = [new ScreenConfig(1)];
+    // Screen 1 matches the HTML defaults (5×5 tiles, 1' dimensions)
+    window.screenConfigurations = [new ScreenConfig(1, {
+      blocksHor: 5, blocksVer: 5, widthFeet: 1, heightFeet: 1
+    })];
   }
   if (typeof window.activeScreenIndex === 'undefined') {
     window.activeScreenIndex = 0;
