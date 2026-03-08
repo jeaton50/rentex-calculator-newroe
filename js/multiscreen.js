@@ -8,17 +8,11 @@
  * Represents a single screen with all its properties
  */
 class ScreenConfig {
-  constructor(id, opts) {
+  constructor(id) {
     this.id = id;
     this.productType = 'absen';
-    // Tile counts — default to 0 for new screens so they start blank
-    this.blocksHor = 0;
-    this.blocksVer = 0;
-    // Dimension inputs (feet) — independent per screen
-    this.widthFeet = 0;
-    this.heightFeet = 0;
-    // Input mode: 'blocks' (Input Tiles) or 'dimensions' (Input Dimensions)
-    this.inputMode = 'blocks';
+    this.blocksHor = 10;
+    this.blocksVer = 10;
     this.wallType = 'Flat';
     this.supportType = 'groundSupport';
     this.supportOption = 'Single Base';
@@ -30,10 +24,6 @@ class ScreenConfig {
     this.gp2HalfEnabled = false;
     this.gp2HalfCount = 1;
     this.gp2HalfPosition = 'bottom';
-    // Allow overriding defaults (used for the initial Screen 1)
-    if (opts) {
-      Object.assign(this, opts);
-    }
   }
 }
 
@@ -324,16 +314,8 @@ const MultiScreenManager = {
       const config = window.screenConfigurations[window.activeScreenIndex];
 
       config.productType = document.getElementById('productType')?.value || 'absen';
-      config.blocksHor = parseInt(document.getElementById('blocksHor')?.value || 0, 10);
-      config.blocksVer = parseInt(document.getElementById('blocksVer')?.value || 0, 10);
-
-      // Save dimension inputs (feet) — independent per screen
-      config.widthFeet = parseFloat(document.getElementById('widthFeet')?.value || 0);
-      config.heightFeet = parseFloat(document.getElementById('heightFeet')?.value || 0);
-
-      // Save input mode (tiles vs dimensions)
-      const dimensionRadio = document.getElementById('dimensionInput');
-      config.inputMode = (dimensionRadio && dimensionRadio.checked) ? 'dimensions' : 'blocks';
+      config.blocksHor = parseInt(document.getElementById('blocksHor')?.value || 10, 10);
+      config.blocksVer = parseInt(document.getElementById('blocksVer')?.value || 10, 10);
 
       const wallTypeRadios = document.querySelectorAll('input[name="wallType"]');
       for (const radio of wallTypeRadios) {
@@ -387,29 +369,6 @@ const MultiScreenManager = {
       const redundancyEl = document.getElementById('redundancy');
       const sourceSignalsEl = document.getElementById('sourceSignals');
 
-      // Restore input mode (tiles vs dimensions)
-      const blockInputRadio = document.getElementById('blockInput');
-      const dimensionInputRadio = document.getElementById('dimensionInput');
-      const blockInputsDiv = document.getElementById('blockInputs');
-      const dimensionInputsDiv = document.getElementById('dimensionInputs');
-      if (config.inputMode === 'dimensions') {
-        if (dimensionInputRadio) dimensionInputRadio.checked = true;
-        if (blockInputRadio) blockInputRadio.checked = false;
-        if (blockInputsDiv) blockInputsDiv.style.display = 'none';
-        if (dimensionInputsDiv) dimensionInputsDiv.style.display = 'block';
-      } else {
-        if (blockInputRadio) blockInputRadio.checked = true;
-        if (dimensionInputRadio) dimensionInputRadio.checked = false;
-        if (blockInputsDiv) blockInputsDiv.style.display = 'block';
-        if (dimensionInputsDiv) dimensionInputsDiv.style.display = 'none';
-      }
-
-      // Restore dimension inputs (feet)
-      const widthFeetEl = document.getElementById('widthFeet');
-      const heightFeetEl = document.getElementById('heightFeet');
-      if (widthFeetEl) widthFeetEl.value = config.widthFeet || 0;
-      if (heightFeetEl) heightFeetEl.value = config.heightFeet || 0;
-
       // Set product type first (without triggering change yet)
       if (productTypeEl) productTypeEl.value = config.productType;
       if (blocksHorEl) blocksHorEl.value = config.blocksHor;
@@ -461,21 +420,6 @@ const MultiScreenManager = {
       if (blocksHorEl) blocksHorEl.value = config.blocksHor;
       if (blocksVerEl) blocksVerEl.value = config.blocksVer;
 
-      // Re-apply dimension inputs and input mode after change event
-      if (widthFeetEl) widthFeetEl.value = config.widthFeet || 0;
-      if (heightFeetEl) heightFeetEl.value = config.heightFeet || 0;
-      if (config.inputMode === 'dimensions') {
-        if (dimensionInputRadio) dimensionInputRadio.checked = true;
-        if (blockInputRadio) blockInputRadio.checked = false;
-        if (blockInputsDiv) blockInputsDiv.style.display = 'none';
-        if (dimensionInputsDiv) dimensionInputsDiv.style.display = 'block';
-      } else {
-        if (blockInputRadio) blockInputRadio.checked = true;
-        if (dimensionInputRadio) dimensionInputRadio.checked = false;
-        if (blockInputsDiv) blockInputsDiv.style.display = 'block';
-        if (dimensionInputsDiv) dimensionInputsDiv.style.display = 'none';
-      }
-
       // Dummy tiles
       const dummyTilesCheckbox = document.getElementById('dummyTilesCheckbox');
       const dummyTileCountInput = document.getElementById('dummyTileCount');
@@ -516,16 +460,21 @@ const MultiScreenManager = {
    */
   calculateCombinedDistro() {
     let totalTiles = 0;
-    let totalSpares = 0;
-    let sumHorizontalBlocks = 0;
-    let maxVerticalBlocks = 0;
-    let combinedGp2HalfRows = 0;
-    const productTypeTiles = {};
+    let combinedPowerRequirements = {
+      voltage110: false,
+      voltage208: false,
+      totalAmps110: 0,
+      totalAmps208: 0,
+      totalWatts: 0
+    };
+
+    const productTypes = new Set();
 
     // Calculate totals from all screens
     window.screenConfigurations.forEach((config) => {
       const screenTiles = config.blocksHor * config.blocksVer;
       totalTiles += screenTiles;
+      productTypes.add(config.productType);
 
       // Resolve voltage string to a number for calculation
       // 'Auto', 'CUBEDIST', 'TP1', '208' all maps to 208
@@ -570,8 +519,9 @@ const MultiScreenManager = {
     // Calculate distribution requirements
     let CUBEDIST = 0, TP1 = 0, L2130T1FB = 0, SOCA6XTRU1 = 0, TXT32SOCA = 0;
 
-      if (!productTypeTiles[config.productType]) productTypeTiles[config.productType] = 0;
-      productTypeTiles[config.productType] += screenTiles;
+    // For 208V calculations
+    if (combinedPowerRequirements.voltage208) {
+      let totalAmps208 = combinedPowerRequirements.totalAmps208;
 
       // Calculate total circuits needed for the system
       let circuits = 0;
@@ -674,17 +624,13 @@ const MultiScreenManager = {
     }
 
     return {
-      CUBEDIST: distro.CUBEDIST,
-      TP1: distro.TP1,
-      L2130T1FB: distro.L2130T1FB,
-      SOCA6XTRU1: distro.SOCA6XTRU1,
-      TXT32SOCA: distro.TXT32SOCA,
-      EDT110M: 0,
-      powerRequirements: {
-        voltage: voltage,
-        totalAmps: power.amps,
-        totalWatts: power.watts,
-      }
+      CUBEDIST,
+      TP1,
+      L2130T1FB,
+      SOCA6XTRU1,
+      TXT32SOCA,
+      EDT110M,
+      powerRequirements: combinedPowerRequirements
     };
   },
 
@@ -711,9 +657,14 @@ const MultiScreenManager = {
 
     let distroHTML = '<h3>Combined Power Distribution Requirements</h3>';
     distroHTML += '<div style="margin-bottom: 15px;">';
-    distroHTML += `<p><strong>Total Power:</strong> ${distroReqs.powerRequirements.totalWatts.toFixed(2)}W</p>`;
-    distroHTML += `<p><strong>Voltage:</strong> ${distroReqs.powerRequirements.voltage}V</p>`;
-    distroHTML += `<p><strong>Total Amperage:</strong> ${distroReqs.powerRequirements.totalAmps.toFixed(2)}A</p>`;
+    distroHTML += `<p><strong>Total Power:</strong> ${distroReqs.powerRequirements.totalWatts}W</p>`;
+
+    if (distroReqs.powerRequirements.voltage208) {
+      distroHTML += `<p><strong>208V Total Amperage:</strong> ${distroReqs.powerRequirements.totalAmps208.toFixed(2)}A</p>`;
+    }
+    if (distroReqs.powerRequirements.voltage110) {
+      distroHTML += `<p><strong>110V Total Amperage:</strong> ${distroReqs.powerRequirements.totalAmps110.toFixed(2)}A</p>`;
+    }
 
     distroHTML += '</div>';
     distroHTML += '<h4>Recommended Distribution Equipment:</h4>';
@@ -864,13 +815,14 @@ const MultiScreenManager = {
    */
   calculateCombinedProcessing() {
     let totalTiles = 0;
-    let totalPixelWidth = 0;
-    let maxPixelHeight = 0;
-    let sumHorizontalBlocks = 0;
-    let maxVerticalBlocks = 0;
-    let combinedGp2HalfRows = 0;
+    let totalDataPorts = 0;
     const productTypes = new Set();
-    const productTypeTiles = {};
+    const processorRequirements = {
+      SX40: 0,
+      XD10: 0,
+      S8: 0,
+      MX40PRO: 0
+    };
 
     let totalWatts = 0;
     let totalAmps110 = 0;
@@ -962,12 +914,7 @@ const MultiScreenManager = {
       totalAmps110,
       totalAmps208,
       productTypes: Array.from(productTypes),
-      processors: {
-        SX40: processors.SX40,
-        XD10: processors.XD10,
-        S8: processors.S8,
-        MX40PRO: processors.MX40PRO || 0,
-      }
+      processors: processorRequirements
     };
   },
 
@@ -1294,10 +1241,7 @@ function toggleMultiScreenManagement() {
 if (typeof window !== 'undefined') {
   // Initialize global variables
   if (!window.screenConfigurations) {
-    // Screen 1 matches the HTML defaults (5×5 tiles, 1' dimensions)
-    window.screenConfigurations = [new ScreenConfig(1, {
-      blocksHor: 5, blocksVer: 5, widthFeet: 1, heightFeet: 1
-    })];
+    window.screenConfigurations = [new ScreenConfig(1)];
   }
   if (typeof window.activeScreenIndex === 'undefined') {
     window.activeScreenIndex = 0;
