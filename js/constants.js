@@ -196,7 +196,7 @@ const EQUIPMENT = {
   ECON1M: { code: 'ECON1M', name: "Ethercon to Ethercon 1m", weight: 0.25, image: 'ECON1M.png' },
   T1025: { code: 'T1025', name: "True1 power cable 25'", weight: 4, image: 'TRUE125FT.png' },
   EDT110M: { code: 'EDT110M', name: "Edison to True1 power cable, 10 meter", weight: 3.2, image: 'EDT110M.png' },
-  T11M: { code: 'T11M', name: "True1 power cable 1M (3')", weight: 0.44, image: 'T11M.png' },
+  T1003: { code: 'T1003', name: "True1 power cable 1m (3')", weight: 0.44, image: 'T1003.png' },
 
   // Misc
   SANDBAG25: { code: 'SANDBAG25', name: 'Sand Bag 25 lbs.', weight: 25, image: 'SANDBAG25.png' }
@@ -225,7 +225,7 @@ const CANONICAL_EQUIPMENT_ORDER = [
 
   // Cables
   'CAT5ES005', 'ECON010C6', 'ECON050C6', 'ECON100C6', 'ECON1M', 'TXT92TXT9', 'TXT92ETRCN',
-  'T1016', 'T1025', 'TXT32T125', 'T11M', 'TXT3POWER', 'EDT110M', 'TXT32ED6',
+  'T1016', 'T1025', 'TXT32T125', 'T1003', 'TXT3POWER', 'EDT110M', 'TXT32ED6',
 
   // Power Distro
   'CUBEDIST', 'TP1', 'L2130T1FB', 'SOCA6XTRU1', 'TXT32SOCA'

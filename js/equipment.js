@@ -683,7 +683,7 @@ const EquipmentCalculator = {
       // Power cables / circuits
       EDT110M: adjustedPowerCables, // shown only on 120V in display logic
       T1025: adjustedCircuits,  // this is your "number of circuits" output
-      T11M: totalTilesWithSparesIncludingHalf,
+      T1003: totalTilesWithSparesIncludingHalf,
     };
   },
 
@@ -1032,7 +1032,7 @@ function addAbsenEquipment(config, tbody) {
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
   if (cables.T1025 > 0) addEquipmentRow("T1025", "True1 power cable 25'", 4, cables.T1025, tbody);
   if (cables.EDT110M > 0 && normalizeVoltage(voltage) === 120) addEquipmentRow("EDT110M", "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
-  if (cables.T11M > 0) addEquipmentRow("T11M", "True1 power cable 1M (3')", 0.44, cables.T11M, tbody);
+  if (cables.T1003 > 0) addEquipmentRow("T1003", "True1 power cable 1m (3')", 0.44, cables.T1003, tbody);
 
   if (powerDistro.CUBEDIST > 0) addEquipmentRow("CUBEDIST", "Indu Electric 200A Cube Distro", 177, powerDistro.CUBEDIST, tbody);
   if (powerDistro.TP1 > 0) addEquipmentRow("TP1", "Indu Electric 400A Power Distro w/ (4) 208v Soca", 197, powerDistro.TP1, tbody);
@@ -1173,7 +1173,7 @@ function addROEEquipment(config, tbody) {
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
   if (cables.T1025 > 0) addEquipmentRow("T1025", "True1 power cable 25'", 4, cables.T1025, tbody);
   if (cables.EDT110M > 0 && normalizeVoltage(voltage) === 120) addEquipmentRow("EDT110M", "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
-  if (cables.T11M > 0) addEquipmentRow("T11M", "True1 power cable 1M (3')", 0.44, cables.T11M, tbody);
+  if (cables.T1003 > 0) addEquipmentRow("T1003", "True1 power cable 1m (3')", 0.44, cables.T1003, tbody);
 
   if (powerDistro.CUBEDIST > 0) addEquipmentRow("CUBEDIST", "Indu Electric 200A Cube Distro", 177, powerDistro.CUBEDIST, tbody);
   if (powerDistro.TP1 > 0) addEquipmentRow("TP1", "Indu Electric 400A Power Distro w/ (4) 208v Soca", 197, powerDistro.TP1, tbody);
@@ -1370,7 +1370,7 @@ function addROEGP26Equipment(config, tbody) {
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
   if (cables.T1025 > 0) addEquipmentRow("T1025", "True1 power cable 25'", 4, cables.T1025, tbody);
   if (cables.EDT110M > 0 && normalizeVoltage(voltage) === 120) addEquipmentRow("EDT110M", "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
-  if (cables.T11M > 0) addEquipmentRow("T11M", "True1 power cable 1M (3')", 0.44, cables.T11M, tbody);
+  if (cables.T1003 > 0) addEquipmentRow("T1003", "True1 power cable 1m (3')", 0.44, cables.T1003, tbody);
 
   if (powerDistro.CUBEDIST > 0) addEquipmentRow("CUBEDIST", "Indu Electric 200A Cube Distro", 177, powerDistro.CUBEDIST, tbody);
   if (powerDistro.TP1 > 0) addEquipmentRow("TP1", "Indu Electric 400A Power Distro w/ (4) 208v Soca", 197, powerDistro.TP1, tbody);
