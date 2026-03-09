@@ -196,7 +196,7 @@ const ExportManager = {
             'SX40', 'XD10', 'S8', 'MX40PRO',
             'CUBEDIST', 'TP1', 'L2130T1FB', 'SOCA6XTRU1', 'TXT32SOCA',
             'CAT5ES005', 'ECON010C6', 'ECON050C6', 'ECON100C6', 'ECON1M',
-            'T1025', 'T11M', 'EDT110M', 'TXT32ED6', 'TXT32T125'
+            'T1025', 'T1003', 'EDT110M', 'TXT32ED6', 'TXT32T125'
           ]);
 
           Object.keys(combinedEquipment).forEach(key => {
