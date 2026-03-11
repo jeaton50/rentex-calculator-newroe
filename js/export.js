@@ -581,7 +581,7 @@ const ExportManager = {
         { header: 'Ecode', dataKey: 'ecode' },
         { header: 'Equipment Name', dataKey: 'name' },
         { header: 'Qty', dataKey: 'quantity' },
-        { header: 'Weight (lbs)', dataKey: 'weight' }
+        { header: 'Total Weight (lbs)', dataKey: 'weight' }
       ];
 
       // Table data
@@ -590,7 +590,7 @@ const ExportManager = {
         ecode: item.ecode,
         name: item.name,
         quantity: item.quantity.toString(),
-        weight: item.weight ? Number(item.weight).toFixed(2) : '0.00'
+        weight: item.weight ? (Number(item.weight) * item.quantity).toFixed(2) : '0.00'
       }));
 
       // Column styles
