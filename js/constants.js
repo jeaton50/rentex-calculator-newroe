@@ -185,7 +185,7 @@ const EQUIPMENT = {
   TX_BRACKETC: { code: 'TXBRACKETC', name: 'Theatrixx Nomad Exact bracket-curved', weight: 0, image: 'TXBRACKETC.png' },
   TX_VERTSPRT: { code: 'TXVERTSPRT', name: 'Theatrixx Nomad Exact vertical support', weight: 0, image: 'TXVERTSPRT.png' },
   TX_SKIFTSNG: { code: 'TXSKIFTSNG', name: 'Theatrixx Nomad Exact single foot', weight: 0, image: 'TXSKIFTSNG.png' },
-  TX_M10B: { code: 'TXM10B', name: 'Theatrixx Nomad Exact M10 Screw', weight: 0 },
+  TX_M10B: { code: 'TXM10B', name: 'Theatrixx Nomad Exact M10 Screw', weight: 0, image: 'TXM10B.png' },
 
   // Processors
   SX40: { code: 'SX40', name: 'Brompton Tessera SX40 **Kit includes an XD10**', weight: 17, image: 'SX40.png' },
