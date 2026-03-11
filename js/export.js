@@ -375,7 +375,7 @@ const ExportManager = {
         canvas.height = img.naturalHeight;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
+        resolve({ data: canvas.toDataURL('image/png'), width: img.naturalWidth, height: img.naturalHeight });
       };
       img.onerror = function () {
         resolve(null);
@@ -510,7 +510,8 @@ const ExportManager = {
       // Load Rentex logo
       let logoData = null;
       try {
-        logoData = await this.loadImageAsBase64('static/images/rentexLogo.png');
+        const logoResult = await this.loadImageAsBase64('static/images/rentexLogo.png');
+        if (logoResult) logoData = logoResult.data;
       } catch (e) {
         console.warn('Could not load Rentex logo for PDF');
       }
@@ -571,7 +572,7 @@ const ExportManager = {
       const rowHeight = imgCellSize + (rowPadding * 2);
 
       // Build a quick lookup: row index -> has image loaded
-      const rowHasImage = equipmentItems.map(item => !!imageCache[item.ecode]);
+      const rowHasImage = equipmentItems.map(item => !!(imageCache[item.ecode] && imageCache[item.ecode].data));
       const hasAnyImages = rowHasImage.some(Boolean);
 
       // Always include Image column so layout is ready as images are added
@@ -632,11 +633,21 @@ const ExportManager = {
             try {
               const item = equipmentItems[data.row.index];
               if (!item) return;
-              const imgData = imageCache[item.ecode];
-              if (imgData) {
-                const cellX = data.cell.x + rowPadding;
-                const cellY = data.cell.y + rowPadding;
-                doc.addImage(imgData, 'PNG', cellX, cellY, imgCellSize, imgCellSize);
+              const cached = imageCache[item.ecode];
+              if (cached && cached.data) {
+                // Scale image to fit within imgCellSize x imgCellSize while preserving aspect ratio
+                const maxSize = imgCellSize;
+                const srcW = cached.width || maxSize;
+                const srcH = cached.height || maxSize;
+                const scale = Math.min(maxSize / srcW, maxSize / srcH);
+                const drawW = srcW * scale;
+                const drawH = srcH * scale;
+                // Center image within the padded cell area
+                const cellInnerW = data.cell.width - rowPadding * 2;
+                const cellInnerH = data.cell.height - rowPadding * 2;
+                const offsetX = data.cell.x + rowPadding + (cellInnerW - drawW) / 2;
+                const offsetY = data.cell.y + rowPadding + (cellInnerH - drawH) / 2;
+                doc.addImage(cached.data, 'PNG', offsetX, offsetY, drawW, drawH);
               }
             } catch (e) {
               console.warn('Could not draw image for row', data.row.index, e);
