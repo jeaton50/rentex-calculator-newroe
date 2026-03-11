@@ -171,11 +171,21 @@ const EQUIPMENT = {
 
   // Theatrixx
   TX_NOMAD26: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm', weight: 24, image: 'TXNOMAD26.png' },
+  TX_NOMAD26_SPARE: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm ** Spare Tiles **', weight: 24, image: 'TXNOMAD26.png' },
+  TX_10PT_NOMAD: { code: '10PTXNOMAD', name: 'Theatrixx Nomad 2.6 10x package', weight: 0 },
   CATXLED: { code: 'CATXLED', name: 'Case, Theatrixx Nomad tile 10x', weight: 187, image: 'CATXLED.png' },
   TX_BASE1W: { code: 'TXBASE1W', name: 'Theatrixx Nomad Exact stacking base, 1 wide', weight: 27, image: 'TXBASE1W.png' },
   TX_BASE2W: { code: 'TXBASE2W', name: 'Theatrixx Nomad Exact stacking base, 2 wide', weight: 12, image: 'TXBASE2W.png' },
   TX_DBL_HEAD: { code: 'TXDBLHEAD', name: 'Theatrixx Nomad double header', weight: 12, image: 'TXDBLHEAD.png' },
   TX_SNGL_HEAD: { code: 'TXSNGLHEAD', name: 'Theatrixx Nomad single header', weight: 8, image: 'TXSNGLHEAD.png' },
+  TX_SKIFRAME: { code: 'TXSKIFRAME', name: 'Theatrixx Nomad Exact ski frame (T base)', weight: 0, image: 'TXSKIFRAME.png' },
+  TX_STAKEXT: { code: 'TXSTAKEXT', name: 'Theatrixx Nomad Exact ski stacking extension', weight: 0, image: 'TXSTAKEXT.png' },
+  TX_LADDER: { code: 'TXLADDER', name: 'Theatrixx Nomad Exact ladder frame', weight: 0, image: 'TXLADDER.png' },
+  TX_BRACKETS: { code: 'TXBRACKETS', name: 'Theatrixx Nomad Exact bracket-straight', weight: 0, image: 'TXBRACKETS.png' },
+  TX_BRACKETC: { code: 'TXBRACKETC', name: 'Theatrixx Nomad Exact bracket-curved', weight: 0, image: 'TXBRACKETC.png' },
+  TX_VERTSPRT: { code: 'TXVERTSPRT', name: 'Theatrixx Nomad Exact vertical support', weight: 0, image: 'TXVERTSPRT.png' },
+  TX_SKIFTSNG: { code: 'TXSKIFTSNG', name: 'Theatrixx Nomad Exact single foot', weight: 0, image: 'TXSKIFTSNG.png' },
+  TX_M10B: { code: 'TXM10B', name: 'Theatrixx Nomad Exact M10 Screw', weight: 0 },
 
   // Processors
   SX40: { code: 'SX40', name: 'Brompton Tessera SX40 **Kit includes an XD10**', weight: 17, image: 'SX40.png' },
