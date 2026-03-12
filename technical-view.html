@@ -1497,7 +1497,8 @@
     // State
     let dataManualMode = false;
     let powerManualMode = false;
-    const socaColors = { 1: '#c62828', 2: '#2e7d32', 3: '#1565c0', 4: '#6a1b9a' };
+    const socaColors  = { 1: '#c62828', 2: '#2e7d32', 3: '#1565c0', 4: '#6a1b9a' };
+    const socaLetters = { 1: 'A', 2: 'B', 3: 'C', 4: 'D' };
     let activeSoca = 1;
     // Each chain: { portNumber, tiles: [{row, col}] }
     let manualDataChains  = [{ portNumber: 1, tiles: [] }];
@@ -1790,7 +1791,9 @@
 
         // Port label at chain start
         const sp = pts[0];
-        const labelText = isDashed ? `C${chain.portNumber}` : `P${chain.portNumber}`;
+        const labelText = isDashed
+          ? `${socaLetters[chain.soca] || chain.soca}${chain.portNumber}`
+          : `P${chain.portNumber}`;
         const fontSize = Math.max(9, blockSize / 5);
         ctx.font = `bold ${fontSize}px Arial`;
         ctx.textAlign = 'center';
@@ -1836,7 +1839,9 @@
             ctx.lineWidth = 2;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            const shortLabel = isDashed ? `C${chain.portNumber}` : `${chain.portNumber}`;
+            const shortLabel = isDashed
+              ? (socaLetters[chain.soca] || chain.soca)
+              : `${chain.portNumber}`;
             ctx.strokeText(shortLabel, px, py + blockSize * 0.25);
             ctx.fillText(shortLabel, px, py + blockSize * 0.25);
           });
@@ -1883,7 +1888,9 @@
 
           if (pts.length > 0) {
             const sp = pts[0];
-            const labelText = isDashed ? `C${chain.portNumber}` : `P${chain.portNumber}`;
+            const labelText = isDashed
+          ? `${socaLetters[chain.soca] || chain.soca}${chain.portNumber}`
+          : `P${chain.portNumber}`;
             const fontSize = Math.max(9, blockSize / 5);
             ctx.font = `bold ${fontSize}px Arial`;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1900,8 +1907,11 @@
               ctx.fillStyle = 'white'; ctx.strokeStyle = color; ctx.lineWidth = 2;
               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
               const offsetY = idx === 0 ? blockSize * 0.25 : 0;
-              ctx.strokeText((idx + 1).toString(), px, py + offsetY);
-              ctx.fillText((idx + 1).toString(), px, py + offsetY);
+              const tileLabel = isDashed
+                ? (socaLetters[chain.soca] || chain.soca)
+                : (idx + 1).toString();
+              ctx.strokeText(tileLabel, px, py + offsetY);
+              ctx.fillText(tileLabel, px, py + offsetY);
             });
           } else {
             chain.tiles.forEach(t => {
@@ -1910,7 +1920,9 @@
               ctx.font = `bold ${Math.max(9, blockSize / 5)}px Arial`;
               ctx.fillStyle = color; ctx.strokeStyle = 'white'; ctx.lineWidth = 2;
               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-              const shortLabel = isDashed ? `C${chain.portNumber}` : `${chain.portNumber}`;
+              const shortLabel = isDashed
+              ? (socaLetters[chain.soca] || chain.soca)
+              : `${chain.portNumber}`;
               ctx.strokeText(shortLabel, px, py + blockSize * 0.25);
               ctx.fillText(shortLabel, px, py + blockSize * 0.25);
             });
