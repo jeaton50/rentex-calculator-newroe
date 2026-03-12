@@ -1696,14 +1696,20 @@
       let totalHeight = 0;
       for (let r = 0; r < blocksVer; r++) totalHeight += getRowHeight(r);
       const redundancyLabelHeight = redundancyMode ? Math.max(36, Math.round(blockSize * 1.2)) : 0;
-      canvas.width  = blocksHor * blockWidth  + padding * 2;
+      // Extra left margin so power circuit labels (C-A-1 etc.) can sit outside the grid
+      const labelMargin = isDashed ? Math.max(65, Math.round(blockSize * 1.3)) : 0;
+      canvas.width  = blocksHor * blockWidth  + padding * 2 + labelMargin;
       canvas.height = totalHeight + padding * 2 + redundancyLabelHeight;
 
       // Background
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#fff';
-      ctx.fillRect(padding, padding, blocksHor * blockWidth, totalHeight);
+      ctx.fillRect(padding + labelMargin, padding, blocksHor * blockWidth, totalHeight);
+
+      // Shift all grid / chain drawing right so the label margin is on the left
+      ctx.save();
+      ctx.translate(labelMargin, 0);
 
       // Build a quick lookup: "row,col" -> chain index
       const tileAssignment = {};
@@ -1790,20 +1796,21 @@
         ctx.arc(ep.x, ep.y, isActive ? 10 : 8, 0, Math.PI * 2);
         ctx.fill(); ctx.stroke();
 
-        // Port label at chain start
+        // Port label: power circuits go in the left margin, data stays on first tile
         const sp = pts[0];
         const labelText = isDashed
           ? `C-${socaLetters[chain.soca] || chain.soca}-${chain.portNumber}`
           : `P${chain.portNumber}`;
-        const fontSize = Math.max(9, blockSize / 5);
+        const fontSize = Math.max(11, blockSize / 4);
         ctx.font = `bold ${fontSize}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = color;
-        ctx.strokeStyle = 'black';
+        ctx.strokeStyle = 'white';
         ctx.lineWidth = 3;
-        ctx.strokeText(labelText, sp.x, sp.y);
-        ctx.fillText(labelText, sp.x, sp.y);
+        const labelX = isDashed ? -(labelMargin / 2) : sp.x;
+        ctx.strokeText(labelText, labelX, sp.y);
+        ctx.fillText(labelText, labelX, sp.y);
 
         // Tile labels on active chain
         if (isActive) {
@@ -1900,14 +1907,15 @@
           if (pts.length > 0) {
             const sp = pts[0];
             const labelText = isDashed
-          ? `C-${socaLetters[chain.soca] || chain.soca}-${chain.portNumber}`
-          : `P${chain.portNumber}`;
-            const fontSize = Math.max(9, blockSize / 5);
+              ? `C-${socaLetters[chain.soca] || chain.soca}-${chain.portNumber}`
+              : `P${chain.portNumber}`;
+            const fontSize = Math.max(11, blockSize / 4);
             ctx.font = `bold ${fontSize}px Arial`;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillStyle = color; ctx.strokeStyle = 'black'; ctx.lineWidth = 3;
-            ctx.strokeText(labelText, sp.x, sp.y);
-            ctx.fillText(labelText, sp.x, sp.y);
+            ctx.fillStyle = color; ctx.strokeStyle = 'white'; ctx.lineWidth = 3;
+            const labelX = isDashed ? -(labelMargin / 2) : sp.x;
+            ctx.strokeText(labelText, labelX, sp.y);
+            ctx.fillText(labelText, labelX, sp.y);
           }
 
           if (isActive) {
@@ -1993,6 +2001,8 @@
         ctx.fillText(p2Label || 'Processor 2', p2X, labelY);
       }
 
+      // Restore translate so labelMargin shift is removed
+      ctx.restore();
       ctx.setLineDash([]);
     }
 
