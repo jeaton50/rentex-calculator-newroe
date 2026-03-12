@@ -325,6 +325,38 @@
     .proc-btn.p2             { border-color: #e65100; color: #e65100; }
     .proc-btn.p2.active      { background: #e65100; color: white; }
 
+    /* SOCA selector */
+    .soca-select {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .soca-label {
+      font-size: 12px;
+      font-weight: bold;
+      color: #555;
+      white-space: nowrap;
+    }
+    .soca-btn {
+      padding: 5px 12px;
+      border: 2px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      background: white;
+      transition: background 0.15s, color 0.15s;
+    }
+    .soca-btn.s1             { border-color: #c62828; color: #c62828; }
+    .soca-btn.s1.active      { background: #c62828; color: white; }
+    .soca-btn.s2             { border-color: #2e7d32; color: #2e7d32; }
+    .soca-btn.s2.active      { background: #2e7d32; color: white; }
+    .soca-btn.s3             { border-color: #1565c0; color: #1565c0; }
+    .soca-btn.s3.active      { background: #1565c0; color: white; }
+    .soca-btn.s4             { border-color: #6a1b9a; color: #6a1b9a; }
+    .soca-btn.s4.active      { background: #6a1b9a; color: white; }
+
     /* Redundancy half-label inputs */
     .redundancy-labels {
       display: none;
@@ -517,6 +549,13 @@
           <div class="processor-select" id="powerProcessorSelect">
             <button type="button" class="proc-btn p1 active" id="powerP1Btn">Proc 1 (Left Half)</button>
             <button type="button" class="proc-btn p2" id="powerP2Btn">Proc 2 (Right Half)</button>
+          </div>
+          <div class="soca-select" id="powerSocaSelect">
+            <span class="soca-label">SOCA:</span>
+            <button type="button" class="soca-btn s1 active" id="powerSoca1Btn">SOCA 1</button>
+            <button type="button" class="soca-btn s2" id="powerSoca2Btn">SOCA 2</button>
+            <button type="button" class="soca-btn s3" id="powerSoca3Btn">SOCA 3</button>
+            <button type="button" class="soca-btn s4" id="powerSoca4Btn">SOCA 4</button>
           </div>
           <p class="manual-instruction" id="powerManualInstruction">Click panels on the diagram to add them to the current power circuit. Click an already-selected panel to remove it. Use <strong>New Power</strong> to finish the current circuit and start the next one.</p>
         </div>
@@ -1332,9 +1371,11 @@
     // State
     let dataManualMode = false;
     let powerManualMode = false;
-    // Each chain: { portNumber, tiles: [{row, col}] }
+    const socaColors = { 1: '#c62828', 2: '#2e7d32', 3: '#1565c0', 4: '#6a1b9a' };
+    let activeSoca = 1;
+    // Each chain: { portNumber, tiles: [{row, col}], soca }
     let manualDataChains  = [{ portNumber: 1, tiles: [] }];
-    let manualPowerChains = [{ portNumber: 1, tiles: [] }];
+    let manualPowerChains = [{ portNumber: 1, tiles: [], soca: 1 }];
     let activeDataChainIdx  = 0;
     let activePowerChainIdx = 0;
 
@@ -1344,7 +1385,7 @@
     let activeDataProcessor  = 1;   // 1 = left half, 2 = right half
     let activePowerProcessor = 1;
     let manualDataChainsP2  = [{ portNumber: 1, tiles: [] }];
-    let manualPowerChainsP2 = [{ portNumber: 1, tiles: [] }];
+    let manualPowerChainsP2 = [{ portNumber: 1, tiles: [], soca: 1 }];
     let activeDataChainIdxP2  = 0;
     let activePowerChainIdxP2 = 0;
 
@@ -1521,7 +1562,9 @@
           const key = `${r},${c}`;
           if (tileAssignment[key] !== undefined) {
             const ci = tileAssignment[key];
-            const color = chainColors[ci % chainColors.length];
+            const color = (isDashed && manualChains[ci] && manualChains[ci].soca)
+              ? socaColors[manualChains[ci].soca]
+              : chainColors[ci % chainColors.length];
             ctx.fillStyle = color + '28'; // ~16% opacity
             ctx.fillRect(padding + c * blockWidth + 1, rowY + 1, blockWidth - 2, rh - 2);
           }
@@ -1553,7 +1596,9 @@
       manualChains.forEach((chain, ci) => {
         if (chain.tiles.length === 0) return;
         const isActive = ci === activeChainIdx;
-        const color = chainColors[ci % chainColors.length];
+        const color = (isDashed && chain.soca)
+          ? socaColors[chain.soca]
+          : chainColors[ci % chainColors.length];
 
         const pts = chain.tiles.map(t => {
           const ry = calculateRowY(t.row);
@@ -1650,7 +1695,9 @@
         p2Chains.forEach((chain, ci) => {
           if (chain.tiles.length === 0) return;
           const isActive = ci === activeP2ChainIdx && activeProcessor === 2;
-          const color = chainColors[(ci + p2ColorOffset) % chainColors.length];
+          const color = (isDashed && chain.soca)
+            ? socaColors[chain.soca]
+            : chainColors[(ci + p2ColorOffset) % chainColors.length];
 
           const pts = chain.tiles.map(t => {
             const ry = calculateRowY(t.row);
@@ -1927,11 +1974,11 @@
     document.getElementById('powerNewPort').addEventListener('click', () => {
       if (powerRedundancyMode && activePowerProcessor === 2) {
         const next = manualPowerChainsP2.length + 1;
-        manualPowerChainsP2.push({ portNumber: next, tiles: [] });
+        manualPowerChainsP2.push({ portNumber: next, tiles: [], soca: activeSoca });
         activePowerChainIdxP2 = manualPowerChainsP2.length - 1;
       } else {
         const next = manualPowerChains.length + 1;
-        manualPowerChains.push({ portNumber: next, tiles: [] });
+        manualPowerChains.push({ portNumber: next, tiles: [], soca: activeSoca });
         activePowerChainIdx = manualPowerChains.length - 1;
       }
       renderPowerWiring();
@@ -1966,8 +2013,8 @@
     });
 
     document.getElementById('powerClearManual').addEventListener('click', () => {
-      manualPowerChains    = [{ portNumber: 1, tiles: [] }];
-      manualPowerChainsP2  = [{ portNumber: 1, tiles: [] }];
+      manualPowerChains    = [{ portNumber: 1, tiles: [], soca: activeSoca }];
+      manualPowerChainsP2  = [{ portNumber: 1, tiles: [], soca: activeSoca }];
       activePowerChainIdx  = 0;
       activePowerChainIdxP2 = 0;
       renderPowerWiring();
@@ -2045,6 +2092,23 @@
       document.getElementById('powerP2Btn').classList.add('active');
       document.getElementById('powerP1Btn').classList.remove('active');
       renderPowerWiring();
+    });
+
+    // SOCA selectors — Power
+    [1, 2, 3, 4].forEach(n => {
+      document.getElementById(`powerSoca${n}Btn`).addEventListener('click', () => {
+        activeSoca = n;
+        [1, 2, 3, 4].forEach(i => {
+          document.getElementById(`powerSoca${i}Btn`).classList.toggle('active', i === n);
+        });
+        // Update the current active chain's soca so recoloring is immediate
+        const useP2 = powerRedundancyMode && activePowerProcessor === 2;
+        const chain = useP2
+          ? manualPowerChainsP2[activePowerChainIdxP2]
+          : manualPowerChains[activePowerChainIdx];
+        if (chain) chain.soca = n;
+        renderPowerWiring();
+      });
     });
 
     // Re-render canvas when redundancy labels are edited
