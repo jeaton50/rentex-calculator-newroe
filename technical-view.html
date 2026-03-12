@@ -582,6 +582,7 @@
             <span id="powerChainTiles">0</span> / <span id="powerChainLimitDisplay">10</span> tiles
           </span>
           <span class="chain-limit-warning" id="powerLimitWarning">Chain limit reached — click New Power</span>
+          <span class="chain-limit-warning" id="powerSocaCircuitWarning" style="display:none">Max 6 circuits per SOCA</span>
           <button type="button" class="manual-btn new-port" id="powerNewPort">New Power</button>
           <button type="button" class="manual-btn undo" id="powerUndoTile">Undo Last Tile</button>
           <button type="button" class="manual-btn clear" id="powerClearManual">Clear All</button>
@@ -1792,7 +1793,7 @@
         // Port label at chain start
         const sp = pts[0];
         const labelText = isDashed
-          ? (socaLetters[chain.soca] || chain.soca.toString())
+          ? `C-${socaLetters[chain.soca] || chain.soca}-${chain.portNumber}`
           : `P${chain.portNumber}`;
         const fontSize = Math.max(9, blockSize / 5);
         ctx.font = `bold ${fontSize}px Arial`;
@@ -1899,7 +1900,7 @@
           if (pts.length > 0) {
             const sp = pts[0];
             const labelText = isDashed
-          ? (socaLetters[chain.soca] || chain.soca.toString())
+          ? `C-${socaLetters[chain.soca] || chain.soca}-${chain.portNumber}`
           : `P${chain.portNumber}`;
             const fontSize = Math.max(9, blockSize / 5);
             ctx.font = `bold ${fontSize}px Arial`;
@@ -2165,6 +2166,12 @@
       const socaMap = useP2 ? socaPowerChainsP2 : socaPowerChains;
       const idxMap  = useP2 ? socaActiveIdxP2   : socaActiveIdxP1;
       const arr = socaMap[activeSoca];
+      const socaWarn = document.getElementById('powerSocaCircuitWarning');
+      if (arr.length >= 6) {
+        socaWarn.style.display = 'inline';
+        return;
+      }
+      socaWarn.style.display = 'none';
       arr.push({ portNumber: arr.length + 1, tiles: [] });
       idxMap[activeSoca] = arr.length - 1;
       renderPowerWiring();
@@ -2289,6 +2296,7 @@
         activeSoca = n;
         [1, 2, 3, 4].forEach(i =>
           document.getElementById(`powerSoca${i}Btn`).classList.toggle('active', i === n));
+        document.getElementById('powerSocaCircuitWarning').style.display = 'none';
         // Ensure this SOCA has a chain ready to fill — resets to C1 each time
         const useP2 = powerRedundancyMode && activePowerProcessor === 2;
         ensureSocaChain(useP2 ? socaPowerChainsP2 : socaPowerChains,
