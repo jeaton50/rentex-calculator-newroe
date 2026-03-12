@@ -460,6 +460,11 @@
           <p>Amperage: <span class="value" id="powerAmps">-</span></p>
           <p>Watts: <span class="value" id="powerWatts">-</span></p>
         </div>
+        <div class="info-box">
+          <h3>Daisy Chain Limits</h3>
+          <p>Max Power Chain: <span class="value" id="maxPowerChain">-</span> tiles</p>
+          <p>Max Data Chain: <span class="value" id="maxDataChain">-</span> tiles</p>
+        </div>
       </div>
     </div>
 
@@ -763,6 +768,8 @@
     document.getElementById('powerVoltage').textContent = `${voltage}V`;
     document.getElementById('powerAmps').textContent = `${amps.toFixed(2)} A`;
     document.getElementById('powerWatts').textContent = `${watts.toFixed(0)} W`;
+    document.getElementById('maxPowerChain').textContent = getPowerChainLimit();
+    document.getElementById('maxDataChain').textContent = getDataChainLimit();
 
     // Update back button to preserve calculator state including GP2 Half parameters
     const backButton = document.getElementById('backButton');
@@ -1393,7 +1400,10 @@
     document.getElementById('wiringStartPosition').addEventListener('change', (e) => { wiringStartPosition = e.target.value; renderDataWiring(); });
     document.getElementById('powerDirection').addEventListener('change', (e) => { powerDirection = e.target.value; renderPowerWiring(); });
     document.getElementById('powerStartPosition').addEventListener('change', (e) => { powerStartPosition = e.target.value; renderPowerWiring(); });
-    document.getElementById('powerDistroType').addEventListener('change', () => { renderPowerWiring(); });
+    document.getElementById('powerDistroType').addEventListener('change', () => {
+      document.getElementById('maxPowerChain').textContent = getPowerChainLimit();
+      renderPowerWiring();
+    });
 
     document.getElementById('dataZoomInButton').addEventListener('click', dataZoomIn);
     document.getElementById('dataZoomOutButton').addEventListener('click', dataZoomOut);
