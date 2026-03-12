@@ -1404,11 +1404,12 @@
         return acc;
       };
 
-      // Canvas size
+      // Canvas size (add extra room for processor labels when in redundancy mode)
       let totalHeight = 0;
       for (let r = 0; r < blocksVer; r++) totalHeight += getRowHeight(r);
+      const redundancyLabelHeight = redundancyMode ? 36 : 0;
       canvas.width  = blocksHor * blockWidth  + padding * 2;
-      canvas.height = totalHeight + padding * 2;
+      canvas.height = totalHeight + padding * 2 + redundancyLabelHeight;
 
       // Background
       ctx.fillStyle = '#fff';
@@ -1665,11 +1666,6 @@
         ctx.fillStyle = '#e65100';
         ctx.strokeText('Processor 2', p2X, labelY);
         ctx.fillText('Processor 2', p2X, labelY);
-
-        // Resize canvas to make room for labels
-        if (canvas.height <= padding * 2 + totalH + 32) {
-          canvas.height = padding * 2 + totalH + 36;
-        }
       }
 
       ctx.setLineDash([]);
