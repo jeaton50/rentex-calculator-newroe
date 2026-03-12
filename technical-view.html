@@ -1027,7 +1027,7 @@
             ctx.font = 'bold 20px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            const labelText = isDashed ? `P${chainNumber}` : chainNumber.toString();
+            const labelText = isDashed ? `C${chainNumber}` : chainNumber.toString();
             ctx.strokeText(labelText, chainStartX, chainStartY);
             ctx.fillText(labelText, chainStartX, chainStartY);
 
@@ -1088,7 +1088,7 @@
           ctx.font = `bold ${Math.max(9, blockSize / 5)}px Arial`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          const labelText = `P${chainNumber}`;
+          const labelText = isDashed ? `C${chainNumber}` : `P${chainNumber}`;
           ctx.strokeText(labelText, chainStartX, chainStartY);
           ctx.fillText(labelText, chainStartX, chainStartY);
 
@@ -1590,7 +1590,7 @@
 
         // Port label at chain start
         const sp = pts[0];
-        const labelText = `P${chain.portNumber}`;
+        const labelText = isDashed ? `C${chain.portNumber}` : `P${chain.portNumber}`;
         const fontSize = Math.max(9, blockSize / 5);
         ctx.font = `bold ${fontSize}px Arial`;
         ctx.textAlign = 'center';
@@ -1636,7 +1636,7 @@
             ctx.lineWidth = 2;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            const shortLabel = isDashed ? `P${chain.portNumber}` : `${chain.portNumber}`;
+            const shortLabel = isDashed ? `C${chain.portNumber}` : `${chain.portNumber}`;
             ctx.strokeText(shortLabel, px, py + blockSize * 0.25);
             ctx.fillText(shortLabel, px, py + blockSize * 0.25);
           });
@@ -1681,7 +1681,7 @@
 
           if (pts.length > 0) {
             const sp = pts[0];
-            const labelText = `P${chain.portNumber}`;
+            const labelText = isDashed ? `C${chain.portNumber}` : `P${chain.portNumber}`;
             const fontSize = Math.max(9, blockSize / 5);
             ctx.font = `bold ${fontSize}px Arial`;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1708,7 +1708,7 @@
               ctx.font = `bold ${Math.max(9, blockSize / 5)}px Arial`;
               ctx.fillStyle = color; ctx.strokeStyle = 'white'; ctx.lineWidth = 2;
               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-              const shortLabel = isDashed ? `P${chain.portNumber}` : `${chain.portNumber}`;
+              const shortLabel = isDashed ? `C${chain.portNumber}` : `${chain.portNumber}`;
               ctx.strokeText(shortLabel, px, py + blockSize * 0.25);
               ctx.fillText(shortLabel, px, py + blockSize * 0.25);
             });
