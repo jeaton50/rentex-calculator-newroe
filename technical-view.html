@@ -294,6 +294,37 @@
     }
     canvas.manual-cursor { cursor: crosshair; }
 
+    /* Redundancy mode styles */
+    .redundancy-btn {
+      background: #7b1fa2;
+      color: white;
+    }
+    .redundancy-btn.active {
+      background: #4a148c;
+    }
+    .processor-select {
+      display: none;
+      gap: 6px;
+      align-items: center;
+    }
+    .processor-select.visible {
+      display: flex;
+    }
+    .proc-btn {
+      padding: 5px 14px;
+      border: 2px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      background: white;
+      transition: background 0.15s, color 0.15s;
+    }
+    .proc-btn.p1             { border-color: #1565c0; color: #1565c0; }
+    .proc-btn.p1.active      { background: #1565c0; color: white; }
+    .proc-btn.p2             { border-color: #e65100; color: #e65100; }
+    .proc-btn.p2.active      { background: #e65100; color: white; }
+
     .capture-both-button {
       display: inline-block;
       padding: 15px 30px;
@@ -386,7 +417,12 @@
           <button type="button" class="manual-btn new-port" id="dataNewPort">New Port</button>
           <button type="button" class="manual-btn undo" id="dataUndoTile">Undo Last Tile</button>
           <button type="button" class="manual-btn clear" id="dataClearManual">Clear All</button>
-          <p class="manual-instruction">Click panels on the diagram to add them to the current port chain. Click an already-selected panel to remove it. Use <strong>New Port</strong> to finish the current chain and start the next one.</p>
+          <button type="button" class="manual-btn redundancy-btn" id="dataRedundancyToggle">Redundancy Mode</button>
+          <div class="processor-select" id="dataProcessorSelect">
+            <button type="button" class="proc-btn p1 active" id="dataP1Btn">Proc 1 (Left Half)</button>
+            <button type="button" class="proc-btn p2" id="dataP2Btn">Proc 2 (Right Half)</button>
+          </div>
+          <p class="manual-instruction" id="dataManualInstruction">Click panels on the diagram to add them to the current port chain. Click an already-selected panel to remove it. Use <strong>New Port</strong> to finish the current chain and start the next one.</p>
         </div>
       </div>
 
@@ -431,7 +467,7 @@
             <label for="powerDistroType">Power Voltage:</label>
             <select id="powerDistroType" name="powerDistroType">
               <option value="110">110V</option>
-              <option value="208">208V</option>
+              <option value="208" selected>208V</option>
             </select>
           </div>
         </div>
@@ -450,7 +486,12 @@
           <button type="button" class="manual-btn new-port" id="powerNewPort">New Power</button>
           <button type="button" class="manual-btn undo" id="powerUndoTile">Undo Last Tile</button>
           <button type="button" class="manual-btn clear" id="powerClearManual">Clear All</button>
-          <p class="manual-instruction">Click panels on the diagram to add them to the current power circuit. Click an already-selected panel to remove it. Use <strong>New Power</strong> to finish the current circuit and start the next one.</p>
+          <button type="button" class="manual-btn redundancy-btn" id="powerRedundancyToggle">Redundancy Mode</button>
+          <div class="processor-select" id="powerProcessorSelect">
+            <button type="button" class="proc-btn p1 active" id="powerP1Btn">Proc 1 (Left Half)</button>
+            <button type="button" class="proc-btn p2" id="powerP2Btn">Proc 2 (Right Half)</button>
+          </div>
+          <p class="manual-instruction" id="powerManualInstruction">Click panels on the diagram to add them to the current power circuit. Click an already-selected panel to remove it. Use <strong>New Power</strong> to finish the current circuit and start the next one.</p>
         </div>
       </div>
 
@@ -1208,6 +1249,19 @@
     let activeDataChainIdx  = 0;
     let activePowerChainIdx = 0;
 
+    // Redundancy state
+    let dataRedundancyMode  = false;
+    let powerRedundancyMode = false;
+    let activeDataProcessor  = 1;   // 1 = left half, 2 = right half
+    let activePowerProcessor = 1;
+    let manualDataChainsP2  = [{ portNumber: 1, tiles: [] }];
+    let manualPowerChainsP2 = [{ portNumber: 1, tiles: [] }];
+    let activeDataChainIdxP2  = 0;
+    let activePowerChainIdxP2 = 0;
+
+    // Returns the column index that starts the right half
+    function getSplitCol() { return Math.ceil(params.blocksHor / 2); }
+
     // Chain limit helpers
     function getDataChainLimit() {
       return daisyChainLimits[params.productType] || 10;
@@ -1274,8 +1328,13 @@
 
     // Update status labels
     function updateDataManualStatus() {
-      const chain = manualDataChains[activeDataChainIdx];
+      const isP2 = dataRedundancyMode && activeDataProcessor === 2;
+      const chain = isP2 ? manualDataChainsP2[activeDataChainIdxP2] : manualDataChains[activeDataChainIdx];
       const limit = getDataChainLimit();
+      const procLabel = dataRedundancyMode ? (isP2 ? 'P2 Port' : 'P1 Port') : 'Port';
+      document.getElementById('dataPortNum').textContent = `${procLabel === 'Port' ? '' : procLabel + ' '}${chain.portNumber}`.trim().replace(/^Port /, '');
+      // just show port number + prefix via the surrounding text node "Port X"
+      document.getElementById('dataPortNum').previousSibling.textContent = procLabel + ' ';
       document.getElementById('dataPortNum').textContent = chain.portNumber;
       document.getElementById('dataChainTiles').textContent = chain.tiles.length;
       document.getElementById('dataChainLimitDisplay').textContent = limit;
@@ -1283,8 +1342,11 @@
       warn.style.display = chain.tiles.length >= limit ? 'inline' : 'none';
     }
     function updatePowerManualStatus() {
-      const chain = manualPowerChains[activePowerChainIdx];
+      const isP2 = powerRedundancyMode && activePowerProcessor === 2;
+      const chain = isP2 ? manualPowerChainsP2[activePowerChainIdxP2] : manualPowerChains[activePowerChainIdx];
       const limit = getPowerChainLimit();
+      const procLabel = powerRedundancyMode ? (isP2 ? 'P2 Power' : 'P1 Power') : 'Power';
+      document.getElementById('powerPortNum').previousSibling.textContent = procLabel + ' ';
       document.getElementById('powerPortNum').textContent = chain.portNumber;
       document.getElementById('powerChainTiles').textContent = chain.tiles.length;
       document.getElementById('powerChainLimitDisplay').textContent = limit;
@@ -1295,7 +1357,8 @@
     // Draw manual wiring diagram (overlays manual chains onto the standard grid)
     function drawManualWiringDiagram(canvas, blocksHor, blocksVer, zoomLevel, chainColors, isDashed,
         productType, gp2HalfAutoRows, gp2HalfManualRows, gp2HalfManualPosition, gp2FullVerticalBlocks,
-        manualChains, activeChainIdx) {
+        manualChains, activeChainIdx,
+        redundancyMode = false, activeProcessor = 1, p2Chains = [], activeP2ChainIdx = 0) {
 
       const ctx = canvas.getContext('2d');
       const blockSize = (baseBlockPixels / 4) * zoomLevel;
@@ -1489,6 +1552,126 @@
         }
       });
 
+      // Draw P2 chains when in redundancy mode
+      if (redundancyMode && p2Chains.length > 0) {
+        // P2 uses warm accent color set offset to distinguish from P1
+        const p2ColorOffset = Math.ceil(chainColors.length / 2);
+        p2Chains.forEach((chain, ci) => {
+          if (chain.tiles.length === 0) return;
+          const isActive = ci === activeP2ChainIdx && activeProcessor === 2;
+          const color = chainColors[(ci + p2ColorOffset) % chainColors.length];
+
+          const pts = chain.tiles.map(t => {
+            const ry = calculateRowY(t.row);
+            const rh = getRowHeight(t.row);
+            return { x: padding + t.col * blockWidth + blockWidth / 2, y: ry + rh / 2 };
+          });
+
+          if (pts.length > 1) {
+            if (isDashed) ctx.setLineDash([10, 5]);
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 8;
+            ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+            pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.stroke();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = isActive ? 5 : 4;
+            ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+            pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+
+          const ep = pts[pts.length - 1];
+          ctx.fillStyle = color; ctx.strokeStyle = 'black'; ctx.lineWidth = 2;
+          ctx.setLineDash([]);
+          ctx.beginPath(); ctx.arc(ep.x, ep.y, isActive ? 10 : 8, 0, Math.PI * 2);
+          ctx.fill(); ctx.stroke();
+
+          if (pts.length > 0) {
+            const sp = pts[0];
+            const labelText = isDashed ? `P2 Pwr ${chain.portNumber}` : `P2 Port ${chain.portNumber}`;
+            const fontSize = Math.max(14, blockSize / 3);
+            ctx.font = `bold ${fontSize}px Arial`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillStyle = color; ctx.strokeStyle = 'black'; ctx.lineWidth = 3;
+            ctx.strokeText(labelText, sp.x, sp.y);
+            ctx.fillText(labelText, sp.x, sp.y);
+          }
+
+          if (isActive) {
+            chain.tiles.forEach((t, idx) => {
+              const ry = calculateRowY(t.row), rh = getRowHeight(t.row);
+              const px = padding + t.col * blockWidth + blockWidth / 2, py = ry + rh / 2;
+              ctx.font = `bold ${Math.max(9, blockSize / 5)}px Arial`;
+              ctx.fillStyle = 'white'; ctx.strokeStyle = color; ctx.lineWidth = 2;
+              ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+              const offsetY = idx === 0 ? blockSize * 0.25 : 0;
+              ctx.strokeText((idx + 1).toString(), px, py + offsetY);
+              ctx.fillText((idx + 1).toString(), px, py + offsetY);
+            });
+          } else {
+            chain.tiles.forEach(t => {
+              const ry = calculateRowY(t.row), rh = getRowHeight(t.row);
+              const px = padding + t.col * blockWidth + blockWidth / 2, py = ry + rh / 2;
+              ctx.font = `bold ${Math.max(9, blockSize / 5)}px Arial`;
+              ctx.fillStyle = color; ctx.strokeStyle = 'white'; ctx.lineWidth = 2;
+              ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+              const shortLabel = isDashed ? `P${chain.portNumber}` : `${chain.portNumber}`;
+              ctx.strokeText(shortLabel, px, py + blockSize * 0.25);
+              ctx.fillText(shortLabel, px, py + blockSize * 0.25);
+            });
+          }
+        });
+      }
+
+      // Draw split divider line when in redundancy mode
+      if (redundancyMode) {
+        const splitCol = Math.ceil(blocksHor / 2);
+        const splitX = padding + splitCol * blockWidth;
+        const totalH = canvas.height - padding * 2;
+
+        // Dim inactive half with overlay
+        ctx.save();
+        ctx.globalAlpha = 0.15;
+        ctx.fillStyle = activeProcessor === 1 ? '#e65100' : '#1565c0';
+        const dimX = activeProcessor === 1 ? splitX : padding;
+        ctx.fillRect(dimX, padding, blocksHor * blockWidth / 2, totalH);
+        ctx.restore();
+
+        // Bold vertical divider
+        ctx.setLineDash([8, 4]);
+        ctx.strokeStyle = '#9c27b0';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(splitX, padding - 5);
+        ctx.lineTo(splitX, padding + totalH + 5);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // "Processor 1" and "Processor 2" labels
+        const labelY = padding + totalH + 18;
+        const p1X = padding + (splitCol * blockWidth) / 2;
+        const p2X = splitX + ((blocksHor - splitCol) * blockWidth) / 2;
+        ctx.font = `bold ${Math.max(13, blockSize / 3)}px Arial`;
+        ctx.textBaseline = 'middle';
+
+        ctx.fillStyle = '#1565c0';
+        ctx.strokeStyle = 'white'; ctx.lineWidth = 3;
+        ctx.textAlign = 'center';
+        ctx.strokeText('Processor 1', p1X, labelY);
+        ctx.fillText('Processor 1', p1X, labelY);
+
+        ctx.fillStyle = '#e65100';
+        ctx.strokeText('Processor 2', p2X, labelY);
+        ctx.fillText('Processor 2', p2X, labelY);
+
+        // Resize canvas to make room for labels
+        if (canvas.height <= padding * 2 + totalH + 32) {
+          canvas.height = padding * 2 + totalH + 36;
+        }
+      }
+
       ctx.setLineDash([]);
     }
 
@@ -1503,7 +1686,8 @@
           dataChainColors, false,
           params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
           params.gp2HalfManualPosition, params.gp2FullVerticalBlocks,
-          manualDataChains, activeDataChainIdx);
+          manualDataChains, activeDataChainIdx,
+          dataRedundancyMode, activeDataProcessor, manualDataChainsP2, activeDataChainIdxP2);
         document.getElementById('dataZoomLevel').textContent = `Zoom: ${dataZoomLevel}`;
         updateDataManualStatus();
       } else {
@@ -1518,7 +1702,8 @@
           powerChainColors, true,
           params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
           params.gp2HalfManualPosition, params.gp2FullVerticalBlocks,
-          manualPowerChains, activePowerChainIdx);
+          manualPowerChains, activePowerChainIdx,
+          powerRedundancyMode, activePowerProcessor, manualPowerChainsP2, activePowerChainIdxP2);
         document.getElementById('powerZoomLevel').textContent = `Zoom: ${powerZoomLevel}`;
         updatePowerManualStatus();
       } else {
@@ -1533,11 +1718,21 @@
       const tile = getTileFromClick(e, canvas, dataZoomLevel);
       if (!tile) return;
 
-      const chain = manualDataChains[activeDataChainIdx];
+      // Enforce half restriction in redundancy mode
+      if (dataRedundancyMode) {
+        const splitCol = getSplitCol();
+        const isLeftHalf  = tile.col < splitCol;
+        if (activeDataProcessor === 1 && !isLeftHalf) return;
+        if (activeDataProcessor === 2 &&  isLeftHalf) return;
+      }
+
+      const useP2 = dataRedundancyMode && activeDataProcessor === 2;
+      const chains = useP2 ? manualDataChainsP2 : manualDataChains;
+      const activeIdx = useP2 ? activeDataChainIdxP2 : activeDataChainIdx;
+      const chain = chains[activeIdx];
       const existingIdx = chain.tiles.findIndex(t => t.row === tile.row && t.col === tile.col);
 
       if (existingIdx >= 0) {
-        // Toggle off: remove tile
         chain.tiles.splice(existingIdx, 1);
       } else {
         const limit = getDataChainLimit();
@@ -1556,7 +1751,18 @@
       const tile = getTileFromClick(e, canvas, powerZoomLevel);
       if (!tile) return;
 
-      const chain = manualPowerChains[activePowerChainIdx];
+      // Enforce half restriction in redundancy mode
+      if (powerRedundancyMode) {
+        const splitCol = getSplitCol();
+        const isLeftHalf  = tile.col < splitCol;
+        if (activePowerProcessor === 1 && !isLeftHalf) return;
+        if (activePowerProcessor === 2 &&  isLeftHalf) return;
+      }
+
+      const useP2 = powerRedundancyMode && activePowerProcessor === 2;
+      const chains = useP2 ? manualPowerChainsP2 : manualPowerChains;
+      const activeIdx = useP2 ? activePowerChainIdxP2 : activePowerChainIdx;
+      const chain = chains[activeIdx];
       const existingIdx = chain.tiles.findIndex(t => t.row === tile.row && t.col === tile.col);
 
       if (existingIdx >= 0) {
@@ -1614,44 +1820,134 @@
       renderPowerWiring();
     });
 
-    // New Port / New Power
+    // New Port / New Power (processor-aware)
     document.getElementById('dataNewPort').addEventListener('click', () => {
-      const nextPort = manualDataChains.length + 1;
-      manualDataChains.push({ portNumber: nextPort, tiles: [] });
-      activeDataChainIdx = manualDataChains.length - 1;
+      if (dataRedundancyMode && activeDataProcessor === 2) {
+        const next = manualDataChainsP2.length + 1;
+        manualDataChainsP2.push({ portNumber: next, tiles: [] });
+        activeDataChainIdxP2 = manualDataChainsP2.length - 1;
+      } else {
+        const next = manualDataChains.length + 1;
+        manualDataChains.push({ portNumber: next, tiles: [] });
+        activeDataChainIdx = manualDataChains.length - 1;
+      }
       renderDataWiring();
     });
 
     document.getElementById('powerNewPort').addEventListener('click', () => {
-      const nextPort = manualPowerChains.length + 1;
-      manualPowerChains.push({ portNumber: nextPort, tiles: [] });
-      activePowerChainIdx = manualPowerChains.length - 1;
+      if (powerRedundancyMode && activePowerProcessor === 2) {
+        const next = manualPowerChainsP2.length + 1;
+        manualPowerChainsP2.push({ portNumber: next, tiles: [] });
+        activePowerChainIdxP2 = manualPowerChainsP2.length - 1;
+      } else {
+        const next = manualPowerChains.length + 1;
+        manualPowerChains.push({ portNumber: next, tiles: [] });
+        activePowerChainIdx = manualPowerChains.length - 1;
+      }
       renderPowerWiring();
     });
 
-    // Undo last tile
+    // Undo last tile (processor-aware)
     document.getElementById('dataUndoTile').addEventListener('click', () => {
-      const chain = manualDataChains[activeDataChainIdx];
-      chain.tiles.pop();
+      if (dataRedundancyMode && activeDataProcessor === 2) {
+        manualDataChainsP2[activeDataChainIdxP2].tiles.pop();
+      } else {
+        manualDataChains[activeDataChainIdx].tiles.pop();
+      }
       renderDataWiring();
     });
 
     document.getElementById('powerUndoTile').addEventListener('click', () => {
-      const chain = manualPowerChains[activePowerChainIdx];
-      chain.tiles.pop();
+      if (powerRedundancyMode && activePowerProcessor === 2) {
+        manualPowerChainsP2[activePowerChainIdxP2].tiles.pop();
+      } else {
+        manualPowerChains[activePowerChainIdx].tiles.pop();
+      }
       renderPowerWiring();
     });
 
-    // Clear all manual chains
+    // Clear all (resets both processors)
     document.getElementById('dataClearManual').addEventListener('click', () => {
-      manualDataChains  = [{ portNumber: 1, tiles: [] }];
-      activeDataChainIdx = 0;
+      manualDataChains    = [{ portNumber: 1, tiles: [] }];
+      manualDataChainsP2  = [{ portNumber: 1, tiles: [] }];
+      activeDataChainIdx  = 0;
+      activeDataChainIdxP2 = 0;
       renderDataWiring();
     });
 
     document.getElementById('powerClearManual').addEventListener('click', () => {
-      manualPowerChains  = [{ portNumber: 1, tiles: [] }];
-      activePowerChainIdx = 0;
+      manualPowerChains    = [{ portNumber: 1, tiles: [] }];
+      manualPowerChainsP2  = [{ portNumber: 1, tiles: [] }];
+      activePowerChainIdx  = 0;
+      activePowerChainIdxP2 = 0;
+      renderPowerWiring();
+    });
+
+    // Redundancy toggle — Data
+    document.getElementById('dataRedundancyToggle').addEventListener('click', () => {
+      dataRedundancyMode = !dataRedundancyMode;
+      const btn = document.getElementById('dataRedundancyToggle');
+      const sel = document.getElementById('dataProcessorSelect');
+      const instr = document.getElementById('dataManualInstruction');
+      if (dataRedundancyMode) {
+        btn.classList.add('active');
+        btn.textContent = 'Redundancy On';
+        sel.classList.add('visible');
+        instr.innerHTML = 'Redundancy mode: wire <strong>Proc 1 (left half)</strong> and <strong>Proc 2 (right half)</strong> independently. Switch processors using the buttons above.';
+      } else {
+        btn.classList.remove('active');
+        btn.textContent = 'Redundancy Mode';
+        sel.classList.remove('visible');
+        instr.innerHTML = 'Click panels on the diagram to add them to the current port chain. Click an already-selected panel to remove it. Use <strong>New Port</strong> to finish the current chain and start the next one.';
+      }
+      renderDataWiring();
+    });
+
+    // Redundancy toggle — Power
+    document.getElementById('powerRedundancyToggle').addEventListener('click', () => {
+      powerRedundancyMode = !powerRedundancyMode;
+      const btn = document.getElementById('powerRedundancyToggle');
+      const sel = document.getElementById('powerProcessorSelect');
+      const instr = document.getElementById('powerManualInstruction');
+      if (powerRedundancyMode) {
+        btn.classList.add('active');
+        btn.textContent = 'Redundancy On';
+        sel.classList.add('visible');
+        instr.innerHTML = 'Redundancy mode: wire <strong>Proc 1 (left half)</strong> and <strong>Proc 2 (right half)</strong> independently. Switch processors using the buttons above.';
+      } else {
+        btn.classList.remove('active');
+        btn.textContent = 'Redundancy Mode';
+        sel.classList.remove('visible');
+        instr.innerHTML = 'Click panels on the diagram to add them to the current power circuit. Click an already-selected panel to remove it. Use <strong>New Power</strong> to finish the current circuit and start the next one.';
+      }
+      renderPowerWiring();
+    });
+
+    // Processor selectors — Data
+    document.getElementById('dataP1Btn').addEventListener('click', () => {
+      activeDataProcessor = 1;
+      document.getElementById('dataP1Btn').classList.add('active');
+      document.getElementById('dataP2Btn').classList.remove('active');
+      renderDataWiring();
+    });
+    document.getElementById('dataP2Btn').addEventListener('click', () => {
+      activeDataProcessor = 2;
+      document.getElementById('dataP2Btn').classList.add('active');
+      document.getElementById('dataP1Btn').classList.remove('active');
+      renderDataWiring();
+    });
+
+    // Processor selectors — Power
+    document.getElementById('powerP1Btn').addEventListener('click', () => {
+      activePowerProcessor = 1;
+      document.getElementById('powerP1Btn').classList.add('active');
+      document.getElementById('powerP2Btn').classList.remove('active');
+      renderPowerWiring();
+    });
+    document.getElementById('powerP2Btn').addEventListener('click', () => {
+      activePowerProcessor = 2;
+      document.getElementById('powerP2Btn').classList.add('active');
+      document.getElementById('powerP1Btn').classList.remove('active');
       renderPowerWiring();
     });
 
