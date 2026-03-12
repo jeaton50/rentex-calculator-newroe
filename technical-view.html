@@ -1792,7 +1792,7 @@
         // Port label at chain start
         const sp = pts[0];
         const labelText = isDashed
-          ? chain.portNumber.toString()
+          ? (socaLetters[chain.soca] || chain.soca.toString())
           : `P${chain.portNumber}`;
         const fontSize = Math.max(9, blockSize / 5);
         ctx.font = `bold ${fontSize}px Arial`;
@@ -1804,46 +1804,56 @@
         ctx.strokeText(labelText, sp.x, sp.y);
         ctx.fillText(labelText, sp.x, sp.y);
 
-        // Tile order numbers (small) on active chain
+        // Tile labels on active chain
         if (isActive) {
           chain.tiles.forEach((t, idx) => {
             const ry = calculateRowY(t.row);
             const rh = getRowHeight(t.row);
             const px = padding + t.col * blockWidth + blockWidth / 2;
             const py = ry + rh / 2;
-            const numSize = Math.max(9, blockSize / 5);
+            const numSize = Math.max(8, blockSize / 6);
             ctx.font = `bold ${numSize}px Arial`;
             ctx.fillStyle = 'white';
             ctx.strokeStyle = color;
             ctx.lineWidth = 2;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            // small offset so it doesn't overlap the port label
-            const offsetY = idx === 0 ? blockSize * 0.25 : 0;
-            ctx.strokeText((idx + 1).toString(), px, py + offsetY);
-            ctx.fillText((idx + 1).toString(), px, py + offsetY);
+            if (isDashed && chain.soca) {
+              ctx.strokeText(socaLetters[chain.soca] || chain.soca, px, py - numSize * 0.55);
+              ctx.fillText(socaLetters[chain.soca] || chain.soca, px, py - numSize * 0.55);
+              ctx.strokeText((idx + 1).toString(), px, py + numSize * 0.55);
+              ctx.fillText((idx + 1).toString(), px, py + numSize * 0.55);
+            } else {
+              const offsetY = idx === 0 ? blockSize * 0.25 : 0;
+              ctx.strokeText((idx + 1).toString(), px, py + offsetY);
+              ctx.fillText((idx + 1).toString(), px, py + offsetY);
+            }
           });
         }
 
-        // Tile assignment labels for all completed chains
+        // Tile labels on completed chains
         if (!isActive) {
-          chain.tiles.forEach(t => {
+          chain.tiles.forEach((t, idx) => {
             const ry = calculateRowY(t.row);
             const rh = getRowHeight(t.row);
             const px = padding + t.col * blockWidth + blockWidth / 2;
             const py = ry + rh / 2;
-            const numSize = Math.max(9, blockSize / 5);
+            const numSize = Math.max(8, blockSize / 6);
             ctx.font = `bold ${numSize}px Arial`;
             ctx.fillStyle = color;
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 2;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            const shortLabel = isDashed
-              ? (idx + 1).toString()
-              : `${chain.portNumber}`;
-            ctx.strokeText(shortLabel, px, py + blockSize * 0.25);
-            ctx.fillText(shortLabel, px, py + blockSize * 0.25);
+            if (isDashed && chain.soca) {
+              ctx.strokeText(socaLetters[chain.soca] || chain.soca, px, py - numSize * 0.55);
+              ctx.fillText(socaLetters[chain.soca] || chain.soca, px, py - numSize * 0.55);
+              ctx.strokeText((idx + 1).toString(), px, py + numSize * 0.55);
+              ctx.fillText((idx + 1).toString(), px, py + numSize * 0.55);
+            } else {
+              ctx.strokeText(`${chain.portNumber}`, px, py + blockSize * 0.25);
+              ctx.fillText(`${chain.portNumber}`, px, py + blockSize * 0.25);
+            }
           });
         }
       });
@@ -1889,7 +1899,7 @@
           if (pts.length > 0) {
             const sp = pts[0];
             const labelText = isDashed
-          ? chain.portNumber.toString()
+          ? (socaLetters[chain.soca] || chain.soca.toString())
           : `P${chain.portNumber}`;
             const fontSize = Math.max(9, blockSize / 5);
             ctx.font = `bold ${fontSize}px Arial`;
@@ -1903,25 +1913,38 @@
             chain.tiles.forEach((t, idx) => {
               const ry = calculateRowY(t.row), rh = getRowHeight(t.row);
               const px = padding + t.col * blockWidth + blockWidth / 2, py = ry + rh / 2;
-              ctx.font = `bold ${Math.max(9, blockSize / 5)}px Arial`;
+              const numSize = Math.max(8, blockSize / 6);
+              ctx.font = `bold ${numSize}px Arial`;
               ctx.fillStyle = 'white'; ctx.strokeStyle = color; ctx.lineWidth = 2;
               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-              const offsetY = idx === 0 ? blockSize * 0.25 : 0;
-              ctx.strokeText((idx + 1).toString(), px, py + offsetY);
-              ctx.fillText((idx + 1).toString(), px, py + offsetY);
+              if (isDashed && chain.soca) {
+                ctx.strokeText(socaLetters[chain.soca] || chain.soca, px, py - numSize * 0.55);
+                ctx.fillText(socaLetters[chain.soca] || chain.soca, px, py - numSize * 0.55);
+                ctx.strokeText((idx + 1).toString(), px, py + numSize * 0.55);
+                ctx.fillText((idx + 1).toString(), px, py + numSize * 0.55);
+              } else {
+                const offsetY = idx === 0 ? blockSize * 0.25 : 0;
+                ctx.strokeText((idx + 1).toString(), px, py + offsetY);
+                ctx.fillText((idx + 1).toString(), px, py + offsetY);
+              }
             });
           } else {
-            chain.tiles.forEach(t => {
+            chain.tiles.forEach((t, idx) => {
               const ry = calculateRowY(t.row), rh = getRowHeight(t.row);
               const px = padding + t.col * blockWidth + blockWidth / 2, py = ry + rh / 2;
-              ctx.font = `bold ${Math.max(9, blockSize / 5)}px Arial`;
+              const numSize = Math.max(8, blockSize / 6);
+              ctx.font = `bold ${numSize}px Arial`;
               ctx.fillStyle = color; ctx.strokeStyle = 'white'; ctx.lineWidth = 2;
               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-              const shortLabel = isDashed
-              ? (idx + 1).toString()
-              : `${chain.portNumber}`;
-              ctx.strokeText(shortLabel, px, py + blockSize * 0.25);
-              ctx.fillText(shortLabel, px, py + blockSize * 0.25);
+              if (isDashed && chain.soca) {
+                ctx.strokeText(socaLetters[chain.soca] || chain.soca, px, py - numSize * 0.55);
+                ctx.fillText(socaLetters[chain.soca] || chain.soca, px, py - numSize * 0.55);
+                ctx.strokeText((idx + 1).toString(), px, py + numSize * 0.55);
+                ctx.fillText((idx + 1).toString(), px, py + numSize * 0.55);
+              } else {
+                ctx.strokeText(`${chain.portNumber}`, px, py + blockSize * 0.25);
+                ctx.fillText(`${chain.portNumber}`, px, py + blockSize * 0.25);
+              }
             });
           }
         });
