@@ -1799,7 +1799,7 @@
         // Port label: power circuits go in the left margin, data stays on first tile
         const sp = pts[0];
         const labelText = isDashed
-          ? `C-${socaLetters[chain.soca] || chain.soca}-${chain.portNumber}`
+          ? `Soca-${socaLetters[chain.soca] || chain.soca}-${chain.portNumber}`
           : `P${chain.portNumber}`;
         const fontSize = Math.max(11, blockSize / 4);
         ctx.font = `bold ${fontSize}px Arial`;
@@ -1907,7 +1907,7 @@
           if (pts.length > 0) {
             const sp = pts[0];
             const labelText = isDashed
-              ? `C-${socaLetters[chain.soca] || chain.soca}-${chain.portNumber}`
+              ? `Soca-${socaLetters[chain.soca] || chain.soca}-${chain.portNumber}`
               : `P${chain.portNumber}`;
             const fontSize = Math.max(11, blockSize / 4);
             ctx.font = `bold ${fontSize}px Arial`;
