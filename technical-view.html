@@ -1244,7 +1244,8 @@
             powerRedundancyMode, activePowerProcessor,
             getFlatPowerChains(socaPowerChainsP2), getFlatActiveIdx(socaPowerChainsP2, socaActiveIdxP2),
             document.getElementById('powerLabelP1').value.trim() || 'Processor 1',
-            document.getElementById('powerLabelP2').value.trim() || 'Processor 2');
+            document.getElementById('powerLabelP2').value.trim() || 'Processor 2',
+            true /* isExport */);
         } else {
           drawWiringDiagram(targetCanvas, params.blocksHor, params.blocksVer, exportZoom, powerChainLimit,
             powerChainColors, powerDirection, powerStartPosition, true,
@@ -1646,7 +1647,7 @@
         productType, gp2HalfAutoRows, gp2HalfManualRows, gp2HalfManualPosition, gp2FullVerticalBlocks,
         manualChains, activeChainIdx,
         redundancyMode = false, activeProcessor = 1, p2Chains = [], activeP2ChainIdx = 0,
-        p1Label = 'Processor 1', p2Label = 'Processor 2') {
+        p1Label = 'Processor 1', p2Label = 'Processor 2', isExport = false) {
 
       const ctx = canvas.getContext('2d');
       const blockSize = (baseBlockPixels / 4) * zoomLevel;
@@ -1965,13 +1966,15 @@
         const splitX = padding + splitCol * blockWidth;
         const totalH = canvas.height - padding * 2;
 
-        // Dim inactive half with overlay
+        // Dim inactive half with overlay (live view only, not in export)
+        if (!isExport) {
         ctx.save();
         ctx.globalAlpha = 0.15;
         ctx.fillStyle = activeProcessor === 1 ? '#e65100' : '#1565c0';
         const dimX = activeProcessor === 1 ? splitX : padding;
         ctx.fillRect(dimX, padding, blocksHor * blockWidth / 2, totalH);
         ctx.restore();
+        } // end !isExport overlay
 
         // Bold vertical divider
         ctx.setLineDash([8, 4]);
