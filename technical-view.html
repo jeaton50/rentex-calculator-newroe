@@ -1091,10 +1091,50 @@
     function powerZoomIn() { if (powerZoomLevel < 8) { powerZoomLevel++; renderPowerWiring(); } }
     function powerZoomOut() { if (powerZoomLevel > 1) { powerZoomLevel--; renderPowerWiring(); } }
 
-    // Capture functions
-    function captureCanvas(canvas, title, filename) {
+    // ---- High-resolution export helpers ----
+    const EXPORT_ZOOM = 4; // zoom level used for all PNG exports
+
+    // Render the data or power diagram onto any target canvas at a given zoom
+    function renderDiagramToCanvas(targetCanvas, type, exportZoom) {
+      if (type === 'data') {
+        if (dataManualMode) {
+          drawManualWiringDiagram(targetCanvas, params.blocksHor, params.blocksVer, exportZoom,
+            dataChainColors, false,
+            params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
+            params.gp2HalfManualPosition, params.gp2FullVerticalBlocks,
+            manualDataChains, activeDataChainIdx,
+            dataRedundancyMode, activeDataProcessor, manualDataChainsP2, activeDataChainIdxP2);
+        } else {
+          const chainLimit = daisyChainLimits[params.productType] || 10;
+          drawWiringDiagram(targetCanvas, params.blocksHor, params.blocksVer, exportZoom, chainLimit,
+            dataChainColors, wiringDirection, wiringStartPosition, false,
+            params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
+            params.gp2HalfManualPosition, params.gp2FullVerticalBlocks);
+        }
+      } else {
+        const voltage = parseInt(powerDistroTypeSelect.value);
+        const powerChainLimit = (powerTileLimits[params.productType]?.[voltage]) || 10;
+        if (powerManualMode) {
+          drawManualWiringDiagram(targetCanvas, params.blocksHor, params.blocksVer, exportZoom,
+            powerChainColors, true,
+            params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
+            params.gp2HalfManualPosition, params.gp2FullVerticalBlocks,
+            manualPowerChains, activePowerChainIdx,
+            powerRedundancyMode, activePowerProcessor, manualPowerChainsP2, activePowerChainIdxP2);
+        } else {
+          drawWiringDiagram(targetCanvas, params.blocksHor, params.blocksVer, exportZoom, powerChainLimit,
+            powerChainColors, powerDirection, powerStartPosition, true,
+            params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
+            params.gp2HalfManualPosition, params.gp2FullVerticalBlocks);
+        }
+      }
+    }
+
+    // Add a footer bar to a canvas and trigger download
+    function captureCanvas(canvas, title, filename, textScale = 1) {
       const tempCanvas = document.createElement('canvas');
-      const infoHeight = 80;
+      const s = Math.max(1, textScale);
+      const infoHeight = Math.round(80 * s);
       tempCanvas.width = canvas.width;
       tempCanvas.height = canvas.height + infoHeight;
       const ctx = tempCanvas.getContext('2d');
@@ -1106,11 +1146,12 @@
       ctx.fillStyle = '#f0f0f0';
       ctx.fillRect(0, canvas.height, tempCanvas.width, infoHeight);
       ctx.fillStyle = '#000000';
-      ctx.font = 'bold 20px Arial';
+      ctx.font = `bold ${Math.round(20 * s)}px Arial`;
       ctx.textAlign = 'center';
-      ctx.fillText(title, tempCanvas.width / 2, canvas.height + 30);
-      ctx.font = '16px Arial';
-      ctx.fillText(`${displayName} - ${params.blocksHor} × ${params.blocksVer} tiles`, tempCanvas.width / 2, canvas.height + 55);
+      ctx.fillText(title, tempCanvas.width / 2, canvas.height + Math.round(30 * s));
+      ctx.font = `${Math.round(16 * s)}px Arial`;
+      ctx.fillText(`${displayName} - ${params.blocksHor} × ${params.blocksVer} tiles`,
+        tempCanvas.width / 2, canvas.height + Math.round(58 * s));
 
       const link = document.createElement('a');
       link.download = filename;
@@ -1119,100 +1160,112 @@
     }
 
     function captureDataWiring() {
-      captureCanvas(document.getElementById('dataWiringCanvas'), 'Data Wiring Diagram',
-        `${params.productType.toUpperCase()}_Data_Wiring_${params.blocksHor}x${params.blocksVer}.png`);
+      const screenCanvas = document.getElementById('dataWiringCanvas');
+      const hiRes = document.createElement('canvas');
+      renderDiagramToCanvas(hiRes, 'data', EXPORT_ZOOM);
+      const scale = hiRes.width / Math.max(screenCanvas.width, 1);
+      captureCanvas(hiRes, 'Data Wiring Diagram',
+        `${params.productType.toUpperCase()}_Data_Wiring_${params.blocksHor}x${params.blocksVer}.png`,
+        scale);
     }
 
     function capturePowerWiring() {
-      const voltage = powerDistroTypeSelect.value;
-      captureCanvas(document.getElementById('powerWiringCanvas'), `Power Wiring Diagram (${voltage}V)`,
-        `${params.productType.toUpperCase()}_Power_Wiring_${voltage}V_${params.blocksHor}x${params.blocksVer}.png`);
+      const screenCanvas = document.getElementById('powerWiringCanvas');
+      const hiRes = document.createElement('canvas');
+      renderDiagramToCanvas(hiRes, 'power', EXPORT_ZOOM);
+      const scale = hiRes.width / Math.max(screenCanvas.width, 1);
+      const voltageLabel = powerDistroTypeSelect.value;
+      captureCanvas(hiRes, `Power Wiring Diagram (${voltageLabel}V)`,
+        `${params.productType.toUpperCase()}_Power_Wiring_${voltageLabel}V_${params.blocksHor}x${params.blocksVer}.png`,
+        scale);
     }
 
     function captureBothDiagrams() {
-      const dataCanvas = document.getElementById('dataWiringCanvas');
-      const powerCanvas = document.getElementById('powerWiringCanvas');
-      const headerHeight = 140;
-      const labelHeight = 50;
-      const spacing = 20;
+      // Render both at high resolution
+      const dataHiRes  = document.createElement('canvas');
+      const powerHiRes = document.createElement('canvas');
+      renderDiagramToCanvas(dataHiRes,  'data',  EXPORT_ZOOM);
+      renderDiagramToCanvas(powerHiRes, 'power', EXPORT_ZOOM);
+
+      const screenData = document.getElementById('dataWiringCanvas');
+      const s = dataHiRes.width / Math.max(screenData.width, 1); // text scale factor
+
+      const headerHeight = Math.round(140 * s);
+      const labelHeight  = Math.round(50  * s);
+      const spacing      = Math.round(20  * s);
 
       const tempCanvas = document.createElement('canvas');
-      const maxWidth = Math.max(dataCanvas.width, powerCanvas.width, 600);
-      tempCanvas.width = maxWidth;
-      tempCanvas.height = headerHeight + dataCanvas.height + labelHeight + spacing + powerCanvas.height + labelHeight;
+      const maxWidth = Math.max(dataHiRes.width, powerHiRes.width, Math.round(600 * s));
+      tempCanvas.width  = maxWidth;
+      tempCanvas.height = headerHeight + dataHiRes.height + labelHeight + spacing + powerHiRes.height + labelHeight;
       const ctx = tempCanvas.getContext('2d');
 
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-      // Draw header with screen info
+      // Header
       ctx.fillStyle = '#f0f0f0';
       ctx.fillRect(0, 0, tempCanvas.width, headerHeight);
-
       ctx.fillStyle = '#000000';
-      ctx.font = 'bold 22px Arial';
+      ctx.font = `bold ${Math.round(22 * s)}px Arial`;
       ctx.textAlign = 'center';
-      ctx.fillText(displayName, tempCanvas.width / 2, 28);
+      ctx.fillText(displayName, tempCanvas.width / 2, Math.round(28 * s));
 
       // Info grid
-      ctx.font = '14px Arial';
       ctx.textAlign = 'left';
-      const col1 = 20;
-      const col2 = maxWidth / 4 + 10;
-      const col3 = maxWidth / 2 + 10;
-      const col4 = (maxWidth * 3) / 4 + 10;
+      const col1 = Math.round(20 * s);
+      const col2 = maxWidth / 4 + Math.round(10 * s);
+      const col3 = maxWidth / 2 + Math.round(10 * s);
+      const col4 = (maxWidth * 3) / 4 + Math.round(10 * s);
+      const r1 = Math.round(55 * s), r2 = Math.round(75 * s), r3 = Math.round(92 * s), r4 = Math.round(109 * s);
 
-      // Screen Size column
-      ctx.font = 'bold 14px Arial';
-      ctx.fillText('Screen Size', col1, 55);
-      ctx.font = '13px Arial';
-      ctx.fillText(`Tiles: ${params.blocksHor} × ${params.blocksVer}`, col1, 75);
-      ctx.fillText(`Size: ${widthFeet}' × ${heightFeet}'`, col1, 92);
-      ctx.fillText(`${widthMeters}m × ${heightMeters}m`, col1, 109);
+      ctx.font = `bold ${Math.round(14 * s)}px Arial`;
+      ctx.fillText('Screen Size', col1, r1);
+      ctx.font = `${Math.round(13 * s)}px Arial`;
+      ctx.fillText(`Tiles: ${params.blocksHor} × ${params.blocksVer}`, col1, r2);
+      ctx.fillText(`Size: ${widthFeet}' × ${heightFeet}'`, col1, r3);
+      ctx.fillText(`${widthMeters}m × ${heightMeters}m`, col1, r4);
 
-      // Pixels column
-      ctx.font = 'bold 14px Arial';
-      ctx.fillText('Pixels', col2, 55);
-      ctx.font = '13px Arial';
-      ctx.fillText(`Horizontal: ${horizontalPixels.toLocaleString()}`, col2, 75);
-      ctx.fillText(`Vertical: ${verticalPixels.toLocaleString()}`, col2, 92);
-      ctx.fillText(`Total: ${totalPixels.toLocaleString()}`, col2, 109);
+      ctx.font = `bold ${Math.round(14 * s)}px Arial`;
+      ctx.fillText('Pixels', col2, r1);
+      ctx.font = `${Math.round(13 * s)}px Arial`;
+      ctx.fillText(`Horizontal: ${horizontalPixels.toLocaleString()}`, col2, r2);
+      ctx.fillText(`Vertical: ${verticalPixels.toLocaleString()}`, col2, r3);
+      ctx.fillText(`Total: ${totalPixels.toLocaleString()}`, col2, r4);
 
-      // Tiles column
-      ctx.font = 'bold 14px Arial';
-      ctx.fillText('Tiles', col3, 55);
-      ctx.font = '13px Arial';
-      ctx.fillText(`Total: ${totalTiles}`, col3, 75);
-      ctx.fillText(`Weight: ${weight} lbs`, col3, 92);
+      ctx.font = `bold ${Math.round(14 * s)}px Arial`;
+      ctx.fillText('Tiles', col3, r1);
+      ctx.font = `${Math.round(13 * s)}px Arial`;
+      ctx.fillText(`Total: ${totalTiles}`, col3, r2);
+      ctx.fillText(`Weight: ${weight} lbs`, col3, r3);
 
-      // Power column
-      ctx.font = 'bold 14px Arial';
-      ctx.fillText('Power', col4, 55);
-      ctx.font = '13px Arial';
-      ctx.fillText(`Voltage: ${voltage}V`, col4, 75);
-      ctx.fillText(`Amperage: ${amps.toFixed(2)} A`, col4, 92);
-      ctx.fillText(`Watts: ${watts.toFixed(0)} W`, col4, 109);
+      ctx.font = `bold ${Math.round(14 * s)}px Arial`;
+      ctx.fillText('Power', col4, r1);
+      ctx.font = `${Math.round(13 * s)}px Arial`;
+      ctx.fillText(`Voltage: ${voltage}V`, col4, r2);
+      ctx.fillText(`Amperage: ${amps.toFixed(2)} A`, col4, r3);
+      ctx.fillText(`Watts: ${watts.toFixed(0)} W`, col4, r4);
 
-      // Data wiring diagram
+      // Data diagram
       let y = headerHeight;
-      ctx.drawImage(dataCanvas, (maxWidth - dataCanvas.width) / 2, y);
-      y += dataCanvas.height;
+      ctx.drawImage(dataHiRes, (maxWidth - dataHiRes.width) / 2, y);
+      y += dataHiRes.height;
       ctx.fillStyle = '#e8f4f8';
       ctx.fillRect(0, y, tempCanvas.width, labelHeight);
       ctx.fillStyle = '#000000';
-      ctx.font = 'bold 18px Arial';
+      ctx.font = `bold ${Math.round(18 * s)}px Arial`;
       ctx.textAlign = 'center';
-      ctx.fillText('Data Wiring Diagram', tempCanvas.width / 2, y + 30);
+      ctx.fillText('Data Wiring Diagram', tempCanvas.width / 2, y + Math.round(30 * s));
 
-      // Power wiring diagram
+      // Power diagram
       y += labelHeight + spacing;
-      ctx.drawImage(powerCanvas, (maxWidth - powerCanvas.width) / 2, y);
-      y += powerCanvas.height;
+      ctx.drawImage(powerHiRes, (maxWidth - powerHiRes.width) / 2, y);
+      y += powerHiRes.height;
       ctx.fillStyle = '#e8f4f8';
       ctx.fillRect(0, y, tempCanvas.width, labelHeight);
       ctx.fillStyle = '#000000';
-      ctx.font = 'bold 18px Arial';
-      ctx.fillText(`Power Wiring Diagram (${powerDistroTypeSelect.value}V)`, tempCanvas.width / 2, y + 30);
+      ctx.font = `bold ${Math.round(18 * s)}px Arial`;
+      ctx.fillText(`Power Wiring Diagram (${powerDistroTypeSelect.value}V)`, tempCanvas.width / 2, y + Math.round(30 * s));
 
       const link = document.createElement('a');
       link.download = `${params.productType.toUpperCase()}_Complete_Wiring_${params.blocksHor}x${params.blocksVer}.png`;
