@@ -1239,8 +1239,9 @@
             powerChainColors, true,
             params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
             params.gp2HalfManualPosition, params.gp2FullVerticalBlocks,
-            manualPowerChains, activePowerChainIdx,
-            powerRedundancyMode, activePowerProcessor, manualPowerChainsP2, activePowerChainIdxP2,
+            getFlatPowerChains(socaPowerChains), getFlatActiveIdx(socaPowerChains, socaActiveIdxP1),
+            powerRedundancyMode, activePowerProcessor,
+            getFlatPowerChains(socaPowerChainsP2), getFlatActiveIdx(socaPowerChainsP2, socaActiveIdxP2),
             document.getElementById('powerLabelP1').value.trim() || 'Processor 1',
             document.getElementById('powerLabelP2').value.trim() || 'Processor 2');
         } else {
@@ -1423,11 +1424,40 @@
     let powerManualMode = false;
     const socaColors = { 1: '#c62828', 2: '#2e7d32', 3: '#1565c0', 4: '#6a1b9a' };
     let activeSoca = 1;
-    // Each chain: { portNumber, tiles: [{row, col}], soca }
+    // Each chain: { portNumber, tiles: [{row, col}] }
     let manualDataChains  = [{ portNumber: 1, tiles: [] }];
-    let manualPowerChains = [{ portNumber: 1, tiles: [], soca: 1 }];
     let activeDataChainIdx  = 0;
-    let activePowerChainIdx = 0;
+
+    // Power chains stored per-SOCA so each SOCA has its own C1, C2, C3...
+    function makeSocaMap() { return { 1: [{ portNumber: 1, tiles: [] }], 2: [], 3: [], 4: [] }; }
+    function makeIdxMap()  { return { 1: 0, 2: 0, 3: 0, 4: 0 }; }
+    let socaPowerChains   = makeSocaMap();
+    let socaActiveIdxP1   = makeIdxMap();
+    let socaPowerChainsP2 = makeSocaMap();
+    let socaActiveIdxP2   = makeIdxMap();
+
+    // Flatten all SOCA sub-arrays into one list (adds soca property for color lookup)
+    function getFlatPowerChains(socaMap) {
+      return [1, 2, 3, 4].flatMap(s => socaMap[s].map(c => ({ ...c, soca: s })));
+    }
+    // Active flat index into the flattened list for a given SOCA map + idx map
+    function getFlatActiveIdx(socaMap, idxMap) {
+      let offset = 0;
+      for (let s = 1; s < activeSoca; s++) offset += socaMap[s].length;
+      return offset + (idxMap[activeSoca] ?? 0);
+    }
+    // Get the currently active chain object from a SOCA map
+    function getActivePowerChain(socaMap, idxMap) {
+      const arr = socaMap[activeSoca];
+      return arr[idxMap[activeSoca]] || null;
+    }
+    // Ensure the active SOCA has at least one chain to work with
+    function ensureSocaChain(socaMap, idxMap) {
+      if (socaMap[activeSoca].length === 0) {
+        socaMap[activeSoca].push({ portNumber: 1, tiles: [] });
+        idxMap[activeSoca] = 0;
+      }
+    }
 
     // Redundancy state
     let dataRedundancyMode  = false;
@@ -1435,9 +1465,7 @@
     let activeDataProcessor  = 1;   // 1 = left half, 2 = right half
     let activePowerProcessor = 1;
     let manualDataChainsP2  = [{ portNumber: 1, tiles: [] }];
-    let manualPowerChainsP2 = [{ portNumber: 1, tiles: [], soca: 1 }];
     let activeDataChainIdxP2  = 0;
-    let activePowerChainIdxP2 = 0;
 
     // Returns the column index that starts the right half
     function getSplitCol() { return Math.ceil(params.blocksHor / 2); }
@@ -1523,7 +1551,9 @@
     }
     function updatePowerManualStatus() {
       const isP2 = powerRedundancyMode && activePowerProcessor === 2;
-      const chain = isP2 ? manualPowerChainsP2[activePowerChainIdxP2] : manualPowerChains[activePowerChainIdx];
+      const chain = isP2
+        ? getActivePowerChain(socaPowerChainsP2, socaActiveIdxP2)
+        : getActivePowerChain(socaPowerChains, socaActiveIdxP1);
       const limit = getPowerChainLimit();
       const procLabel = powerRedundancyMode ? (isP2 ? 'P2 Power' : 'P1 Power') : 'Power';
       document.getElementById('powerPortNum').previousSibling.textContent = procLabel + ' ';
@@ -1887,8 +1917,9 @@
           powerChainColors, true,
           params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
           params.gp2HalfManualPosition, params.gp2FullVerticalBlocks,
-          manualPowerChains, activePowerChainIdx,
-          powerRedundancyMode, activePowerProcessor, manualPowerChainsP2, activePowerChainIdxP2,
+          getFlatPowerChains(socaPowerChains), getFlatActiveIdx(socaPowerChains, socaActiveIdxP1),
+          powerRedundancyMode, activePowerProcessor,
+          getFlatPowerChains(socaPowerChainsP2), getFlatActiveIdx(socaPowerChainsP2, socaActiveIdxP2),
           document.getElementById('powerLabelP1').value.trim() || 'Processor 1',
           document.getElementById('powerLabelP2').value.trim() || 'Processor 2');
         document.getElementById('powerZoomLevel').textContent = `Zoom: ${powerZoomLevel}`;
@@ -1947,9 +1978,10 @@
       }
 
       const useP2 = powerRedundancyMode && activePowerProcessor === 2;
-      const chains = useP2 ? manualPowerChainsP2 : manualPowerChains;
-      const activeIdx = useP2 ? activePowerChainIdxP2 : activePowerChainIdx;
-      const chain = chains[activeIdx];
+      const socaMap  = useP2 ? socaPowerChainsP2 : socaPowerChains;
+      const idxMap   = useP2 ? socaActiveIdxP2   : socaActiveIdxP1;
+      ensureSocaChain(socaMap, idxMap);
+      const chain = getActivePowerChain(socaMap, idxMap);
       const existingIdx = chain.tiles.findIndex(t => t.row === tile.row && t.col === tile.col);
 
       if (existingIdx >= 0) {
@@ -2022,15 +2054,12 @@
     });
 
     document.getElementById('powerNewPort').addEventListener('click', () => {
-      if (powerRedundancyMode && activePowerProcessor === 2) {
-        const next = manualPowerChainsP2.length + 1;
-        manualPowerChainsP2.push({ portNumber: next, tiles: [], soca: activeSoca });
-        activePowerChainIdxP2 = manualPowerChainsP2.length - 1;
-      } else {
-        const next = manualPowerChains.length + 1;
-        manualPowerChains.push({ portNumber: next, tiles: [], soca: activeSoca });
-        activePowerChainIdx = manualPowerChains.length - 1;
-      }
+      const useP2   = powerRedundancyMode && activePowerProcessor === 2;
+      const socaMap = useP2 ? socaPowerChainsP2 : socaPowerChains;
+      const idxMap  = useP2 ? socaActiveIdxP2   : socaActiveIdxP1;
+      const arr = socaMap[activeSoca];
+      arr.push({ portNumber: arr.length + 1, tiles: [] });
+      idxMap[activeSoca] = arr.length - 1;
       renderPowerWiring();
     });
 
@@ -2045,11 +2074,11 @@
     });
 
     document.getElementById('powerUndoTile').addEventListener('click', () => {
-      if (powerRedundancyMode && activePowerProcessor === 2) {
-        manualPowerChainsP2[activePowerChainIdxP2].tiles.pop();
-      } else {
-        manualPowerChains[activePowerChainIdx].tiles.pop();
-      }
+      const useP2 = powerRedundancyMode && activePowerProcessor === 2;
+      const chain = useP2
+        ? getActivePowerChain(socaPowerChainsP2, socaActiveIdxP2)
+        : getActivePowerChain(socaPowerChains, socaActiveIdxP1);
+      if (chain) chain.tiles.pop();
       renderPowerWiring();
     });
 
@@ -2063,10 +2092,13 @@
     });
 
     document.getElementById('powerClearManual').addEventListener('click', () => {
-      manualPowerChains    = [{ portNumber: 1, tiles: [], soca: activeSoca }];
-      manualPowerChainsP2  = [{ portNumber: 1, tiles: [], soca: activeSoca }];
-      activePowerChainIdx  = 0;
-      activePowerChainIdxP2 = 0;
+      socaPowerChains   = makeSocaMap();
+      socaPowerChainsP2 = makeSocaMap();
+      socaActiveIdxP1   = makeIdxMap();
+      socaActiveIdxP2   = makeIdxMap();
+      activeSoca = 1;
+      [1, 2, 3, 4].forEach(i =>
+        document.getElementById(`powerSoca${i}Btn`).classList.toggle('active', i === 1));
       renderPowerWiring();
     });
 
@@ -2148,15 +2180,12 @@
     [1, 2, 3, 4].forEach(n => {
       document.getElementById(`powerSoca${n}Btn`).addEventListener('click', () => {
         activeSoca = n;
-        [1, 2, 3, 4].forEach(i => {
-          document.getElementById(`powerSoca${i}Btn`).classList.toggle('active', i === n);
-        });
-        // Update the current active chain's soca so recoloring is immediate
+        [1, 2, 3, 4].forEach(i =>
+          document.getElementById(`powerSoca${i}Btn`).classList.toggle('active', i === n));
+        // Ensure this SOCA has a chain ready to fill — resets to C1 each time
         const useP2 = powerRedundancyMode && activePowerProcessor === 2;
-        const chain = useP2
-          ? manualPowerChainsP2[activePowerChainIdxP2]
-          : manualPowerChains[activePowerChainIdx];
-        if (chain) chain.soca = n;
+        ensureSocaChain(useP2 ? socaPowerChainsP2 : socaPowerChains,
+                        useP2 ? socaActiveIdxP2   : socaActiveIdxP1);
         renderPowerWiring();
       });
     });
