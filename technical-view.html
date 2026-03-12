@@ -229,6 +229,71 @@
       border-radius: 8px;
     }
 
+    /* Manual wiring mode styles */
+    .manual-toggle-btn {
+      padding: 8px 16px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+    .manual-toggle-btn.active {
+      background: #e65100;
+    }
+    .manual-toggle-btn:hover {
+      opacity: 0.85;
+    }
+    .manual-mode-panel {
+      display: none;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: rgba(230, 81, 0, 0.07);
+      border-radius: 6px;
+      border: 1px solid rgba(230, 81, 0, 0.3);
+    }
+    .manual-mode-panel.visible {
+      display: flex;
+    }
+    .port-status {
+      font-weight: bold;
+      font-size: 14px;
+      color: #e65100;
+      flex-shrink: 0;
+    }
+    .chain-limit-warning {
+      font-size: 12px;
+      color: #dc3545;
+      font-weight: bold;
+      display: none;
+    }
+    .manual-btn {
+      padding: 6px 13px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      transition: opacity 0.15s;
+    }
+    .manual-btn:hover { opacity: 0.85; }
+    .manual-btn.new-port { background: #28a745; color: white; }
+    .manual-btn.undo    { background: #ffc107; color: #333; }
+    .manual-btn.clear   { background: #dc3545; color: white; }
+    .manual-instruction {
+      font-size: 12px;
+      color: #666;
+      width: 100%;
+      margin: 4px 0 0;
+    }
+    canvas.manual-cursor { cursor: crosshair; }
+
     .capture-both-button {
       display: inline-block;
       padding: 15px 30px;
@@ -308,6 +373,23 @@
         </div>
       </div>
 
+      <div class="controls">
+        <div class="controls-row">
+          <button type="button" class="manual-toggle-btn" id="dataManualToggle">Enable Manual Wiring</button>
+        </div>
+        <div class="manual-mode-panel" id="dataManualPanel">
+          <span class="port-status">
+            Port <span id="dataPortNum">1</span> &mdash;
+            <span id="dataChainTiles">0</span> / <span id="dataChainLimitDisplay">10</span> tiles
+          </span>
+          <span class="chain-limit-warning" id="dataLimitWarning">Chain limit reached — click New Port</span>
+          <button type="button" class="manual-btn new-port" id="dataNewPort">New Port</button>
+          <button type="button" class="manual-btn undo" id="dataUndoTile">Undo Last Tile</button>
+          <button type="button" class="manual-btn clear" id="dataClearManual">Clear All</button>
+          <p class="manual-instruction">Click panels on the diagram to add them to the current port chain. Click an already-selected panel to remove it. Use <strong>New Port</strong> to finish the current chain and start the next one.</p>
+        </div>
+      </div>
+
       <div class="canvas-container">
         <canvas id="dataWiringCanvas"></canvas>
       </div>
@@ -352,6 +434,23 @@
               <option value="208">208V</option>
             </select>
           </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="controls-row">
+          <button type="button" class="manual-toggle-btn" id="powerManualToggle">Enable Manual Wiring</button>
+        </div>
+        <div class="manual-mode-panel" id="powerManualPanel">
+          <span class="port-status">
+            Power <span id="powerPortNum">1</span> &mdash;
+            <span id="powerChainTiles">0</span> / <span id="powerChainLimitDisplay">10</span> tiles
+          </span>
+          <span class="chain-limit-warning" id="powerLimitWarning">Chain limit reached — click New Power</span>
+          <button type="button" class="manual-btn new-port" id="powerNewPort">New Power</button>
+          <button type="button" class="manual-btn undo" id="powerUndoTile">Undo Last Tile</button>
+          <button type="button" class="manual-btn clear" id="powerClearManual">Clear All</button>
+          <p class="manual-instruction">Click panels on the diagram to add them to the current power circuit. Click an already-selected panel to remove it. Use <strong>New Power</strong> to finish the current circuit and start the next one.</p>
         </div>
       </div>
 
@@ -1095,6 +1194,466 @@
     document.getElementById('captureDataButton').addEventListener('click', captureDataWiring);
     document.getElementById('capturePowerButton').addEventListener('click', capturePowerWiring);
     document.getElementById('captureBothButton').addEventListener('click', captureBothDiagrams);
+
+    // ============================================
+    // MANUAL WIRING MODE
+    // ============================================
+
+    // State
+    let dataManualMode = false;
+    let powerManualMode = false;
+    // Each chain: { portNumber, tiles: [{row, col}] }
+    let manualDataChains  = [{ portNumber: 1, tiles: [] }];
+    let manualPowerChains = [{ portNumber: 1, tiles: [] }];
+    let activeDataChainIdx  = 0;
+    let activePowerChainIdx = 0;
+
+    // Chain limit helpers
+    function getDataChainLimit() {
+      return daisyChainLimits[params.productType] || 10;
+    }
+    function getPowerChainLimit() {
+      const voltage = parseInt(document.getElementById('powerDistroType').value);
+      return (powerTileLimits[params.productType]?.[voltage]) || 10;
+    }
+
+    // Convert a canvas click to {row, col}
+    function getTileFromClick(e, canvas, zoomLevel) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const clickX = (e.clientX - rect.left) * scaleX;
+      const clickY = (e.clientY - rect.top) * scaleY;
+
+      const blockSize = (baseBlockPixels / 4) * zoomLevel;
+      const blockWidth = blockSize;
+
+      const hasMixedGP2 = params.productType === 'ROEGP26Full' &&
+        (params.gp2HalfAutoRows > 0 || params.gp2HalfManualRows > 0);
+      const isGP2Full = params.productType === 'ROEGP26Full' && !hasMixedGP2;
+
+      const col = Math.floor((clickX - padding) / blockWidth);
+      if (col < 0 || col >= params.blocksHor) return null;
+
+      let row;
+      if (hasMixedGP2) {
+        // Compute mixed GP2 row heights same as drawWiringDiagram
+        const topHalfRows_ = (() => {
+          let t = 0, b = 0;
+          if (params.gp2HalfAutoRows > 0 && params.gp2HalfManualRows > 0) {
+            t = params.gp2HalfAutoRows;
+            if (params.gp2HalfManualPosition === 'top') t += params.gp2HalfManualRows;
+            else b = params.gp2HalfManualRows;
+          } else if (params.gp2HalfAutoRows > 0) {
+            t = params.gp2HalfAutoRows;
+          } else if (params.gp2HalfManualRows > 0) {
+            if (params.gp2HalfManualPosition === 'top') t = params.gp2HalfManualRows;
+            else b = params.gp2HalfManualRows;
+          }
+          return t;
+        })();
+        const fullRowsStart_ = topHalfRows_;
+        const fullRowsEnd_   = topHalfRows_ + params.gp2FullVerticalBlocks;
+
+        let accY = padding;
+        row = -1;
+        for (let r = 0; r < params.blocksVer; r++) {
+          const isHalf = r < fullRowsStart_ || r >= fullRowsEnd_;
+          const rh = isHalf ? blockSize : blockSize * 2;
+          if (clickY >= accY && clickY < accY + rh) { row = r; break; }
+          accY += rh;
+        }
+      } else {
+        const blockHeight = isGP2Full ? blockSize * 2 : blockSize;
+        row = Math.floor((clickY - padding) / blockHeight);
+      }
+
+      if (row < 0 || row >= params.blocksVer) return null;
+      return { row, col };
+    }
+
+    // Update status labels
+    function updateDataManualStatus() {
+      const chain = manualDataChains[activeDataChainIdx];
+      const limit = getDataChainLimit();
+      document.getElementById('dataPortNum').textContent = chain.portNumber;
+      document.getElementById('dataChainTiles').textContent = chain.tiles.length;
+      document.getElementById('dataChainLimitDisplay').textContent = limit;
+      const warn = document.getElementById('dataLimitWarning');
+      warn.style.display = chain.tiles.length >= limit ? 'inline' : 'none';
+    }
+    function updatePowerManualStatus() {
+      const chain = manualPowerChains[activePowerChainIdx];
+      const limit = getPowerChainLimit();
+      document.getElementById('powerPortNum').textContent = chain.portNumber;
+      document.getElementById('powerChainTiles').textContent = chain.tiles.length;
+      document.getElementById('powerChainLimitDisplay').textContent = limit;
+      const warn = document.getElementById('powerLimitWarning');
+      warn.style.display = chain.tiles.length >= limit ? 'inline' : 'none';
+    }
+
+    // Draw manual wiring diagram (overlays manual chains onto the standard grid)
+    function drawManualWiringDiagram(canvas, blocksHor, blocksVer, zoomLevel, chainColors, isDashed,
+        productType, gp2HalfAutoRows, gp2HalfManualRows, gp2HalfManualPosition, gp2FullVerticalBlocks,
+        manualChains, activeChainIdx) {
+
+      const ctx = canvas.getContext('2d');
+      const blockSize = (baseBlockPixels / 4) * zoomLevel;
+      let blockWidth  = blockSize;
+      let blockHeight = blockSize;
+
+      const hasMixedGP2 = productType === 'ROEGP26Full' &&
+        (gp2HalfAutoRows > 0 || gp2HalfManualRows > 0);
+      if (productType === 'ROEGP26Full' && !hasMixedGP2) blockHeight = blockSize * 2;
+
+      const halfBlockHeight = blockSize;
+      const fullBlockHeight = blockSize * 2;
+
+      // Mixed GP2 row layout
+      let topHalfRows = 0, bottomHalfRows = 0;
+      if (hasMixedGP2) {
+        if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
+          topHalfRows = gp2HalfAutoRows;
+          if (gp2HalfManualPosition === 'top') topHalfRows += gp2HalfManualRows;
+          else bottomHalfRows = gp2HalfManualRows;
+        } else if (gp2HalfAutoRows > 0) {
+          topHalfRows = gp2HalfAutoRows;
+        } else if (gp2HalfManualRows > 0) {
+          if (gp2HalfManualPosition === 'top') topHalfRows = gp2HalfManualRows;
+          else bottomHalfRows = gp2HalfManualRows;
+        }
+      }
+      const fullRowsStart = topHalfRows;
+      const fullRowsEnd   = topHalfRows + gp2FullVerticalBlocks;
+
+      const getTileTypeForRow = (row) => {
+        if (!hasMixedGP2) return productType;
+        return (row < fullRowsStart || row >= fullRowsEnd) ? 'ROEGP26Half' : 'ROEGP26Full';
+      };
+      const getRowHeight = (row) => {
+        if (!hasMixedGP2) return blockHeight;
+        return getTileTypeForRow(row) === 'ROEGP26Half' ? halfBlockHeight : fullBlockHeight;
+      };
+      const calculateRowY = (row) => {
+        if (!hasMixedGP2) return padding + row * blockHeight;
+        let acc = padding;
+        for (let r = 0; r < row; r++) acc += getRowHeight(r);
+        return acc;
+      };
+
+      // Canvas size
+      let totalHeight = 0;
+      for (let r = 0; r < blocksVer; r++) totalHeight += getRowHeight(r);
+      canvas.width  = blocksHor * blockWidth  + padding * 2;
+      canvas.height = totalHeight + padding * 2;
+
+      // Background
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(padding, padding, blocksHor * blockWidth, totalHeight);
+
+      // Build a quick lookup: "row,col" -> chain index
+      const tileAssignment = {};
+      manualChains.forEach((chain, ci) => {
+        chain.tiles.forEach(t => { tileAssignment[`${t.row},${t.col}`] = ci; });
+      });
+
+      // Shade assigned tiles
+      for (let r = 0; r < blocksVer; r++) {
+        const rowY = calculateRowY(r);
+        const rh   = getRowHeight(r);
+        for (let c = 0; c < blocksHor; c++) {
+          const key = `${r},${c}`;
+          if (tileAssignment[key] !== undefined) {
+            const ci = tileAssignment[key];
+            const color = chainColors[ci % chainColors.length];
+            ctx.fillStyle = color + '28'; // ~16% opacity
+            ctx.fillRect(padding + c * blockWidth + 1, rowY + 1, blockWidth - 2, rh - 2);
+          }
+        }
+      }
+
+      // Grid lines
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([]);
+      for (let c = 0; c <= blocksHor; c++) {
+        ctx.beginPath();
+        ctx.moveTo(padding + c * blockWidth, padding);
+        ctx.lineTo(padding + c * blockWidth, padding + totalHeight);
+        ctx.stroke();
+      }
+      for (let r = 0; r <= blocksVer; r++) {
+        const y = calculateRowY(r);
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(padding + blocksHor * blockWidth, y);
+        ctx.stroke();
+      }
+
+      // Draw each chain
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      manualChains.forEach((chain, ci) => {
+        if (chain.tiles.length === 0) return;
+        const isActive = ci === activeChainIdx;
+        const color = chainColors[ci % chainColors.length];
+
+        const pts = chain.tiles.map(t => {
+          const ry = calculateRowY(t.row);
+          const rh = getRowHeight(t.row);
+          return { x: padding + t.col * blockWidth + blockWidth / 2, y: ry + rh / 2 };
+        });
+
+        if (pts.length > 1) {
+          if (isDashed) ctx.setLineDash([10, 5]);
+          // Outline
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = 8;
+          ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+          pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+          ctx.stroke();
+          // Colored line
+          ctx.strokeStyle = color;
+          ctx.lineWidth = isActive ? 5 : 4;
+          ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+          pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // End-of-chain dot
+        const ep = pts[pts.length - 1];
+        ctx.fillStyle = color;
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(ep.x, ep.y, isActive ? 10 : 8, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+
+        // Port label at chain start
+        const sp = pts[0];
+        const labelText = isDashed ? `Pwr ${chain.portNumber}` : `Port ${chain.portNumber}`;
+        const fontSize = Math.max(14, blockSize / 3);
+        ctx.font = `bold ${fontSize}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = color;
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.strokeText(labelText, sp.x, sp.y);
+        ctx.fillText(labelText, sp.x, sp.y);
+
+        // Tile order numbers (small) on active chain
+        if (isActive) {
+          chain.tiles.forEach((t, idx) => {
+            const ry = calculateRowY(t.row);
+            const rh = getRowHeight(t.row);
+            const px = padding + t.col * blockWidth + blockWidth / 2;
+            const py = ry + rh / 2;
+            const numSize = Math.max(9, blockSize / 5);
+            ctx.font = `bold ${numSize}px Arial`;
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            // small offset so it doesn't overlap the port label
+            const offsetY = idx === 0 ? blockSize * 0.25 : 0;
+            ctx.strokeText((idx + 1).toString(), px, py + offsetY);
+            ctx.fillText((idx + 1).toString(), px, py + offsetY);
+          });
+        }
+
+        // Tile assignment labels for all completed chains
+        if (!isActive) {
+          chain.tiles.forEach(t => {
+            const ry = calculateRowY(t.row);
+            const rh = getRowHeight(t.row);
+            const px = padding + t.col * blockWidth + blockWidth / 2;
+            const py = ry + rh / 2;
+            const numSize = Math.max(9, blockSize / 5);
+            ctx.font = `bold ${numSize}px Arial`;
+            ctx.fillStyle = color;
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const shortLabel = isDashed ? `P${chain.portNumber}` : `${chain.portNumber}`;
+            ctx.strokeText(shortLabel, px, py + blockSize * 0.25);
+            ctx.fillText(shortLabel, px, py + blockSize * 0.25);
+          });
+        }
+      });
+
+      ctx.setLineDash([]);
+    }
+
+    // Override render functions to use manual mode when active
+    const _origRenderDataWiring  = renderDataWiring;
+    const _origRenderPowerWiring = renderPowerWiring;
+
+    renderDataWiring = function() {
+      if (dataManualMode) {
+        const canvas = document.getElementById('dataWiringCanvas');
+        drawManualWiringDiagram(canvas, params.blocksHor, params.blocksVer, dataZoomLevel,
+          dataChainColors, false,
+          params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
+          params.gp2HalfManualPosition, params.gp2FullVerticalBlocks,
+          manualDataChains, activeDataChainIdx);
+        document.getElementById('dataZoomLevel').textContent = `Zoom: ${dataZoomLevel}`;
+        updateDataManualStatus();
+      } else {
+        _origRenderDataWiring();
+      }
+    };
+
+    renderPowerWiring = function() {
+      if (powerManualMode) {
+        const canvas = document.getElementById('powerWiringCanvas');
+        drawManualWiringDiagram(canvas, params.blocksHor, params.blocksVer, powerZoomLevel,
+          powerChainColors, true,
+          params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
+          params.gp2HalfManualPosition, params.gp2FullVerticalBlocks,
+          manualPowerChains, activePowerChainIdx);
+        document.getElementById('powerZoomLevel').textContent = `Zoom: ${powerZoomLevel}`;
+        updatePowerManualStatus();
+      } else {
+        _origRenderPowerWiring();
+      }
+    };
+
+    // Canvas click handlers
+    function handleDataCanvasClick(e) {
+      if (!dataManualMode) return;
+      const canvas = document.getElementById('dataWiringCanvas');
+      const tile = getTileFromClick(e, canvas, dataZoomLevel);
+      if (!tile) return;
+
+      const chain = manualDataChains[activeDataChainIdx];
+      const existingIdx = chain.tiles.findIndex(t => t.row === tile.row && t.col === tile.col);
+
+      if (existingIdx >= 0) {
+        // Toggle off: remove tile
+        chain.tiles.splice(existingIdx, 1);
+      } else {
+        const limit = getDataChainLimit();
+        if (chain.tiles.length >= limit) {
+          document.getElementById('dataLimitWarning').style.display = 'inline';
+          return;
+        }
+        chain.tiles.push(tile);
+      }
+      renderDataWiring();
+    }
+
+    function handlePowerCanvasClick(e) {
+      if (!powerManualMode) return;
+      const canvas = document.getElementById('powerWiringCanvas');
+      const tile = getTileFromClick(e, canvas, powerZoomLevel);
+      if (!tile) return;
+
+      const chain = manualPowerChains[activePowerChainIdx];
+      const existingIdx = chain.tiles.findIndex(t => t.row === tile.row && t.col === tile.col);
+
+      if (existingIdx >= 0) {
+        chain.tiles.splice(existingIdx, 1);
+      } else {
+        const limit = getPowerChainLimit();
+        if (chain.tiles.length >= limit) {
+          document.getElementById('powerLimitWarning').style.display = 'inline';
+          return;
+        }
+        chain.tiles.push(tile);
+      }
+      renderPowerWiring();
+    }
+
+    document.getElementById('dataWiringCanvas').addEventListener('click', handleDataCanvasClick);
+    document.getElementById('powerWiringCanvas').addEventListener('click', handlePowerCanvasClick);
+
+    // Toggle buttons
+    document.getElementById('dataManualToggle').addEventListener('click', () => {
+      dataManualMode = !dataManualMode;
+      const btn = document.getElementById('dataManualToggle');
+      const panel = document.getElementById('dataManualPanel');
+      const canvas = document.getElementById('dataWiringCanvas');
+      if (dataManualMode) {
+        btn.textContent = 'Disable Manual Wiring';
+        btn.classList.add('active');
+        panel.classList.add('visible');
+        canvas.classList.add('manual-cursor');
+      } else {
+        btn.textContent = 'Enable Manual Wiring';
+        btn.classList.remove('active');
+        panel.classList.remove('visible');
+        canvas.classList.remove('manual-cursor');
+      }
+      renderDataWiring();
+    });
+
+    document.getElementById('powerManualToggle').addEventListener('click', () => {
+      powerManualMode = !powerManualMode;
+      const btn = document.getElementById('powerManualToggle');
+      const panel = document.getElementById('powerManualPanel');
+      const canvas = document.getElementById('powerWiringCanvas');
+      if (powerManualMode) {
+        btn.textContent = 'Disable Manual Wiring';
+        btn.classList.add('active');
+        panel.classList.add('visible');
+        canvas.classList.add('manual-cursor');
+      } else {
+        btn.textContent = 'Enable Manual Wiring';
+        btn.classList.remove('active');
+        panel.classList.remove('visible');
+        canvas.classList.remove('manual-cursor');
+      }
+      renderPowerWiring();
+    });
+
+    // New Port / New Power
+    document.getElementById('dataNewPort').addEventListener('click', () => {
+      const nextPort = manualDataChains.length + 1;
+      manualDataChains.push({ portNumber: nextPort, tiles: [] });
+      activeDataChainIdx = manualDataChains.length - 1;
+      renderDataWiring();
+    });
+
+    document.getElementById('powerNewPort').addEventListener('click', () => {
+      const nextPort = manualPowerChains.length + 1;
+      manualPowerChains.push({ portNumber: nextPort, tiles: [] });
+      activePowerChainIdx = manualPowerChains.length - 1;
+      renderPowerWiring();
+    });
+
+    // Undo last tile
+    document.getElementById('dataUndoTile').addEventListener('click', () => {
+      const chain = manualDataChains[activeDataChainIdx];
+      chain.tiles.pop();
+      renderDataWiring();
+    });
+
+    document.getElementById('powerUndoTile').addEventListener('click', () => {
+      const chain = manualPowerChains[activePowerChainIdx];
+      chain.tiles.pop();
+      renderPowerWiring();
+    });
+
+    // Clear all manual chains
+    document.getElementById('dataClearManual').addEventListener('click', () => {
+      manualDataChains  = [{ portNumber: 1, tiles: [] }];
+      activeDataChainIdx = 0;
+      renderDataWiring();
+    });
+
+    document.getElementById('powerClearManual').addEventListener('click', () => {
+      manualPowerChains  = [{ portNumber: 1, tiles: [] }];
+      activePowerChainIdx = 0;
+      renderPowerWiring();
+    });
 
     // Initial render
     renderDataWiring();
