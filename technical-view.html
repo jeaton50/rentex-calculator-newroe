@@ -1792,7 +1792,7 @@
         // Port label at chain start
         const sp = pts[0];
         const labelText = isDashed
-          ? `${socaLetters[chain.soca] || chain.soca}${chain.portNumber}`
+          ? chain.portNumber.toString()
           : `P${chain.portNumber}`;
         const fontSize = Math.max(9, blockSize / 5);
         ctx.font = `bold ${fontSize}px Arial`;
@@ -1840,7 +1840,7 @@
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             const shortLabel = isDashed
-              ? (socaLetters[chain.soca] || chain.soca)
+              ? (idx + 1).toString()
               : `${chain.portNumber}`;
             ctx.strokeText(shortLabel, px, py + blockSize * 0.25);
             ctx.fillText(shortLabel, px, py + blockSize * 0.25);
@@ -1889,7 +1889,7 @@
           if (pts.length > 0) {
             const sp = pts[0];
             const labelText = isDashed
-          ? `${socaLetters[chain.soca] || chain.soca}${chain.portNumber}`
+          ? chain.portNumber.toString()
           : `P${chain.portNumber}`;
             const fontSize = Math.max(9, blockSize / 5);
             ctx.font = `bold ${fontSize}px Arial`;
@@ -1907,11 +1907,8 @@
               ctx.fillStyle = 'white'; ctx.strokeStyle = color; ctx.lineWidth = 2;
               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
               const offsetY = idx === 0 ? blockSize * 0.25 : 0;
-              const tileLabel = isDashed
-                ? (socaLetters[chain.soca] || chain.soca)
-                : (idx + 1).toString();
-              ctx.strokeText(tileLabel, px, py + offsetY);
-              ctx.fillText(tileLabel, px, py + offsetY);
+              ctx.strokeText((idx + 1).toString(), px, py + offsetY);
+              ctx.fillText((idx + 1).toString(), px, py + offsetY);
             });
           } else {
             chain.tiles.forEach(t => {
@@ -1921,7 +1918,7 @@
               ctx.fillStyle = color; ctx.strokeStyle = 'white'; ctx.lineWidth = 2;
               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
               const shortLabel = isDashed
-              ? (socaLetters[chain.soca] || chain.soca)
+              ? (idx + 1).toString()
               : `${chain.portNumber}`;
               ctx.strokeText(shortLabel, px, py + blockSize * 0.25);
               ctx.fillText(shortLabel, px, py + blockSize * 0.25);
