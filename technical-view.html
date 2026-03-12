@@ -1253,13 +1253,63 @@
       }
     }
 
+    // Wrap text to fit within maxWidth at the given fontSize
+    function wrapText(ctx, text, maxWidth, fontSize) {
+      ctx.font = `${fontSize}px Arial`;
+      const words = text.split(' ');
+      const lines = [];
+      let line = '';
+      for (const word of words) {
+        const test = line ? line + ' ' + word : word;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = test;
+        }
+      }
+      if (line) lines.push(line);
+      return lines;
+    }
+
+    // Draw a notes block onto ctx at the given y offset; returns height used
+    function drawNotesBlock(ctx, notes, y, totalWidth, s) {
+      if (!notes.trim()) return 0;
+      const pad = Math.round(16 * s);
+      const fontSize = Math.round(13 * s);
+      const lineH = Math.round(18 * s);
+      const lines = wrapText(ctx, notes.trim(), totalWidth - pad * 2, fontSize);
+      const blockH = Math.round(24 * s) + lines.length * lineH + Math.round(8 * s);
+      ctx.fillStyle = '#fffde7';
+      ctx.fillRect(0, y, totalWidth, blockH);
+      ctx.fillStyle = '#5f4339';
+      ctx.font = `bold ${fontSize}px Arial`;
+      ctx.textAlign = 'left';
+      ctx.fillText('Notes:', pad, y + Math.round(16 * s));
+      ctx.font = `${fontSize}px Arial`;
+      ctx.fillStyle = '#333';
+      lines.forEach((ln, i) => {
+        ctx.fillText(ln, pad, y + Math.round(16 * s) + (i + 1) * lineH);
+      });
+      return blockH;
+    }
+
     // Add a footer bar to a canvas and trigger download
-    function captureCanvas(canvas, title, filename, textScale = 1) {
-      const tempCanvas = document.createElement('canvas');
+    function captureCanvas(canvas, title, filename, textScale = 1, notes = '') {
       const s = Math.max(1, textScale);
-      const infoHeight = Math.round(80 * s);
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = canvas.height + infoHeight;
+      const footerHeight = Math.round(80 * s);
+      // Pre-measure notes height
+      const tmpCtx = document.createElement('canvas').getContext('2d');
+      const notesLines = notes.trim()
+        ? wrapText(tmpCtx, notes.trim(), canvas.width - Math.round(32 * s), Math.round(13 * s))
+        : [];
+      const notesH = notesLines.length > 0
+        ? Math.round(24 * s) + notesLines.length * Math.round(18 * s) + Math.round(8 * s)
+        : 0;
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width  = canvas.width;
+      tempCanvas.height = canvas.height + footerHeight + notesH;
       const ctx = tempCanvas.getContext('2d');
 
       ctx.fillStyle = '#ffffff';
@@ -1267,7 +1317,7 @@
       ctx.drawImage(canvas, 0, 0);
 
       ctx.fillStyle = '#f0f0f0';
-      ctx.fillRect(0, canvas.height, tempCanvas.width, infoHeight);
+      ctx.fillRect(0, canvas.height, tempCanvas.width, footerHeight);
       ctx.fillStyle = '#000000';
       ctx.font = `bold ${Math.round(20 * s)}px Arial`;
       ctx.textAlign = 'center';
@@ -1275,6 +1325,8 @@
       ctx.font = `${Math.round(16 * s)}px Arial`;
       ctx.fillText(`${displayName} - ${params.blocksHor} × ${params.blocksVer} tiles`,
         tempCanvas.width / 2, canvas.height + Math.round(58 * s));
+
+      if (notesH > 0) drawNotesBlock(ctx, notes, canvas.height + footerHeight, tempCanvas.width, s);
 
       const link = document.createElement('a');
       link.download = filename;
@@ -1289,7 +1341,7 @@
       const scale = hiRes.width / Math.max(screenCanvas.width, 1);
       captureCanvas(hiRes, 'Data Wiring Diagram',
         `${params.productType.toUpperCase()}_Data_Wiring_${params.blocksHor}x${params.blocksVer}.png`,
-        scale);
+        scale, document.getElementById('dataNotesInput').value);
     }
 
     function capturePowerWiring() {
@@ -1300,33 +1352,44 @@
       const voltageLabel = powerDistroTypeSelect.value;
       captureCanvas(hiRes, `Power Wiring Diagram (${voltageLabel}V)`,
         `${params.productType.toUpperCase()}_Power_Wiring_${voltageLabel}V_${params.blocksHor}x${params.blocksVer}.png`,
-        scale);
+        scale, document.getElementById('powerNotesInput').value);
     }
 
     function captureBothDiagrams() {
-      // Render both at high resolution
       const dataHiRes  = document.createElement('canvas');
       const powerHiRes = document.createElement('canvas');
       renderDiagramToCanvas(dataHiRes,  'data',  EXPORT_ZOOM);
       renderDiagramToCanvas(powerHiRes, 'power', EXPORT_ZOOM);
 
       const screenData = document.getElementById('dataWiringCanvas');
-      const s = dataHiRes.width / Math.max(screenData.width, 1); // text scale factor
+      const s = dataHiRes.width / Math.max(screenData.width, 1);
 
-      const headerHeight = Math.round(140 * s);
+      const headerHeight = Math.round(150 * s);
       const labelHeight  = Math.round(50  * s);
       const spacing      = Math.round(20  * s);
+      const maxWidth     = Math.max(dataHiRes.width, powerHiRes.width, Math.round(600 * s));
+
+      // Pre-measure notes heights
+      const tmpCtx = document.createElement('canvas').getContext('2d');
+      const dataNotesText  = document.getElementById('dataNotesInput').value;
+      const powerNotesText = document.getElementById('powerNotesInput').value;
+      const noteFontSize   = Math.round(13 * s);
+      const noteLineH      = Math.round(18 * s);
+      const dataNotesLines  = dataNotesText.trim()  ? wrapText(tmpCtx, dataNotesText.trim(),  maxWidth - Math.round(32*s), noteFontSize) : [];
+      const powerNotesLines = powerNotesText.trim() ? wrapText(tmpCtx, powerNotesText.trim(), maxWidth - Math.round(32*s), noteFontSize) : [];
+      const dataNotesH  = dataNotesLines.length  > 0 ? Math.round(24*s) + dataNotesLines.length  * noteLineH + Math.round(8*s) : 0;
+      const powerNotesH = powerNotesLines.length > 0 ? Math.round(24*s) + powerNotesLines.length * noteLineH + Math.round(8*s) : 0;
 
       const tempCanvas = document.createElement('canvas');
-      const maxWidth = Math.max(dataHiRes.width, powerHiRes.width, Math.round(600 * s));
       tempCanvas.width  = maxWidth;
-      tempCanvas.height = headerHeight + dataHiRes.height + labelHeight + spacing + powerHiRes.height + labelHeight;
+      tempCanvas.height = headerHeight + dataHiRes.height + labelHeight + dataNotesH
+                        + spacing + powerHiRes.height + labelHeight + powerNotesH;
       const ctx = tempCanvas.getContext('2d');
 
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-      // Header
+      // ── Header ──────────────────────────────────────────────────────────────
       ctx.fillStyle = '#f0f0f0';
       ctx.fillRect(0, 0, tempCanvas.width, headerHeight);
       ctx.fillStyle = '#000000';
@@ -1334,42 +1397,49 @@
       ctx.textAlign = 'center';
       ctx.fillText(displayName, tempCanvas.width / 2, Math.round(28 * s));
 
-      // Info grid
+      // 5-column info grid
       ctx.textAlign = 'left';
       const col1 = Math.round(20 * s);
-      const col2 = maxWidth / 4 + Math.round(10 * s);
-      const col3 = maxWidth / 2 + Math.round(10 * s);
-      const col4 = (maxWidth * 3) / 4 + Math.round(10 * s);
-      const r1 = Math.round(55 * s), r2 = Math.round(75 * s), r3 = Math.round(92 * s), r4 = Math.round(109 * s);
+      const col2 = maxWidth * 1/5 + Math.round(8 * s);
+      const col3 = maxWidth * 2/5 + Math.round(8 * s);
+      const col4 = maxWidth * 3/5 + Math.round(8 * s);
+      const col5 = maxWidth * 4/5 + Math.round(8 * s);
+      const r1 = Math.round(55 * s), r2 = Math.round(73 * s), r3 = Math.round(90 * s), r4 = Math.round(107 * s), r5 = Math.round(124 * s);
 
-      ctx.font = `bold ${Math.round(14 * s)}px Arial`;
+      ctx.font = `bold ${Math.round(13 * s)}px Arial`;
       ctx.fillText('Screen Size', col1, r1);
-      ctx.font = `${Math.round(13 * s)}px Arial`;
+      ctx.font = `${Math.round(12 * s)}px Arial`;
       ctx.fillText(`Tiles: ${params.blocksHor} × ${params.blocksVer}`, col1, r2);
       ctx.fillText(`Size: ${widthFeet}' × ${heightFeet}'`, col1, r3);
       ctx.fillText(`${widthMeters}m × ${heightMeters}m`, col1, r4);
 
-      ctx.font = `bold ${Math.round(14 * s)}px Arial`;
+      ctx.font = `bold ${Math.round(13 * s)}px Arial`;
       ctx.fillText('Pixels', col2, r1);
-      ctx.font = `${Math.round(13 * s)}px Arial`;
+      ctx.font = `${Math.round(12 * s)}px Arial`;
       ctx.fillText(`Horizontal: ${horizontalPixels.toLocaleString()}`, col2, r2);
       ctx.fillText(`Vertical: ${verticalPixels.toLocaleString()}`, col2, r3);
       ctx.fillText(`Total: ${totalPixels.toLocaleString()}`, col2, r4);
 
-      ctx.font = `bold ${Math.round(14 * s)}px Arial`;
+      ctx.font = `bold ${Math.round(13 * s)}px Arial`;
       ctx.fillText('Tiles', col3, r1);
-      ctx.font = `${Math.round(13 * s)}px Arial`;
+      ctx.font = `${Math.round(12 * s)}px Arial`;
       ctx.fillText(`Total: ${totalTiles}`, col3, r2);
       ctx.fillText(`Weight: ${weight} lbs`, col3, r3);
 
-      ctx.font = `bold ${Math.round(14 * s)}px Arial`;
+      ctx.font = `bold ${Math.round(13 * s)}px Arial`;
       ctx.fillText('Power', col4, r1);
-      ctx.font = `${Math.round(13 * s)}px Arial`;
+      ctx.font = `${Math.round(12 * s)}px Arial`;
       ctx.fillText(`Voltage: ${voltage}V`, col4, r2);
       ctx.fillText(`Amperage: ${amps.toFixed(2)} A`, col4, r3);
       ctx.fillText(`Watts: ${watts.toFixed(0)} W`, col4, r4);
 
-      // Data diagram
+      ctx.font = `bold ${Math.round(13 * s)}px Arial`;
+      ctx.fillText('Daisy Chain Limits', col5, r1);
+      ctx.font = `${Math.round(12 * s)}px Arial`;
+      ctx.fillText(`Max Data Chain: ${getDataChainLimit()} tiles`, col5, r2);
+      ctx.fillText(`Max Power Chain: ${getPowerChainLimit()} tiles`, col5, r3);
+
+      // ── Data diagram ────────────────────────────────────────────────────────
       let y = headerHeight;
       ctx.drawImage(dataHiRes, (maxWidth - dataHiRes.width) / 2, y);
       y += dataHiRes.height;
@@ -1379,16 +1449,21 @@
       ctx.font = `bold ${Math.round(18 * s)}px Arial`;
       ctx.textAlign = 'center';
       ctx.fillText('Data Wiring Diagram', tempCanvas.width / 2, y + Math.round(30 * s));
+      y += labelHeight;
+      if (dataNotesH > 0) { drawNotesBlock(ctx, dataNotesText, y, tempCanvas.width, s); y += dataNotesH; }
 
-      // Power diagram
-      y += labelHeight + spacing;
+      // ── Power diagram ───────────────────────────────────────────────────────
+      y += spacing;
       ctx.drawImage(powerHiRes, (maxWidth - powerHiRes.width) / 2, y);
       y += powerHiRes.height;
       ctx.fillStyle = '#e8f4f8';
       ctx.fillRect(0, y, tempCanvas.width, labelHeight);
       ctx.fillStyle = '#000000';
       ctx.font = `bold ${Math.round(18 * s)}px Arial`;
+      ctx.textAlign = 'center';
       ctx.fillText(`Power Wiring Diagram (${powerDistroTypeSelect.value}V)`, tempCanvas.width / 2, y + Math.round(30 * s));
+      y += labelHeight;
+      if (powerNotesH > 0) drawNotesBlock(ctx, powerNotesText, y, tempCanvas.width, s);
 
       const link = document.createElement('a');
       link.download = `${params.productType.toUpperCase()}_Complete_Wiring_${params.blocksHor}x${params.blocksVer}.png`;
@@ -1618,7 +1693,7 @@
       // Canvas size (add extra room for processor labels when in redundancy mode)
       let totalHeight = 0;
       for (let r = 0; r < blocksVer; r++) totalHeight += getRowHeight(r);
-      const redundancyLabelHeight = redundancyMode ? 36 : 0;
+      const redundancyLabelHeight = redundancyMode ? Math.max(36, Math.round(blockSize * 1.2)) : 0;
       canvas.width  = blocksHor * blockWidth  + padding * 2;
       canvas.height = totalHeight + padding * 2 + redundancyLabelHeight;
 
@@ -1868,7 +1943,7 @@
         ctx.setLineDash([]);
 
         // "Processor 1" and "Processor 2" labels
-        const labelY = padding + totalH + 18;
+        const labelY = padding + totalH - redundancyLabelHeight / 2;
         const p1X = padding + (splitCol * blockWidth) / 2;
         const p2X = splitX + ((blocksHor - splitCol) * blockWidth) / 2;
         ctx.font = `bold ${Math.max(13, blockSize / 3)}px Arial`;
