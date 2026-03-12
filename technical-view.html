@@ -106,6 +106,36 @@
       font-size: 20px;
     }
 
+    .notes-section {
+      margin-top: 14px;
+    }
+    .notes-section label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--text-dark);
+      margin-bottom: 5px;
+    }
+    .notes-section textarea {
+      width: 100%;
+      min-height: 90px;
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      resize: vertical;
+      box-sizing: border-box;
+      background: #fafafa;
+      color: #333;
+      transition: border-color 0.15s;
+    }
+    .notes-section textarea:focus {
+      outline: none;
+      border-color: #1565c0;
+      background: #fff;
+    }
+
     .controls {
       margin-bottom: 12px;
       padding: 12px;
@@ -498,6 +528,11 @@
       <div class="capture-container">
         <button type="button" class="capture-button" id="captureDataButton">📸 Capture Data Wiring</button>
       </div>
+
+      <div class="notes-section">
+        <label for="dataNotesInput">Notes</label>
+        <textarea id="dataNotesInput" placeholder="Add notes for the data wiring diagram..."></textarea>
+      </div>
     </div>
 
     <!-- Power Wiring Section -->
@@ -578,6 +613,11 @@
 
       <div class="capture-container">
         <button type="button" class="capture-button" id="capturePowerButton">📸 Capture Power Wiring</button>
+      </div>
+
+      <div class="notes-section">
+        <label for="powerNotesInput">Notes</label>
+        <textarea id="powerNotesInput" placeholder="Add notes for the power wiring diagram..."></textarea>
       </div>
     </div>
 
