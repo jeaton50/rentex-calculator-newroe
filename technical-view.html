@@ -325,6 +325,28 @@
     .proc-btn.p2             { border-color: #e65100; color: #e65100; }
     .proc-btn.p2.active      { background: #e65100; color: white; }
 
+    /* Redundancy half-label inputs */
+    .redundancy-labels {
+      display: none;
+      justify-content: center;
+      gap: 12px;
+      padding: 8px 10px 4px;
+    }
+    .redundancy-labels.visible { display: flex; }
+    .half-label-input {
+      flex: 1;
+      max-width: 45%;
+      padding: 6px 10px;
+      border: 2px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+      outline: none;
+    }
+    .half-label-input.p1 { border-color: #1565c0; color: #1565c0; }
+    .half-label-input.p2 { border-color: #e65100; color: #e65100; }
+
     .capture-both-button {
       display: inline-block;
       padding: 15px 30px;
@@ -430,6 +452,11 @@
         <canvas id="dataWiringCanvas"></canvas>
       </div>
 
+      <div class="redundancy-labels" id="dataRedundancyLabels">
+        <input type="text" class="half-label-input p1" id="dataLabelP1" placeholder="Processor 1 name..." maxlength="40" />
+        <input type="text" class="half-label-input p2" id="dataLabelP2" placeholder="Processor 2 name..." maxlength="40" />
+      </div>
+
       <div class="zoom-controls">
         <button type="button" class="zoom-button" id="dataZoomOutButton">Zoom Out</button>
         <div class="zoom-level" id="dataZoomLevel">Zoom: 1</div>
@@ -497,6 +524,11 @@
 
       <div class="canvas-container">
         <canvas id="powerWiringCanvas"></canvas>
+      </div>
+
+      <div class="redundancy-labels" id="powerRedundancyLabels">
+        <input type="text" class="half-label-input p1" id="powerLabelP1" placeholder="Processor 1 name..." maxlength="40" />
+        <input type="text" class="half-label-input p2" id="powerLabelP2" placeholder="Processor 2 name..." maxlength="40" />
       </div>
 
       <div class="zoom-controls">
@@ -995,7 +1027,7 @@
             ctx.font = 'bold 20px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            const labelText = isDashed ? `P${chainNumber}` : chainNumber.toString();
+            const labelText = isDashed ? `C${chainNumber}` : chainNumber.toString();
             ctx.strokeText(labelText, chainStartX, chainStartY);
             ctx.fillText(labelText, chainStartX, chainStartY);
 
@@ -1056,7 +1088,7 @@
           ctx.font = `bold ${Math.max(9, blockSize / 5)}px Arial`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          const labelText = `P${chainNumber}`;
+          const labelText = isDashed ? `C${chainNumber}` : `P${chainNumber}`;
           ctx.strokeText(labelText, chainStartX, chainStartY);
           ctx.fillText(labelText, chainStartX, chainStartY);
 
@@ -1103,7 +1135,9 @@
             params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
             params.gp2HalfManualPosition, params.gp2FullVerticalBlocks,
             manualDataChains, activeDataChainIdx,
-            dataRedundancyMode, activeDataProcessor, manualDataChainsP2, activeDataChainIdxP2);
+            dataRedundancyMode, activeDataProcessor, manualDataChainsP2, activeDataChainIdxP2,
+            document.getElementById('dataLabelP1').value.trim() || 'Processor 1',
+            document.getElementById('dataLabelP2').value.trim() || 'Processor 2');
         } else {
           const chainLimit = daisyChainLimits[params.productType] || 10;
           drawWiringDiagram(targetCanvas, params.blocksHor, params.blocksVer, exportZoom, chainLimit,
@@ -1120,7 +1154,9 @@
             params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
             params.gp2HalfManualPosition, params.gp2FullVerticalBlocks,
             manualPowerChains, activePowerChainIdx,
-            powerRedundancyMode, activePowerProcessor, manualPowerChainsP2, activePowerChainIdxP2);
+            powerRedundancyMode, activePowerProcessor, manualPowerChainsP2, activePowerChainIdxP2,
+            document.getElementById('powerLabelP1').value.trim() || 'Processor 1',
+            document.getElementById('powerLabelP2').value.trim() || 'Processor 2');
         } else {
           drawWiringDiagram(targetCanvas, params.blocksHor, params.blocksVer, exportZoom, powerChainLimit,
             powerChainColors, powerDirection, powerStartPosition, true,
@@ -1411,7 +1447,8 @@
     function drawManualWiringDiagram(canvas, blocksHor, blocksVer, zoomLevel, chainColors, isDashed,
         productType, gp2HalfAutoRows, gp2HalfManualRows, gp2HalfManualPosition, gp2FullVerticalBlocks,
         manualChains, activeChainIdx,
-        redundancyMode = false, activeProcessor = 1, p2Chains = [], activeP2ChainIdx = 0) {
+        redundancyMode = false, activeProcessor = 1, p2Chains = [], activeP2ChainIdx = 0,
+        p1Label = 'Processor 1', p2Label = 'Processor 2') {
 
       const ctx = canvas.getContext('2d');
       const blockSize = (baseBlockPixels / 4) * zoomLevel;
@@ -1553,7 +1590,7 @@
 
         // Port label at chain start
         const sp = pts[0];
-        const labelText = `P${chain.portNumber}`;
+        const labelText = isDashed ? `C${chain.portNumber}` : `P${chain.portNumber}`;
         const fontSize = Math.max(9, blockSize / 5);
         ctx.font = `bold ${fontSize}px Arial`;
         ctx.textAlign = 'center';
@@ -1599,7 +1636,7 @@
             ctx.lineWidth = 2;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            const shortLabel = isDashed ? `P${chain.portNumber}` : `${chain.portNumber}`;
+            const shortLabel = isDashed ? `C${chain.portNumber}` : `${chain.portNumber}`;
             ctx.strokeText(shortLabel, px, py + blockSize * 0.25);
             ctx.fillText(shortLabel, px, py + blockSize * 0.25);
           });
@@ -1644,7 +1681,7 @@
 
           if (pts.length > 0) {
             const sp = pts[0];
-            const labelText = `P${chain.portNumber}`;
+            const labelText = isDashed ? `C${chain.portNumber}` : `P${chain.portNumber}`;
             const fontSize = Math.max(9, blockSize / 5);
             ctx.font = `bold ${fontSize}px Arial`;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1671,7 +1708,7 @@
               ctx.font = `bold ${Math.max(9, blockSize / 5)}px Arial`;
               ctx.fillStyle = color; ctx.strokeStyle = 'white'; ctx.lineWidth = 2;
               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-              const shortLabel = isDashed ? `P${chain.portNumber}` : `${chain.portNumber}`;
+              const shortLabel = isDashed ? `C${chain.portNumber}` : `${chain.portNumber}`;
               ctx.strokeText(shortLabel, px, py + blockSize * 0.25);
               ctx.fillText(shortLabel, px, py + blockSize * 0.25);
             });
@@ -1713,12 +1750,12 @@
         ctx.fillStyle = '#1565c0';
         ctx.strokeStyle = 'white'; ctx.lineWidth = 3;
         ctx.textAlign = 'center';
-        ctx.strokeText('Processor 1', p1X, labelY);
-        ctx.fillText('Processor 1', p1X, labelY);
+        ctx.strokeText(p1Label || 'Processor 1', p1X, labelY);
+        ctx.fillText(p1Label || 'Processor 1', p1X, labelY);
 
         ctx.fillStyle = '#e65100';
-        ctx.strokeText('Processor 2', p2X, labelY);
-        ctx.fillText('Processor 2', p2X, labelY);
+        ctx.strokeText(p2Label || 'Processor 2', p2X, labelY);
+        ctx.fillText(p2Label || 'Processor 2', p2X, labelY);
       }
 
       ctx.setLineDash([]);
@@ -1736,7 +1773,9 @@
           params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
           params.gp2HalfManualPosition, params.gp2FullVerticalBlocks,
           manualDataChains, activeDataChainIdx,
-          dataRedundancyMode, activeDataProcessor, manualDataChainsP2, activeDataChainIdxP2);
+          dataRedundancyMode, activeDataProcessor, manualDataChainsP2, activeDataChainIdxP2,
+          document.getElementById('dataLabelP1').value.trim() || 'Processor 1',
+          document.getElementById('dataLabelP2').value.trim() || 'Processor 2');
         document.getElementById('dataZoomLevel').textContent = `Zoom: ${dataZoomLevel}`;
         updateDataManualStatus();
       } else {
@@ -1752,7 +1791,9 @@
           params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
           params.gp2HalfManualPosition, params.gp2FullVerticalBlocks,
           manualPowerChains, activePowerChainIdx,
-          powerRedundancyMode, activePowerProcessor, manualPowerChainsP2, activePowerChainIdxP2);
+          powerRedundancyMode, activePowerProcessor, manualPowerChainsP2, activePowerChainIdxP2,
+          document.getElementById('powerLabelP1').value.trim() || 'Processor 1',
+          document.getElementById('powerLabelP2').value.trim() || 'Processor 2');
         document.getElementById('powerZoomLevel').textContent = `Zoom: ${powerZoomLevel}`;
         updatePowerManualStatus();
       } else {
@@ -1938,15 +1979,18 @@
       const btn = document.getElementById('dataRedundancyToggle');
       const sel = document.getElementById('dataProcessorSelect');
       const instr = document.getElementById('dataManualInstruction');
+      const labelRow = document.getElementById('dataRedundancyLabels');
       if (dataRedundancyMode) {
         btn.classList.add('active');
         btn.textContent = 'Redundancy On';
         sel.classList.add('visible');
+        labelRow.classList.add('visible');
         instr.innerHTML = 'Redundancy mode: wire <strong>Proc 1 (left half)</strong> and <strong>Proc 2 (right half)</strong> independently. Switch processors using the buttons above.';
       } else {
         btn.classList.remove('active');
         btn.textContent = 'Redundancy Mode';
         sel.classList.remove('visible');
+        labelRow.classList.remove('visible');
         instr.innerHTML = 'Click panels on the diagram to add them to the current port chain. Click an already-selected panel to remove it. Use <strong>New Port</strong> to finish the current chain and start the next one.';
       }
       renderDataWiring();
@@ -1958,15 +2002,18 @@
       const btn = document.getElementById('powerRedundancyToggle');
       const sel = document.getElementById('powerProcessorSelect');
       const instr = document.getElementById('powerManualInstruction');
+      const labelRow = document.getElementById('powerRedundancyLabels');
       if (powerRedundancyMode) {
         btn.classList.add('active');
         btn.textContent = 'Redundancy On';
         sel.classList.add('visible');
+        labelRow.classList.add('visible');
         instr.innerHTML = 'Redundancy mode: wire <strong>Proc 1 (left half)</strong> and <strong>Proc 2 (right half)</strong> independently. Switch processors using the buttons above.';
       } else {
         btn.classList.remove('active');
         btn.textContent = 'Redundancy Mode';
         sel.classList.remove('visible');
+        labelRow.classList.remove('visible');
         instr.innerHTML = 'Click panels on the diagram to add them to the current power circuit. Click an already-selected panel to remove it. Use <strong>New Power</strong> to finish the current circuit and start the next one.';
       }
       renderPowerWiring();
@@ -1999,6 +2046,12 @@
       document.getElementById('powerP1Btn').classList.remove('active');
       renderPowerWiring();
     });
+
+    // Re-render canvas when redundancy labels are edited
+    document.getElementById('dataLabelP1').addEventListener('input', () => { if (dataManualMode && dataRedundancyMode) renderDataWiring(); });
+    document.getElementById('dataLabelP2').addEventListener('input', () => { if (dataManualMode && dataRedundancyMode) renderDataWiring(); });
+    document.getElementById('powerLabelP1').addEventListener('input', () => { if (powerManualMode && powerRedundancyMode) renderPowerWiring(); });
+    document.getElementById('powerLabelP2').addEventListener('input', () => { if (powerManualMode && powerRedundancyMode) renderPowerWiring(); });
 
     // Initial render
     renderDataWiring();
