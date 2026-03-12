@@ -1224,7 +1224,8 @@
             manualDataChains, activeDataChainIdx,
             dataRedundancyMode, activeDataProcessor, manualDataChainsP2, activeDataChainIdxP2,
             document.getElementById('dataLabelP1').value.trim() || 'Processor 1',
-            document.getElementById('dataLabelP2').value.trim() || 'Processor 2');
+            document.getElementById('dataLabelP2').value.trim() || 'Processor 2',
+            true /* isExport */);
         } else {
           const chainLimit = daisyChainLimits[params.productType] || 10;
           drawWiringDiagram(targetCanvas, params.blocksHor, params.blocksVer, exportZoom, chainLimit,
