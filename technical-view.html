@@ -831,16 +831,16 @@
 
     // Chain colors for data wiring
     const dataChainColors = [
-      '#FF3366', '#33FF66', '#3366FF', '#FFFF33', '#FF9933',
+      '#FF3366', '#33FF66', '#3366FF', '#CC6600', '#FF9933',
       '#CC33FF', '#33FFFF', '#FF3399', '#99FF33', '#FF6633',
-      '#33FF99', '#9933FF', '#FFCC33', '#33CCFF', '#FF33CC'
+      '#33FF99', '#9933FF', '#B8860B', '#33CCFF', '#FF33CC'
     ];
 
     // Chain colors for power wiring (warmer tones)
     const powerChainColors = [
-      '#FF6B35', '#FFB627', '#FF1744', '#FF9100', '#FFD600',
+      '#FF6B35', '#B87A00', '#FF1744', '#FF9100', '#CC7700',
       '#DD2C00', '#FF6F00', '#F4511E', '#FB8C00', '#FFA726',
-      '#FFAB40', '#FFC107', '#FFD54F', '#FF7043', '#FF5722'
+      '#FF7043', '#CC6600', '#A07830', '#FF7043', '#FF5722'
     ];
 
     // Generate tile path based on direction and start position
@@ -1811,7 +1811,7 @@
             const rh = getRowHeight(t.row);
             const px = padding + t.col * blockWidth + blockWidth / 2;
             const py = ry + rh / 2;
-            const numSize = Math.max(8, blockSize / 6);
+            const numSize = Math.max(16, blockSize / 3);
             ctx.font = `bold ${numSize}px Arial`;
             ctx.fillStyle = 'white';
             ctx.strokeStyle = color;
@@ -1838,7 +1838,7 @@
             const rh = getRowHeight(t.row);
             const px = padding + t.col * blockWidth + blockWidth / 2;
             const py = ry + rh / 2;
-            const numSize = Math.max(8, blockSize / 6);
+            const numSize = Math.max(16, blockSize / 3);
             ctx.font = `bold ${numSize}px Arial`;
             ctx.fillStyle = color;
             ctx.strokeStyle = 'white';
@@ -1913,7 +1913,7 @@
             chain.tiles.forEach((t, idx) => {
               const ry = calculateRowY(t.row), rh = getRowHeight(t.row);
               const px = padding + t.col * blockWidth + blockWidth / 2, py = ry + rh / 2;
-              const numSize = Math.max(8, blockSize / 6);
+              const numSize = Math.max(16, blockSize / 3);
               ctx.font = `bold ${numSize}px Arial`;
               ctx.fillStyle = 'white'; ctx.strokeStyle = color; ctx.lineWidth = 2;
               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1932,7 +1932,7 @@
             chain.tiles.forEach((t, idx) => {
               const ry = calculateRowY(t.row), rh = getRowHeight(t.row);
               const px = padding + t.col * blockWidth + blockWidth / 2, py = ry + rh / 2;
-              const numSize = Math.max(8, blockSize / 6);
+              const numSize = Math.max(16, blockSize / 3);
               ctx.font = `bold ${numSize}px Arial`;
               ctx.fillStyle = color; ctx.strokeStyle = 'white'; ctx.lineWidth = 2;
               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
