@@ -1436,11 +1436,14 @@
       ctx.fillText(`Amperage: ${amps.toFixed(2)} A`, col4, r3);
       ctx.fillText(`Watts: ${watts.toFixed(0)} W`, col4, r4);
 
+      ctx.textAlign = 'right';
+      const col5r = maxWidth - Math.round(20 * s);
       ctx.font = `bold ${Math.round(13 * s)}px Arial`;
-      ctx.fillText('Daisy Chain Limits', col5, r1);
+      ctx.fillText('Daisy Chain Limits', col5r, r1);
       ctx.font = `${Math.round(12 * s)}px Arial`;
-      ctx.fillText(`Max Data Chain: ${getDataChainLimit()} tiles`, col5, r2);
-      ctx.fillText(`Max Power Chain: ${getPowerChainLimit()} tiles`, col5, r3);
+      ctx.fillText(`Max Data Chain: ${getDataChainLimit()} tiles`, col5r, r2);
+      ctx.fillText(`Max Power Chain: ${getPowerChainLimit()} tiles`, col5r, r3);
+      ctx.textAlign = 'left';
 
       // ── Data diagram ────────────────────────────────────────────────────────
       let y = headerHeight;
