@@ -1053,10 +1053,10 @@
           ctx.fillStyle = chainColor;
           ctx.strokeStyle = 'black';
           ctx.lineWidth = 3;
-          ctx.font = `bold ${Math.max(14, blockSize / 3)}px Arial`;
+          ctx.font = `bold ${Math.max(9, blockSize / 5)}px Arial`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          const labelText = isDashed ? `Pwr ${chainNumber}` : `Port ${chainNumber}`;
+          const labelText = `P${chainNumber}`;
           ctx.strokeText(labelText, chainStartX, chainStartY);
           ctx.fillText(labelText, chainStartX, chainStartY);
 
@@ -1500,8 +1500,8 @@
 
         // Port label at chain start
         const sp = pts[0];
-        const labelText = isDashed ? `Pwr ${chain.portNumber}` : `Port ${chain.portNumber}`;
-        const fontSize = Math.max(14, blockSize / 3);
+        const labelText = `P${chain.portNumber}`;
+        const fontSize = Math.max(9, blockSize / 5);
         ctx.font = `bold ${fontSize}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -1591,8 +1591,8 @@
 
           if (pts.length > 0) {
             const sp = pts[0];
-            const labelText = isDashed ? `P2 Pwr ${chain.portNumber}` : `P2 Port ${chain.portNumber}`;
-            const fontSize = Math.max(14, blockSize / 3);
+            const labelText = `P${chain.portNumber}`;
+            const fontSize = Math.max(9, blockSize / 5);
             ctx.font = `bold ${fontSize}px Arial`;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillStyle = color; ctx.strokeStyle = 'black'; ctx.lineWidth = 3;
