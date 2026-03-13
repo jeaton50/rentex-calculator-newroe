@@ -550,17 +550,18 @@ const MultiScreenManager = {
 
       // Calculate total circuits needed for the system
       let circuits = 0;
-      if (productTypes.has('ROEGP26Full')) {
+      if (productTypes.has('ROEGP26Full') || productTypes.has('ROEGP26Half')) {
         // Use global function from equipment.js if available
         if (typeof roeGp26FullCircuitCount === 'function') {
-          // Estimate half tiles for combined count if needed
+          // Separate full and half tiles — roeGp26FullCircuitCount expects only
+          // GP2Full tiles in the first arg and adds half-tiles at 0.5× weight
+          let totalFullTiles = 0;
           let totalHalfTiles = 0;
-          if (productTypes.has('ROEGP26Half')) {
-            window.screenConfigurations.forEach(c => {
-              if (c.productType === 'ROEGP26Half') totalHalfTiles += (c.blocksHor * c.blocksVer);
-            });
-          }
-          circuits = roeGp26FullCircuitCount(totalTiles, 208, totalHalfTiles);
+          window.screenConfigurations.forEach(c => {
+            if (c.productType === 'ROEGP26Full') totalFullTiles += (c.blocksHor * c.blocksVer);
+            if (c.productType === 'ROEGP26Half') totalHalfTiles += (c.blocksHor * c.blocksVer);
+          });
+          circuits = roeGp26FullCircuitCount(totalFullTiles, 208, totalHalfTiles);
         } else {
           circuits = Math.ceil(totalTiles / 16); // Fallback
         }
