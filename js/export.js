@@ -411,6 +411,32 @@ const ExportManager = {
           }
         });
       });
+
+      // In Single Room mode, replace processing/distro/cable items with recalculated totals
+      if (window.screenCombineMode === 'single' && typeof window.calculateSingleRoomEquipment === 'function') {
+        const singleRoomData = window.calculateSingleRoomEquipment();
+
+        // Remove items that get recalculated
+        Object.keys(combinedEquipment).forEach(key => {
+          if (MultiScreenManager.isSingleRoomRecalcItem(combinedEquipment[key].ecode)) {
+            delete combinedEquipment[key];
+          }
+        });
+
+        // Add recalculated items
+        singleRoomData.recalcItems.forEach(item => {
+          if (item.quantity > 0) {
+            const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
+            combinedEquipment[key] = {
+              ecode: item.ecode,
+              name: item.name,
+              quantity: item.quantity,
+              weight: Number(item.weight) || 0
+            };
+          }
+        });
+      }
+
       return Object.values(combinedEquipment).filter(item => item.quantity > 0);
     } else {
       // Read from current equipment table
