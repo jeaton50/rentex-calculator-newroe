@@ -49,7 +49,11 @@ const ExportManager = {
       flownSupportType: (config.supportType === 'flownSupport') ? config.supportOption : null,
       voltage: (config.powerDistroType == '110') ? 110 : 208,
       wallType: config.wallType,
-      powerDistro: config.powerDistroType
+      powerDistro: config.powerDistroType,
+      gp2HalfBottomRow: config.gp2HalfEnabled || false,
+      gp2HalfRows: config.gp2HalfEnabled ? (config.gp2HalfCount || 1) : 0,
+      gp2HalfPosition: config.gp2HalfPosition || 'bottom',
+      gp2FullVerticalBlocks: config.blocksVer
     };
 
     // Use equipment collector to gather items
