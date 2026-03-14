@@ -49,7 +49,11 @@ const ExportManager = {
       flownSupportType: (config.supportType === 'flownSupport') ? config.supportOption : null,
       voltage: (config.powerDistroType == '110') ? 110 : 208,
       wallType: config.wallType,
-      powerDistro: config.powerDistroType
+      powerDistro: config.powerDistroType,
+      gp2HalfBottomRow: config.gp2HalfEnabled || false,
+      gp2HalfRows: config.gp2HalfEnabled ? (config.gp2HalfCount || 1) : 0,
+      gp2HalfPosition: config.gp2HalfPosition || 'bottom',
+      gp2FullVerticalBlocks: config.blocksVer
     };
 
     // Use equipment collector to gather items
@@ -411,6 +415,32 @@ const ExportManager = {
           }
         });
       });
+
+      // In Single Room mode, replace processing/distro/cable items with recalculated totals
+      if (window.screenCombineMode === 'single' && typeof window.calculateSingleRoomEquipment === 'function') {
+        const singleRoomData = window.calculateSingleRoomEquipment();
+
+        // Remove items that get recalculated
+        Object.keys(combinedEquipment).forEach(key => {
+          if (MultiScreenManager.isSingleRoomRecalcItem(combinedEquipment[key].ecode)) {
+            delete combinedEquipment[key];
+          }
+        });
+
+        // Add recalculated items
+        singleRoomData.recalcItems.forEach(item => {
+          if (item.quantity > 0) {
+            const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
+            combinedEquipment[key] = {
+              ecode: item.ecode,
+              name: item.name,
+              quantity: item.quantity,
+              weight: Number(item.weight) || 0
+            };
+          }
+        });
+      }
+
       return Object.values(combinedEquipment).filter(item => item.quantity > 0);
     } else {
       // Read from current equipment table
