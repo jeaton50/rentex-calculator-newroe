@@ -456,8 +456,8 @@ const MultiScreenManager = {
       if (gp2HalfPositionSelect) gp2HalfPositionSelect.value = config.gp2HalfPosition || 'bottom';
 
       // Re-generate the wall now that GP2 Half settings are correctly in the DOM
-      if (config.gp2HalfEnabled && typeof updateWall === 'function') {
-        updateWall();
+      if (config.gp2HalfEnabled && typeof generateWall === 'function') {
+        generateWall();
       }
 
       // Power distro type (re-apply in case change event reset it)
