@@ -440,7 +440,8 @@ const MultiScreenManager = {
       }
       if (dummyTileCountInput) dummyTileCountInput.value = config.dummyTileCount || 1;
 
-      // GP2 Half settings
+      // GP2 Half settings — must be set AFTER the productType change event (which resets them),
+      // then updateWall() is called again so generateWall() sees the correct GP2 Half state.
       const gp2HalfCheckbox = document.getElementById('gp2HalfCheckbox');
       const gp2HalfCountInput = document.getElementById('gp2HalfCount');
       const gp2HalfPositionSelect = document.getElementById('gp2HalfPosition');
@@ -453,6 +454,11 @@ const MultiScreenManager = {
       }
       if (gp2HalfCountInput) gp2HalfCountInput.value = config.gp2HalfCount || 1;
       if (gp2HalfPositionSelect) gp2HalfPositionSelect.value = config.gp2HalfPosition || 'bottom';
+
+      // Re-generate the wall now that GP2 Half settings are correctly in the DOM
+      if (config.gp2HalfEnabled && typeof updateWall === 'function') {
+        updateWall();
+      }
 
       // Power distro type (re-apply in case change event reset it)
       if (powerDistroTypeEl) powerDistroTypeEl.value = config.powerDistroType;
