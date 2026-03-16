@@ -116,53 +116,62 @@ const ExportManager = {
     // Initialize sort order counter
     let sortOrder = 1;
 
-    // Create order map for consistent equipment ordering
-    const equipmentOrderMap = {};
-    let orderIndex = 0;
-
     // Check if in multiple screen mode
     const multipleScreens = window.multiScreenInitialized &&
       document.getElementById('multipleScreenManagementCheckbox')?.checked &&
       window.screenConfigurations &&
       window.screenConfigurations.length > 1;
 
-    // Build order map from first screen
-    if (multipleScreens && window.screenConfigurations.length > 0) {
-      const firstScreenEquipment = this.getEquipmentForScreen(window.screenConfigurations[0]);
-      firstScreenEquipment.forEach(item => {
-        const key = `${item.ecode}|${item.name}`;
-        if (!(key in equipmentOrderMap)) {
-          equipmentOrderMap[key] = orderIndex++;
-        }
-      });
-    }
-
     if (multipleScreens) {
       try {
+        // Fetch equipment for every screen once, reuse for both per-screen rows and combined totals
+        const allScreenEquipment = window.screenConfigurations.map(config =>
+          this.getEquipmentForScreen(config)
+        );
+
         // Export equipment for each screen separately
-        window.screenConfigurations.forEach((config, index) => {
-          // Add header row for this screen
+        allScreenEquipment.forEach((screenEquipment, index) => {
           data.push(['', '', '', '', `===== EQUIPMENT FOR SCREEN ${index + 1} =====`, sortOrder++]);
 
-          // Get equipment for this screen
-          const screenEquipment = this.getEquipmentForScreen(config);
-
-          // Add each equipment item
           screenEquipment.forEach(item => {
             if (item.quantity > 0) {
               const ecodes = item.ecode || '';
-              const equipmentName = item.name || '';
               const qtyOrdered = typeof item.quantity === 'number' ?
                 item.quantity.toString() :
                 Number(item.quantity).toString();
-
-              data.push([ecodes, ecodes, ecodes, qtyOrdered, equipmentName, sortOrder++]);
+              data.push([ecodes, ecodes, ecodes, qtyOrdered, item.name || '', sortOrder++]);
             }
           });
 
-          // Add spacing between screens
-          if (index < window.screenConfigurations.length - 1) {
+          if (index < allScreenEquipment.length - 1) {
             data.push(['', '', '', '', '', sortOrder++]);
+          }
+        });
+
+        // Build combined totals using the same positional-merge order as the web page:
+        // new items from later screens are inserted right after their preceding neighbor.
+        const combinedEquipment = {};
+        const combinedEquipmentOrder = []; // ordered list of keys, same as web page
+
+        allScreenEquipment.forEach(screenEquipment => {
+          const screenKeys = [];
+          for (const item of screenEquipment) {
+            if (item.quantity > 0) {
+              const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
+              screenKeys.push(key);
+
+              if (!combinedEquipment[key]) {
+                combinedEquipment[key] = { ecode: item.ecode, name: item.name, quantity: 0 };
+                // Insert at the position right after the last known preceding neighbor
+                let insertIdx = combinedEquipmentOrder.length;
+                for (let i = screenKeys.length - 2; i >= 0; i--) {
+                  const prevPos = combinedEquipmentOrder.indexOf(screenKeys[i]);
+                  if (prevPos !== -1) { insertIdx = prevPos + 1; break; }
+                }
+                combinedEquipmentOrder.splice(insertIdx, 0, key);
+              }
+              combinedEquipment[key].quantity = Number(combinedEquipment[key].quantity) + Number(item.quantity);
+            }
           }
         });
 
@@ -171,43 +180,11 @@ const ExportManager = {
         const modeLabel = window.screenCombineMode === 'single' ? 'SINGLE ROOM' : 'INDIVIDUAL ROOMS';
         data.push(['', '', '', '', `===== COMBINED EQUIPMENT TOTALS (${modeLabel}) =====`, sortOrder++]);
 
-        // Create map to combine quantities
-        const combinedEquipment = {};
-
-        // Loop through all screens and combine equipment
-        window.screenConfigurations.forEach(config => {
-          const screenEquipment = this.getEquipmentForScreen(config);
-          screenEquipment.forEach(item => {
-            const qty = Number(item.quantity);
-            if (qty > 0) {
-              const key = `${item.ecode.trim()}|${item.name.trim()}`;
-              if (!combinedEquipment[key]) {
-                combinedEquipment[key] = {
-                  ecode: item.ecode,
-                  name: item.name,
-                  quantity: 0,
-                  order: key in equipmentOrderMap ? equipmentOrderMap[key] : 999999
-                };
-              }
-              combinedEquipment[key].quantity = Number(combinedEquipment[key].quantity) + qty;
-            }
-          });
-        });
-
-        // Validate quantities are numbers
-        Object.values(combinedEquipment).forEach(item => {
-          if (typeof item.quantity !== 'number' || isNaN(item.quantity)) {
-            console.warn(`Found non-numeric quantity for ${item.name}: ${item.quantity}`);
-            item.quantity = 0;
-          }
-        });
-
         // If Single Room mode, replace processing/distro/cables with recalculated values
         const isSingleRoom = window.screenCombineMode === 'single';
         if (isSingleRoom && typeof window.calculateSingleRoomEquipment === 'function') {
           const singleRoomData = window.calculateSingleRoomEquipment();
 
-          // Remove existing processing/distro/cable items from combined equipment
           const recalcEcodes = new Set([
             'SX40', 'XD10', 'S8', 'MX40PRO',
             'CUBEDIST', 'TP1', 'L2130T1FB', 'SOCA6XTRU1', 'TXT32SOCA',
@@ -215,45 +192,32 @@ const ExportManager = {
             'T1025', 'T1003', 'EDT110M', 'TXT32ED6', 'TXT32T125'
           ]);
 
-          Object.keys(combinedEquipment).forEach(key => {
-            if (recalcEcodes.has(combinedEquipment[key].ecode)) {
+          // Remove recalculated items from the positional order list and map
+          for (let i = combinedEquipmentOrder.length - 1; i >= 0; i--) {
+            const key = combinedEquipmentOrder[i];
+            if (recalcEcodes.has(combinedEquipment[key]?.ecode)) {
+              combinedEquipmentOrder.splice(i, 1);
               delete combinedEquipment[key];
             }
-          });
+          }
 
-          // Add recalculated items
+          // Append recalculated items at the end (processing/distro/cables go last)
           singleRoomData.recalcItems.forEach(item => {
             if (item.quantity > 0) {
               const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
-              combinedEquipment[key] = {
-                ecode: item.ecode,
-                name: item.name,
-                quantity: item.quantity,
-                order: key in equipmentOrderMap ? equipmentOrderMap[key] : 999999
-              };
+              combinedEquipment[key] = { ecode: item.ecode, name: item.name, quantity: item.quantity };
+              if (!combinedEquipmentOrder.includes(key)) combinedEquipmentOrder.push(key);
             }
           });
         }
 
-        // Sort combined equipment by original order
-        const consolidatedEquipment = Object.values(combinedEquipment);
-        consolidatedEquipment.sort((a, b) => a.order - b.order);
-
-        // Add combined equipment to data
-        consolidatedEquipment.forEach(item => {
+        // Emit combined rows in web-page order
+        combinedEquipmentOrder.forEach(key => {
+          const item = combinedEquipment[key];
+          if (!item || item.quantity <= 0 || isNaN(item.quantity)) return;
           const ecodes = item.ecode || '';
-          const equipmentName = item.name || '';
-          const qtyOrdered = typeof item.quantity === 'number' ?
-            item.quantity.toString() :
-            Number(item.quantity).toString();
-
-          // Skip invalid quantities
-          if (item.quantity <= 0 || isNaN(item.quantity)) {
-            console.warn(`Skipping item with invalid quantity: ${equipmentName}, quantity: ${item.quantity}`);
-            return;
-          }
-
-          data.push([ecodes, ecodes, ecodes, qtyOrdered, equipmentName, sortOrder++]);
+          const qtyOrdered = Number(item.quantity).toString();
+          data.push([ecodes, ecodes, ecodes, qtyOrdered, item.name || '', sortOrder++]);
         });
 
         // Add performance totals for the combined system
