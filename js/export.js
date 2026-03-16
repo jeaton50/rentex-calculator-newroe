@@ -17,8 +17,20 @@ const ExportManager = {
   getEquipmentForScreen(config) {
     if (!config) return [];
 
-    // Calculate totals for this screen
-    const totalBlocks = config.blocksHor * config.blocksVer;
+    // Mirror generateWall()'s GP2 Half detection logic:
+    // Fractional blocksVer (e.g. 5.5) means auto half-rows; manual checkbox is additive.
+    const blocksVerRaw = parseFloat(config.blocksVer) || 0;
+    const blocksVerWhole = Math.floor(blocksVerRaw);
+    const hasFractional = config.productType === 'ROEGP26Full' && (blocksVerRaw % 1) !== 0;
+    const gp2HalfAutoRows = hasFractional ? Math.round((blocksVerRaw % 1) * 2) : 0;
+    const gp2HalfManualRows = (config.gp2HalfEnabled && config.productType === 'ROEGP26Full')
+      ? (config.gp2HalfCount || 1) : 0;
+    const gp2HalfRows = gp2HalfAutoRows + gp2HalfManualRows;
+    const gp2HalfBottomRow = gp2HalfRows > 0;
+    const gp2HalfPosition = config.gp2HalfPosition || 'bottom';
+
+    // totalBlocks must use whole-number rows only (half tiles are tracked separately)
+    const totalBlocks = config.blocksHor * blocksVerWhole;
     const sparePercentage = config.productType === 'theatrixx' ? 10 : 8;
     const spareFactor = config.productType === 'theatrixx' ? 2 : 1.5;
 
@@ -39,7 +51,7 @@ const ExportManager = {
     const requestData = {
       productType: config.productType,
       blocksHor: config.blocksHor,
-      blocksVer: config.blocksVer,
+      blocksVer: blocksVerWhole,
       totalBlocks,
       totalSpares,
       totalBlocksWithSpares,
@@ -50,10 +62,10 @@ const ExportManager = {
       voltage: (config.powerDistroType == '110') ? 110 : 208,
       wallType: config.wallType,
       powerDistro: config.powerDistroType,
-      gp2HalfBottomRow: config.gp2HalfEnabled || false,
-      gp2HalfRows: config.gp2HalfEnabled ? (config.gp2HalfCount || 1) : 0,
-      gp2HalfPosition: config.gp2HalfPosition || 'bottom',
-      gp2FullVerticalBlocks: config.blocksVer
+      gp2HalfBottomRow,
+      gp2HalfRows,
+      gp2HalfPosition,
+      gp2FullVerticalBlocks: blocksVerWhole
     };
 
     // Use equipment collector to gather items
