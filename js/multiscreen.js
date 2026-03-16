@@ -318,7 +318,7 @@ const MultiScreenManager = {
 
       config.productType = document.getElementById('productType')?.value || 'absen';
       config.blocksHor = parseInt(document.getElementById('blocksHor')?.value || 0, 10);
-      config.blocksVer = parseInt(document.getElementById('blocksVer')?.value || 0, 10);
+      config.blocksVer = parseFloat(document.getElementById('blocksVer')?.value || 0);
 
       const inputTypeRadio = document.querySelector('input[name="inputType"]:checked');
       config.inputType = inputTypeRadio ? inputTypeRadio.value : 'blocks';
@@ -455,8 +455,10 @@ const MultiScreenManager = {
       if (gp2HalfCountInput) gp2HalfCountInput.value = config.gp2HalfCount || 1;
       if (gp2HalfPositionSelect) gp2HalfPositionSelect.value = config.gp2HalfPosition || 'bottom';
 
-      // Re-generate the wall now that GP2 Half settings are correctly in the DOM
-      if (config.gp2HalfEnabled && typeof generateWall === 'function') {
+      // Re-generate the wall now that all settings (including GP2 Half) are correctly in the DOM.
+      // The productType change event fired generateWall() before GP2 Half / fractional blocksVer
+      // were restored, so we must run it again to get the correct equipment list.
+      if (typeof generateWall === 'function') {
         generateWall();
       }
 
