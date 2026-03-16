@@ -771,7 +771,11 @@ window.generateAllEquipment = function () {
     let voltage = (config.powerDistroType == "110") ? 110 : 208;
     let amps, watts;
 
-    if (productType === "absen") {
+    if (typeof EquipmentCalculator !== 'undefined' && EquipmentCalculator.calculatePower) {
+      const power = EquipmentCalculator.calculatePower(productType, totalBlocks, voltage, config);
+      amps = power.amps || 0;
+      watts = power.watts || 0;
+    } else if (productType === "absen") {
       amps = (voltage == 110) ? totalBlocks * 0.59 : totalBlocks * 0.312;
       watts = totalBlocks * 192;
     } else if (productType === "BP2B1" || productType === "BP2B2" || productType === "BP2V2") {
@@ -780,6 +784,12 @@ window.generateAllEquipment = function () {
     } else if (productType === "theatrixx") {
       amps = (voltage == 110) ? totalBlocks * 1.63636 : (totalBlocks * 865.38461) / 1000;
       watts = totalBlocks * 190;
+    } else if (productType === "ROEGP26Full") {
+      watts = totalBlocks * 320;
+      amps = voltage ? watts / voltage : 0;
+    } else if (productType === "ROEGP26Half") {
+      watts = totalBlocks * 160;
+      amps = voltage ? watts / voltage : 0;
     } else {
       amps = 0;
       watts = 0;
