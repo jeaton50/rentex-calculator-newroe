@@ -2479,6 +2479,129 @@
     document.getElementById('dataLabelP1').addEventListener('input', () => { if (dataManualMode && dataRedundancyMode) renderDataWiring(); });
     document.getElementById('dataLabelP2').addEventListener('input', () => { if (dataManualMode && dataRedundancyMode) renderDataWiring(); });
 
+    // ============================================
+    // SESSION STATE PERSISTENCE
+    // ============================================
+
+    const sessionKey = `techView_${params.productType}_${params.blocksHor}x${params.blocksVer}_${params.powerDistroType}`;
+
+    function saveTechViewState() {
+      const state = {
+        dataZoomLevel, powerZoomLevel,
+        wiringDirection, wiringStartPosition,
+        powerDirection, powerStartPosition,
+        dataManualMode, powerManualMode,
+        dataRedundancyMode, powerRedundancyMode,
+        activeSoca, activePowerSystem, activeL2130,
+        activeDataChainIdx, activeDataChainIdxP2,
+        activeDataProcessor, activePowerProcessor,
+        manualDataChains, manualDataChainsP2,
+        socaPowerChains, socaPowerChainsP2,
+        l2130PowerChains, l2130PowerChainsP2,
+        socaActiveIdxP1, socaActiveIdxP2,
+        l2130ActiveIdxP1, l2130ActiveIdxP2,
+        dataNotes: document.getElementById('dataNotesInput').value,
+        powerNotes: document.getElementById('powerNotesInput').value,
+        dataLabelP1: document.getElementById('dataLabelP1').value,
+        dataLabelP2: document.getElementById('dataLabelP2').value,
+      };
+      sessionStorage.setItem(sessionKey, JSON.stringify(state));
+    }
+
+    function restoreTechViewState() {
+      const raw = sessionStorage.getItem(sessionKey);
+      if (!raw) return;
+      let s;
+      try { s = JSON.parse(raw); } catch (e) { return; }
+
+      dataZoomLevel   = s.dataZoomLevel   ?? 1;
+      powerZoomLevel  = s.powerZoomLevel  ?? 1;
+      if (!isGP2Product) {
+        wiringDirection     = s.wiringDirection     ?? 'horizontal';
+        wiringStartPosition = s.wiringStartPosition ?? 'bottom-left';
+        powerDirection      = s.powerDirection      ?? 'horizontal';
+        powerStartPosition  = s.powerStartPosition  ?? 'bottom-left';
+        document.getElementById('wiringDirection').value     = wiringDirection;
+        document.getElementById('wiringStartPosition').value = wiringStartPosition;
+        document.getElementById('powerDirection').value      = powerDirection;
+        document.getElementById('powerStartPosition').value  = powerStartPosition;
+      }
+
+      // Notes & labels
+      if (s.dataNotes  != null) document.getElementById('dataNotesInput').value  = s.dataNotes;
+      if (s.powerNotes != null) document.getElementById('powerNotesInput').value = s.powerNotes;
+      if (s.dataLabelP1 != null) document.getElementById('dataLabelP1').value = s.dataLabelP1;
+      if (s.dataLabelP2 != null) document.getElementById('dataLabelP2').value = s.dataLabelP2;
+
+      // Manual chains
+      if (s.manualDataChains)   manualDataChains   = s.manualDataChains;
+      if (s.manualDataChainsP2) manualDataChainsP2 = s.manualDataChainsP2;
+      if (s.activeDataChainIdx  != null) activeDataChainIdx   = s.activeDataChainIdx;
+      if (s.activeDataChainIdxP2 != null) activeDataChainIdxP2 = s.activeDataChainIdxP2;
+
+      // Power chains
+      if (s.socaPowerChains)    socaPowerChains    = s.socaPowerChains;
+      if (s.socaPowerChainsP2)  socaPowerChainsP2  = s.socaPowerChainsP2;
+      if (s.l2130PowerChains)   l2130PowerChains   = s.l2130PowerChains;
+      if (s.l2130PowerChainsP2) l2130PowerChainsP2 = s.l2130PowerChainsP2;
+      if (s.socaActiveIdxP1)    socaActiveIdxP1    = s.socaActiveIdxP1;
+      if (s.socaActiveIdxP2)    socaActiveIdxP2    = s.socaActiveIdxP2;
+      if (s.l2130ActiveIdxP1)   l2130ActiveIdxP1   = s.l2130ActiveIdxP1;
+      if (s.l2130ActiveIdxP2)   l2130ActiveIdxP2   = s.l2130ActiveIdxP2;
+
+      // Active selectors
+      if (s.activeSoca != null)         activeSoca         = s.activeSoca;
+      if (s.activePowerSystem != null)  activePowerSystem  = s.activePowerSystem;
+      if (s.activeL2130 != null)        activeL2130        = s.activeL2130;
+      if (s.activeDataProcessor != null)  activeDataProcessor  = s.activeDataProcessor;
+      if (s.activePowerProcessor != null) activePowerProcessor = s.activePowerProcessor;
+
+      // Restore power selector button active states
+      [1, 2, 3, 4].forEach(i =>
+        document.getElementById(`powerSoca${i}Btn`).classList.toggle('active', activePowerSystem === 'soca' && i === activeSoca));
+      ['A', 'B', 'C', 'D'].forEach((l, idx) =>
+        document.getElementById(`powerL2130${l}Btn`).classList.toggle('active', activePowerSystem === 'l2130' && (idx + 1) === activeL2130));
+
+      // Restore data manual mode UI
+      dataManualMode = s.dataManualMode ?? false;
+      if (dataManualMode) {
+        const btn = document.getElementById('dataManualToggle');
+        btn.textContent = 'Disable Manual Wiring';
+        btn.classList.add('active');
+        document.getElementById('dataManualPanel').classList.add('visible');
+        document.getElementById('dataWiringCanvas').classList.add('manual-cursor');
+      }
+
+      // Restore data redundancy UI
+      dataRedundancyMode = s.dataRedundancyMode ?? false;
+      if (dataRedundancyMode) {
+        const btn = document.getElementById('dataRedundancyToggle');
+        btn.classList.add('active');
+        btn.textContent = 'Redundancy On';
+        document.getElementById('dataProcessorSelect').classList.add('visible');
+        document.getElementById('dataRedundancyLabels').classList.add('visible');
+        document.getElementById('dataManualInstruction').innerHTML = 'Redundancy mode: wire <strong>Proc 1 (left half)</strong> and <strong>Proc 2 (right half)</strong> independently. Switch processors using the buttons above.';
+      }
+      document.getElementById('dataP1Btn').classList.toggle('active', activeDataProcessor === 1);
+      document.getElementById('dataP2Btn').classList.toggle('active', activeDataProcessor === 2);
+
+      // Restore power manual mode UI
+      powerManualMode = s.powerManualMode ?? false;
+      if (powerManualMode) {
+        const btn = document.getElementById('powerManualToggle');
+        btn.textContent = 'Disable Manual Wiring';
+        btn.classList.add('active');
+        document.getElementById('powerManualPanel').classList.add('visible');
+        document.getElementById('powerWiringCanvas').classList.add('manual-cursor');
+      }
+
+      powerRedundancyMode = s.powerRedundancyMode ?? false;
+    }
+
+    document.getElementById('backButton').addEventListener('click', saveTechViewState);
+
+    restoreTechViewState();
+
     // Initial render
     renderDataWiring();
     renderPowerWiring();
