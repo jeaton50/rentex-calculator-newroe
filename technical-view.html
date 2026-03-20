@@ -586,11 +586,6 @@
           <button type="button" class="manual-btn new-port" id="powerNewPort">New Power</button>
           <button type="button" class="manual-btn undo" id="powerUndoTile">Undo Last Tile</button>
           <button type="button" class="manual-btn clear" id="powerClearManual">Clear All</button>
-          <button type="button" class="manual-btn redundancy-btn" id="powerRedundancyToggle">Redundancy Mode</button>
-          <div class="processor-select" id="powerProcessorSelect">
-            <button type="button" class="proc-btn p1 active" id="powerP1Btn">Proc 1 (Left Half)</button>
-            <button type="button" class="proc-btn p2" id="powerP2Btn">Proc 2 (Right Half)</button>
-          </div>
           <div class="soca-select" id="powerSocaSelect">
             <span class="soca-label">SOCA:</span>
             <button type="button" class="soca-btn s1 active" id="powerSoca1Btn">SOCA A</button>
@@ -606,10 +601,6 @@
         <canvas id="powerWiringCanvas"></canvas>
       </div>
 
-      <div class="redundancy-labels" id="powerRedundancyLabels">
-        <input type="text" class="half-label-input p1" id="powerLabelP1" placeholder="Processor 1 name..." maxlength="40" />
-        <input type="text" class="half-label-input p2" id="powerLabelP2" placeholder="Processor 2 name..." maxlength="40" />
-      </div>
 
       <div class="zoom-controls">
         <button type="button" class="zoom-button" id="powerZoomOutButton">Zoom Out</button>
@@ -1242,10 +1233,9 @@
             params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
             params.gp2HalfManualPosition, params.gp2FullVerticalBlocks,
             getFlatPowerChains(socaPowerChains), getFlatActiveIdx(socaPowerChains, socaActiveIdxP1),
-            powerRedundancyMode, activePowerProcessor,
+            false, 1,
             getFlatPowerChains(socaPowerChainsP2), getFlatActiveIdx(socaPowerChainsP2, socaActiveIdxP2),
-            document.getElementById('powerLabelP1').value.trim() || 'Processor 1',
-            document.getElementById('powerLabelP2').value.trim() || 'Processor 2',
+            'Processor 1', 'Processor 2',
             true /* isExport */);
         } else {
           drawWiringDiagram(targetCanvas, params.blocksHor, params.blocksVer, exportZoom, powerChainLimit,
@@ -1544,6 +1534,15 @@
     // Redundancy state
     let dataRedundancyMode  = false;
     let powerRedundancyMode = false;
+
+    // Draggable power label state
+    // Stores per-chain position offsets (dx, dy) in canvas pixels relative to the default position.
+    // Key: `${soca}-${portNumber}`
+    const powerLabelOffsets = {};
+    // Hit areas rebuilt each render: [{key, canvasX, canvasY}]
+    let powerLabelHitAreas = [];
+    let draggingPowerLabel = null; // {key, startMouseX, startMouseY, startDx, startDy}
+    let powerLabelDragMoved = false; // suppress tile-click when a drag occurred
     let activeDataProcessor  = 1;   // 1 = left half, 2 = right half
     let activePowerProcessor = 1;
     let manualDataChainsP2  = [{ portNumber: 1, tiles: [] }];
@@ -1801,7 +1800,7 @@
         ctx.arc(ep.x, ep.y, isActive ? 10 : 8, 0, Math.PI * 2);
         ctx.fill(); ctx.stroke();
 
-        // Port label: power circuits go in the left margin, data stays on first tile
+        // Port label: power circuits go in the left margin (draggable), data stays on first tile
         const sp = pts[0];
         const labelText = isDashed
           ? `Soca-${socaLetters[chain.soca] || chain.soca}-${chain.portNumber}`
@@ -1813,9 +1812,24 @@
         ctx.fillStyle = color;
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 3;
-        const labelX = isDashed ? -(labelMargin / 2) : sp.x;
-        ctx.strokeText(labelText, labelX, sp.y);
-        ctx.fillText(labelText, labelX, sp.y);
+        if (isDashed) {
+          // Power labels are draggable — apply stored offset from default position
+          const chainKey = `${chain.soca}-${chain.portNumber}`;
+          if (!powerLabelOffsets[chainKey]) powerLabelOffsets[chainKey] = { dx: 0, dy: 0 };
+          const off = powerLabelOffsets[chainKey];
+          const defaultLabelX = -(labelMargin / 2);
+          const labelX = defaultLabelX + off.dx;
+          const labelY = sp.y + off.dy;
+          ctx.strokeText(labelText, labelX, labelY);
+          ctx.fillText(labelText, labelX, labelY);
+          // Record canvas-coordinate hit area (labelMargin is the ctx.translate offset)
+          if (!isExport) {
+            powerLabelHitAreas.push({ key: chainKey, canvasX: labelMargin + labelX, canvasY: labelY });
+          }
+        } else {
+          ctx.strokeText(labelText, sp.x, sp.y);
+          ctx.fillText(labelText, sp.x, sp.y);
+        }
 
         // Tile labels on active chain
         if (isActive) {
@@ -2037,16 +2051,16 @@
 
     renderPowerWiring = function() {
       if (powerManualMode) {
+        powerLabelHitAreas = []; // reset before each render so stale areas don't persist
         const canvas = document.getElementById('powerWiringCanvas');
         drawManualWiringDiagram(canvas, params.blocksHor, params.blocksVer, powerZoomLevel,
           powerChainColors, true,
           params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
           params.gp2HalfManualPosition, params.gp2FullVerticalBlocks,
           getFlatPowerChains(socaPowerChains), getFlatActiveIdx(socaPowerChains, socaActiveIdxP1),
-          powerRedundancyMode, activePowerProcessor,
+          false, 1,
           getFlatPowerChains(socaPowerChainsP2), getFlatActiveIdx(socaPowerChainsP2, socaActiveIdxP2),
-          document.getElementById('powerLabelP1').value.trim() || 'Processor 1',
-          document.getElementById('powerLabelP2').value.trim() || 'Processor 2');
+          'Processor 1', 'Processor 2');
         document.getElementById('powerZoomLevel').textContent = `Zoom: ${powerZoomLevel}`;
         updatePowerManualStatus();
       } else {
@@ -2125,7 +2139,73 @@
     }
 
     document.getElementById('dataWiringCanvas').addEventListener('click', handleDataCanvasClick);
-    document.getElementById('powerWiringCanvas').addEventListener('click', handlePowerCanvasClick);
+    document.getElementById('powerWiringCanvas').addEventListener('click', (e) => {
+      // Suppress tile-click if the mousedown-to-mouseup moved (i.e. was a drag)
+      if (powerLabelDragMoved) { powerLabelDragMoved = false; return; }
+      handlePowerCanvasClick(e);
+    });
+
+    // Draggable power labels — mousedown starts a drag if cursor is over a label
+    (function() {
+      const pwCanvas = document.getElementById('powerWiringCanvas');
+
+      function canvasCoords(e) {
+        const rect = pwCanvas.getBoundingClientRect();
+        return {
+          x: (e.clientX - rect.left) * (pwCanvas.width / rect.width),
+          y: (e.clientY - rect.top)  * (pwCanvas.height / rect.height)
+        };
+      }
+
+      pwCanvas.addEventListener('mousedown', (e) => {
+        if (!powerManualMode || powerLabelHitAreas.length === 0) return;
+        const { x: mx, y: my } = canvasCoords(e);
+        const hitRadius = 32;
+        for (const area of powerLabelHitAreas) {
+          const dx = mx - area.canvasX, dy = my - area.canvasY;
+          if (Math.sqrt(dx * dx + dy * dy) <= hitRadius) {
+            if (!powerLabelOffsets[area.key]) powerLabelOffsets[area.key] = { dx: 0, dy: 0 };
+            draggingPowerLabel = {
+              key: area.key,
+              startMouseX: mx, startMouseY: my,
+              startDx: powerLabelOffsets[area.key].dx,
+              startDy: powerLabelOffsets[area.key].dy
+            };
+            powerLabelDragMoved = false;
+            e.preventDefault();
+            return;
+          }
+        }
+      });
+
+      pwCanvas.addEventListener('mousemove', (e) => {
+        const { x: mx, y: my } = canvasCoords(e);
+        if (draggingPowerLabel) {
+          const moved = Math.abs(mx - draggingPowerLabel.startMouseX) > 3 ||
+                        Math.abs(my - draggingPowerLabel.startMouseY) > 3;
+          if (moved) {
+            powerLabelDragMoved = true;
+            powerLabelOffsets[draggingPowerLabel.key] = {
+              dx: draggingPowerLabel.startDx + (mx - draggingPowerLabel.startMouseX),
+              dy: draggingPowerLabel.startDy + (my - draggingPowerLabel.startMouseY)
+            };
+            renderPowerWiring();
+          }
+          return;
+        }
+        // Change cursor when hovering over a draggable label
+        const hitRadius = 32;
+        let overLabel = false;
+        for (const area of powerLabelHitAreas) {
+          const dx = mx - area.canvasX, dy = my - area.canvasY;
+          if (Math.sqrt(dx * dx + dy * dy) <= hitRadius) { overLabel = true; break; }
+        }
+        pwCanvas.style.cursor = overLabel ? 'grab' : '';
+      });
+
+      pwCanvas.addEventListener('mouseup',    () => { draggingPowerLabel = null; pwCanvas.style.cursor = ''; });
+      pwCanvas.addEventListener('mouseleave', () => { draggingPowerLabel = null; pwCanvas.style.cursor = ''; });
+    })();
 
     // Toggle buttons
     document.getElementById('dataManualToggle').addEventListener('click', () => {
@@ -2258,28 +2338,6 @@
       renderDataWiring();
     });
 
-    // Redundancy toggle — Power
-    document.getElementById('powerRedundancyToggle').addEventListener('click', () => {
-      powerRedundancyMode = !powerRedundancyMode;
-      const btn = document.getElementById('powerRedundancyToggle');
-      const sel = document.getElementById('powerProcessorSelect');
-      const instr = document.getElementById('powerManualInstruction');
-      const labelRow = document.getElementById('powerRedundancyLabels');
-      if (powerRedundancyMode) {
-        btn.classList.add('active');
-        btn.textContent = 'Redundancy On';
-        sel.classList.add('visible');
-        labelRow.classList.add('visible');
-        instr.innerHTML = 'Redundancy mode: wire <strong>Proc 1 (left half)</strong> and <strong>Proc 2 (right half)</strong> independently. Switch processors using the buttons above.';
-      } else {
-        btn.classList.remove('active');
-        btn.textContent = 'Redundancy Mode';
-        sel.classList.remove('visible');
-        labelRow.classList.remove('visible');
-        instr.innerHTML = 'Click panels on the diagram to add them to the current power circuit. Click an already-selected panel to remove it. Use <strong>New Power</strong> to finish the current circuit and start the next one.';
-      }
-      renderPowerWiring();
-    });
 
     // Processor selectors — Data
     document.getElementById('dataP1Btn').addEventListener('click', () => {
@@ -2295,19 +2353,6 @@
       renderDataWiring();
     });
 
-    // Processor selectors — Power
-    document.getElementById('powerP1Btn').addEventListener('click', () => {
-      activePowerProcessor = 1;
-      document.getElementById('powerP1Btn').classList.add('active');
-      document.getElementById('powerP2Btn').classList.remove('active');
-      renderPowerWiring();
-    });
-    document.getElementById('powerP2Btn').addEventListener('click', () => {
-      activePowerProcessor = 2;
-      document.getElementById('powerP2Btn').classList.add('active');
-      document.getElementById('powerP1Btn').classList.remove('active');
-      renderPowerWiring();
-    });
 
     // SOCA selectors — Power
     [1, 2, 3, 4].forEach(n => {
@@ -2327,8 +2372,6 @@
     // Re-render canvas when redundancy labels are edited
     document.getElementById('dataLabelP1').addEventListener('input', () => { if (dataManualMode && dataRedundancyMode) renderDataWiring(); });
     document.getElementById('dataLabelP2').addEventListener('input', () => { if (dataManualMode && dataRedundancyMode) renderDataWiring(); });
-    document.getElementById('powerLabelP1').addEventListener('input', () => { if (powerManualMode && powerRedundancyMode) renderPowerWiring(); });
-    document.getElementById('powerLabelP2').addEventListener('input', () => { if (powerManualMode && powerRedundancyMode) renderPowerWiring(); });
 
     // Initial render
     renderDataWiring();
