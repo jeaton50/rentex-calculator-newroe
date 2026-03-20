@@ -1117,22 +1117,31 @@
         ctx.arc(ep.x, ep.y, 8, 0, Math.PI * 2);
         ctx.fill(); ctx.stroke();
 
-        // Port label: power-system mode places it below the first tile; data places it on tile center
+        // Port label: power-system mode — bottom row goes below in margin, other rows stay inside their row
         const sp = pts[0];
         const fontSize = Math.max(11, blockSize / 4);
         ctx.fillStyle = chain.color;
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 3;
         if (powerSystemConfig) {
-          // Label below the bottom edge of the circuit's first tile
-          const firstTileRowY = calculateRowY(chain.tiles[0].row);
-          const firstTileRH   = getRowHeight(chain.tiles[0].row);
+          const firstRow    = chain.tiles[0].row;
+          const isBottomRow = firstRow === blocksVer - 1;
+          const firstTileRowY = calculateRowY(firstRow);
+          const firstTileRH   = getRowHeight(firstRow);
           const labelFontSize = Math.max(9, blockSize / 4.5);
           ctx.font = `bold ${labelFontSize}px Arial`;
           ctx.textAlign = 'center';
-          ctx.textBaseline = 'top';
-          ctx.strokeText(chain.label, sp.x, firstTileRowY + firstTileRH + 2);
-          ctx.fillText(chain.label,   sp.x, firstTileRowY + firstTileRH + 2);
+          if (isBottomRow) {
+            // Below the grid row (in the extra bottom margin)
+            ctx.textBaseline = 'top';
+            ctx.strokeText(chain.label, sp.x, firstTileRowY + firstTileRH + 2);
+            ctx.fillText(chain.label,   sp.x, firstTileRowY + firstTileRH + 2);
+          } else {
+            // Inside the tile row, flush with its bottom edge (won't intrude into the row below)
+            ctx.textBaseline = 'bottom';
+            ctx.strokeText(chain.label, sp.x, firstTileRowY + firstTileRH - 2);
+            ctx.fillText(chain.label,   sp.x, firstTileRowY + firstTileRH - 2);
+          }
         } else if (isDashed) {
           ctx.font = `bold ${fontSize}px Arial`;
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
