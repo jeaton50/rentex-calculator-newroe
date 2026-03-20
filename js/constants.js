@@ -172,9 +172,10 @@ const EQUIPMENT = {
   // ROE GP2 Graphite
   GP2BASE1: { code: 'GP2BASE1', name: 'ROE Graphite GP base bar, 1W', weight: 0, image: 'GP2BASE1.png' },
   GP2BASE2: { code: 'GP2BASE2', name: 'ROE Graphite GP base bar, 2W, V1.5', weight: 0, image: 'GP2BASE2.png' },
-  GP2HEAD1ROE: { code: 'GP2HEAD1ROE', name: 'ROE Graphite GP hanging bar, 1W, clamp and shackle', weight: 0, image: 'GP2HEAD1ROE.png' },
-  GP2HEAD2ROE: { code: 'GP2HEAD2ROE', name: 'ROE Graphite GP hanging bar, 2W, clamp and shackle', weight: 0, image: 'GP2HEAD2ROE.png' },
+  GP2HEAD1: { code: 'GP2HEAD1ROE', name: 'ROE Graphite GP hanging bar, 1W, clamp and shackle', weight: 0, image: 'GP2HEAD1.png' },
+  GP2HEAD2: { code: 'GP2HEAD2ROE', name: 'ROE Graphite GP hanging bar, 2W, clamp and shackle', weight: 0, image: 'GP2HEAD2.png' },
   ROEGP26FULL: { code: 'ROEGP26FULL', name: 'ROE GP2.6 Full LED tile 500x1000mm', weight: 0, image: 'ROEGP26FULL.png' },
+  ROEGP26HALF: { code: 'ROEGP26HALF', name: 'ROE GP2.6 Half LED tile 500x500mm', weight: 0, image: 'ROEGP26HALF.png' },
 
   // Theatrixx
   TX_NOMAD26: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm', weight: 24, image: 'TXNOMAD26.png' },
