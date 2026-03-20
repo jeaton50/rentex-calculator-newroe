@@ -584,6 +584,22 @@
         <div class="controls-row">
           <button type="button" class="manual-toggle-btn" id="powerManualToggle">Enable Manual Wiring</button>
         </div>
+        <div class="soca-select" id="powerSocaSelect" style="margin:6px 0 2px;">
+          <span class="soca-label">SOCA:</span>
+          <button type="button" class="soca-btn s1 active" id="powerSoca1Btn">SOCA A</button>
+          <button type="button" class="soca-btn s2" id="powerSoca2Btn">SOCA B</button>
+          <button type="button" class="soca-btn s3" id="powerSoca3Btn">SOCA C</button>
+          <button type="button" class="soca-btn s4" id="powerSoca4Btn">SOCA D</button>
+          <span class="soca-label" style="margin-left:8px;color:#555;font-weight:normal;">True1 X6 out Soca Fanout</span>
+        </div>
+        <div class="soca-select" id="powerL2130Select" style="margin-bottom:6px;">
+          <span class="soca-label">L2130:</span>
+          <button type="button" class="soca-btn l1" id="powerL2130ABtn">L2130 A</button>
+          <button type="button" class="soca-btn l2" id="powerL2130BBtn">L2130 B</button>
+          <button type="button" class="soca-btn l3" id="powerL2130CBtn">L2130 C</button>
+          <button type="button" class="soca-btn l4" id="powerL2130DBtn">L2130 D</button>
+          <span class="soca-label" style="margin-left:8px;color:#555;font-weight:normal;">True1 X3 L2130 Floor Box with pass through</span>
+        </div>
         <div class="manual-mode-panel" id="powerManualPanel">
           <span class="port-status">
             Power <span id="powerPortNum">1</span> &mdash;
@@ -594,22 +610,6 @@
           <button type="button" class="manual-btn new-port" id="powerNewPort">New Power</button>
           <button type="button" class="manual-btn undo" id="powerUndoTile">Undo Last Tile</button>
           <button type="button" class="manual-btn clear" id="powerClearManual">Clear All</button>
-          <div class="soca-select" id="powerSocaSelect">
-            <span class="soca-label">SOCA:</span>
-            <button type="button" class="soca-btn s1 active" id="powerSoca1Btn">SOCA A</button>
-            <button type="button" class="soca-btn s2" id="powerSoca2Btn">SOCA B</button>
-            <button type="button" class="soca-btn s3" id="powerSoca3Btn">SOCA C</button>
-            <button type="button" class="soca-btn s4" id="powerSoca4Btn">SOCA D</button>
-            <span class="soca-label" style="margin-left:8px;color:#555;font-weight:normal;">True1 X6 out Soca Fanout</span>
-          </div>
-          <div class="soca-select" id="powerL2130Select">
-            <span class="soca-label">L2130:</span>
-            <button type="button" class="soca-btn l1" id="powerL2130ABtn">L2130 A</button>
-            <button type="button" class="soca-btn l2" id="powerL2130BBtn">L2130 B</button>
-            <button type="button" class="soca-btn l3" id="powerL2130CBtn">L2130 C</button>
-            <button type="button" class="soca-btn l4" id="powerL2130DBtn">L2130 D</button>
-            <span class="soca-label" style="margin-left:8px;color:#555;font-weight:normal;">True1 X3 L2130 Floor Box with pass through</span>
-          </div>
           <span class="chain-limit-warning" id="powerL2130CircuitWarning" style="display:none">Max 3 circuits per L2130</span>
           <p class="manual-instruction" id="powerManualInstruction">Click panels on the diagram to add them to the current power circuit. Click an already-selected panel to remove it. Use <strong>New Power</strong> to finish the current circuit and start the next one.</p>
         </div>
@@ -936,7 +936,8 @@
     }
 
     // Draw wiring diagram on canvas
-    function drawWiringDiagram(canvas, blocksHor, blocksVer, zoomLevel, chainLimit, colors, direction, startPosition, isDashed = false, productType = 'absen', gp2HalfAutoRows = 0, gp2HalfManualRows = 0, gp2HalfManualPosition = 'bottom', gp2FullVerticalBlocks = 0) {
+    // powerSystemConfig (optional, for power/dashed): { type, systemName, startBox, boxLetters, boxColors, maxCircuitsPerBox }
+    function drawWiringDiagram(canvas, blocksHor, blocksVer, zoomLevel, chainLimit, colors, direction, startPosition, isDashed = false, productType = 'absen', gp2HalfAutoRows = 0, gp2HalfManualRows = 0, gp2HalfManualPosition = 'bottom', gp2FullVerticalBlocks = 0, powerSystemConfig = null) {
       const ctx = canvas.getContext('2d');
       const blockSize = (baseBlockPixels / 4) * zoomLevel;
 
@@ -986,15 +987,17 @@
       let totalHeight = 0;
       for (let r = 0; r < blocksVer; r++) totalHeight += getRowHeight(r);
 
-      // Left margin for power (dashed) labels, matching manual wiring layout
-      const labelMargin = isDashed ? Math.max(65, Math.round(blockSize * 1.3)) : 0;
+      // Left margin only used for generic dashed (no system config); system labels go below tiles
+      const labelMargin = (isDashed && !powerSystemConfig) ? Math.max(65, Math.round(blockSize * 1.3)) : 0;
       canvas.width  = blocksHor * blockWidth + padding * 2 + labelMargin;
-      canvas.height = totalHeight + padding * 2;
+      // Extra bottom space so per-circuit labels below tiles stay visible
+      const extraBottom = powerSystemConfig ? 28 : 0;
+      canvas.height = totalHeight + padding * 2 + extraBottom;
 
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // --- Phase 1: Collect chains ---
+      // --- Phase 1: Collect chains (track box/circuit for power system) ---
       const tileList = generateTilePath(blocksHor, blocksVer, direction, startPosition);
       const chains = [];
       let tilesInCurrentChain = 0;
@@ -1002,10 +1005,28 @@
       let currentChainTiles = [];
       let currentChainType = null;
       let currentChainLimit = chainLimit;
+      // Power system tracking
+      let psBox = powerSystemConfig ? powerSystemConfig.startBox : 1;
+      let psCircuit = 1;
+      const psMaxCircuits = powerSystemConfig ? powerSystemConfig.maxCircuitsPerBox : Infinity;
 
       function finishChain() {
         if (currentChainTiles.length > 0) {
-          chains.push({ number: chainNumber, color: colors[(chainNumber - 1) % colors.length], tiles: currentChainTiles.slice() });
+          const boxForChain = psBox;
+          const circuitForChain = psCircuit;
+          let chainLabel, chainColor;
+          if (powerSystemConfig) {
+            const letter = powerSystemConfig.boxLetters[boxForChain] || boxForChain;
+            chainLabel = `${powerSystemConfig.systemName}-${letter}-${circuitForChain}`;
+            chainColor = powerSystemConfig.boxColors[boxForChain] || colors[(chainNumber - 1) % colors.length];
+            // Advance to next circuit/box
+            psCircuit++;
+            if (psCircuit > psMaxCircuits) { psCircuit = 1; if (psBox < 4) psBox++; }
+          } else {
+            chainLabel = isDashed ? `C${chainNumber}` : `P${chainNumber}`;
+            chainColor = colors[(chainNumber - 1) % colors.length];
+          }
+          chains.push({ number: chainNumber, label: chainLabel, color: chainColor, box: boxForChain, tiles: currentChainTiles.slice() });
           currentChainTiles = [];
           tilesInCurrentChain = 0;
         }
@@ -1096,25 +1117,35 @@
         ctx.arc(ep.x, ep.y, 8, 0, Math.PI * 2);
         ctx.fill(); ctx.stroke();
 
-        // Port label
+        // Port label: power-system mode places it below the first tile; data places it on tile center
         const sp = pts[0];
-        const labelText = isDashed ? `C${chain.number}` : `P${chain.number}`;
         const fontSize = Math.max(11, blockSize / 4);
-        ctx.font = `bold ${fontSize}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
         ctx.fillStyle = chain.color;
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 3;
-        if (isDashed) {
-          ctx.strokeText(labelText, -(labelMargin / 2), sp.y);
-          ctx.fillText(labelText, -(labelMargin / 2), sp.y);
+        if (powerSystemConfig) {
+          // Label below the bottom edge of the circuit's first tile
+          const firstTileRowY = calculateRowY(chain.tiles[0].row);
+          const firstTileRH   = getRowHeight(chain.tiles[0].row);
+          const labelFontSize = Math.max(9, blockSize / 4.5);
+          ctx.font = `bold ${labelFontSize}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          ctx.strokeText(chain.label, sp.x, firstTileRowY + firstTileRH + 2);
+          ctx.fillText(chain.label,   sp.x, firstTileRowY + firstTileRH + 2);
+        } else if (isDashed) {
+          ctx.font = `bold ${fontSize}px Arial`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.strokeText(chain.label, -(labelMargin / 2), sp.y);
+          ctx.fillText(chain.label,   -(labelMargin / 2), sp.y);
         } else {
-          ctx.strokeText(labelText, sp.x, sp.y);
-          ctx.fillText(labelText, sp.x, sp.y);
+          ctx.font = `bold ${fontSize}px Arial`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.strokeText(chain.label, sp.x, sp.y);
+          ctx.fillText(chain.label,   sp.x, sp.y);
         }
 
-        // Tile number labels (matching completed-chain style in manual wiring)
+        // Tile labels — power-system mode: box letter + index (matching manual SOCA style)
         const numSize = Math.max(16, blockSize / 3);
         ctx.font = `bold ${numSize}px Arial`;
         ctx.fillStyle = chain.color;
@@ -1127,8 +1158,16 @@
           const rh = getRowHeight(t.row);
           const px = padding + t.col * blockWidth + blockWidth / 2;
           const py = ry + rh / 2;
-          ctx.strokeText((idx + 1).toString(), px, py + blockSize * 0.25);
-          ctx.fillText((idx + 1).toString(), px, py + blockSize * 0.25);
+          if (powerSystemConfig) {
+            const boxLetter = powerSystemConfig.boxLetters[chain.box] || chain.box;
+            ctx.strokeText(boxLetter,            px, py - numSize * 0.55);
+            ctx.fillText(boxLetter,              px, py - numSize * 0.55);
+            ctx.strokeText((idx + 1).toString(), px, py + numSize * 0.55);
+            ctx.fillText((idx + 1).toString(),   px, py + numSize * 0.55);
+          } else {
+            ctx.strokeText((idx + 1).toString(), px, py + blockSize * 0.25);
+            ctx.fillText((idx + 1).toString(),   px, py + blockSize * 0.25);
+          }
         });
       });
 
@@ -1144,12 +1183,22 @@
       document.getElementById('dataZoomLevel').textContent = `Zoom: ${dataZoomLevel}`;
     }
 
+    // Build power-system config for auto-wiring labels from current selector state
+    function buildPowerSystemConfig() {
+      if (activePowerSystem === 'l2130') {
+        return { type: 'l2130', systemName: 'L2130', startBox: activeL2130,
+                 boxLetters: l2130Letters, boxColors: l2130Colors, maxCircuitsPerBox: 3 };
+      }
+      return { type: 'soca', systemName: 'Soca', startBox: activeSoca,
+               boxLetters: socaLetters, boxColors: socaColors, maxCircuitsPerBox: 6 };
+    }
+
     // Render power wiring
     function renderPowerWiring() {
       const canvas = document.getElementById('powerWiringCanvas');
       const voltage = parseInt(powerDistroTypeSelect.value);
       const chainLimit = powerTileLimits[params.productType]?.[voltage] || 10;
-      drawWiringDiagram(canvas, params.blocksHor, params.blocksVer, powerZoomLevel, chainLimit, powerChainColors, powerDirection, powerStartPosition, true, params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows, params.gp2HalfManualPosition, params.gp2FullVerticalBlocks);
+      drawWiringDiagram(canvas, params.blocksHor, params.blocksVer, powerZoomLevel, chainLimit, powerChainColors, powerDirection, powerStartPosition, true, params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows, params.gp2HalfManualPosition, params.gp2FullVerticalBlocks, buildPowerSystemConfig());
       document.getElementById('powerZoomLevel').textContent = `Zoom: ${powerZoomLevel}`;
     }
 
@@ -1199,7 +1248,7 @@
           drawWiringDiagram(targetCanvas, params.blocksHor, params.blocksVer, exportZoom, powerChainLimit,
             powerChainColors, powerDirection, powerStartPosition, true,
             params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
-            params.gp2HalfManualPosition, params.gp2FullVerticalBlocks);
+            params.gp2HalfManualPosition, params.gp2FullVerticalBlocks, buildPowerSystemConfig());
         }
       }
     }
