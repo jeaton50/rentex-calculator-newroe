@@ -1809,17 +1809,18 @@
         ctx.font = `bold ${fontSize}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = color;
+        ctx.fillStyle = isDashed ? 'black' : color;
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 3;
         if (isDashed) {
-          // Power labels are draggable — apply stored offset from default position
+          // Power labels are draggable.
+          // Offsets are stored normalized by blockSize so they scale correctly at any zoom/export.
           const chainKey = `${chain.soca}-${chain.portNumber}`;
           if (!powerLabelOffsets[chainKey]) powerLabelOffsets[chainKey] = { dx: 0, dy: 0 };
           const off = powerLabelOffsets[chainKey];
           const defaultLabelX = -(labelMargin / 2);
-          const labelX = defaultLabelX + off.dx;
-          const labelY = sp.y + off.dy;
+          const labelX = defaultLabelX + off.dx * blockSize;
+          const labelY = sp.y + off.dy * blockSize;
           ctx.strokeText(labelText, labelX, labelY);
           ctx.fillText(labelText, labelX, labelY);
           // Record canvas-coordinate hit area (labelMargin is the ctx.translate offset)
@@ -2185,9 +2186,11 @@
                         Math.abs(my - draggingPowerLabel.startMouseY) > 3;
           if (moved) {
             powerLabelDragMoved = true;
+            // Normalize by blockSize at current zoom so offsets scale correctly at export zoom
+            const blockSize = (baseBlockPixels / 4) * powerZoomLevel;
             powerLabelOffsets[draggingPowerLabel.key] = {
-              dx: draggingPowerLabel.startDx + (mx - draggingPowerLabel.startMouseX),
-              dy: draggingPowerLabel.startDy + (my - draggingPowerLabel.startMouseY)
+              dx: draggingPowerLabel.startDx + (mx - draggingPowerLabel.startMouseX) / blockSize,
+              dy: draggingPowerLabel.startDy + (my - draggingPowerLabel.startMouseY) / blockSize
             };
             renderPowerWiring();
           }
