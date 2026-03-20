@@ -940,259 +940,199 @@
       const ctx = canvas.getContext('2d');
       const blockSize = (baseBlockPixels / 4) * zoomLevel;
 
-      // Separate width and height for GP2 Full tiles (500mm × 1000mm)
       let blockWidth = blockSize;
       let blockHeight = blockSize;
 
-      // Check if we have mixed GP2 configuration
       const hasMixedGP2 = productType === 'ROEGP26Full' && (gp2HalfAutoRows > 0 || gp2HalfManualRows > 0);
+      if (productType === 'ROEGP26Full' && !hasMixedGP2) blockHeight = blockSize * 2;
 
-      // GP2 Full tiles are 1000mm tall (2x the width of 500mm)
-      if (productType === 'ROEGP26Full' && !hasMixedGP2) {
-        blockHeight = blockSize * 2;
-      }
+      const halfBlockHeight = blockSize;
+      const fullBlockHeight = blockSize * 2;
 
-      // For mixed GP2, we'll handle heights per-row
-      const halfBlockHeight = blockSize;      // 500mm (GP2 Half)
-      const fullBlockHeight = blockSize * 2;  // 1000mm (GP2 Full)
-
-      // Determine layout for mixed configurations
-      let topHalfRows = 0;
-      let bottomHalfRows = 0;
-
+      let topHalfRows = 0, bottomHalfRows = 0;
       if (hasMixedGP2) {
         if (gp2HalfAutoRows > 0 && gp2HalfManualRows > 0) {
           topHalfRows = gp2HalfAutoRows;
-          if (gp2HalfManualPosition === 'top') {
-            topHalfRows += gp2HalfManualRows;
-          } else {
-            bottomHalfRows = gp2HalfManualRows;
-          }
+          if (gp2HalfManualPosition === 'top') topHalfRows += gp2HalfManualRows;
+          else bottomHalfRows = gp2HalfManualRows;
         } else if (gp2HalfAutoRows > 0) {
           topHalfRows = gp2HalfAutoRows;
         } else if (gp2HalfManualRows > 0) {
-          if (gp2HalfManualPosition === 'top') {
-            topHalfRows = gp2HalfManualRows;
-          } else {
-            bottomHalfRows = gp2HalfManualRows;
-          }
+          if (gp2HalfManualPosition === 'top') topHalfRows = gp2HalfManualRows;
+          else bottomHalfRows = gp2HalfManualRows;
         }
       }
-
       const fullRowsStart = topHalfRows;
       const fullRowsEnd = topHalfRows + gp2FullVerticalBlocks;
 
-      // Function to get tile type for a row
       const getTileTypeForRow = (row) => {
-        if (!hasMixedGP2) {
-          return { type: productType, chainLimit };
-        }
-
-        if (row < fullRowsStart) {
-          return { type: 'ROEGP26Half', chainLimit: 11 };
-        } else if (row >= fullRowsEnd) {
-          return { type: 'ROEGP26Half', chainLimit: 11 };
-        } else {
-          return { type: 'ROEGP26Full', chainLimit: 5 };
-        }
+        if (!hasMixedGP2) return { type: productType, chainLimit };
+        if (row < fullRowsStart || row >= fullRowsEnd) return { type: 'ROEGP26Half', chainLimit: 11 };
+        return { type: 'ROEGP26Full', chainLimit: 5 };
       };
-
-      // Calculate Y position for a row accounting for mixed heights
       const calculateRowY = (row) => {
-        if (!hasMixedGP2) {
-          return padding + row * blockHeight;
-        }
-
-        let accumulatedHeight = padding;
+        if (!hasMixedGP2) return padding + row * blockHeight;
+        let acc = padding;
         for (let r = 0; r < row; r++) {
-          const tileInfo = getTileTypeForRow(r);
-          accumulatedHeight += (tileInfo.type === 'ROEGP26Half') ? halfBlockHeight : fullBlockHeight;
+          acc += getTileTypeForRow(r).type === 'ROEGP26Half' ? halfBlockHeight : fullBlockHeight;
         }
-        return accumulatedHeight;
+        return acc;
       };
-
-      // Calculate row height
       const getRowHeight = (row) => {
-        if (!hasMixedGP2) {
-          return blockHeight;
-        }
-
-        const tileInfo = getTileTypeForRow(row);
-        return (tileInfo.type === 'ROEGP26Half') ? halfBlockHeight : fullBlockHeight;
+        if (!hasMixedGP2) return blockHeight;
+        return getTileTypeForRow(row).type === 'ROEGP26Half' ? halfBlockHeight : fullBlockHeight;
       };
 
-      // Calculate total canvas height
-      let totalHeight;
-      if (hasMixedGP2) {
-        totalHeight = 0;
-        for (let row = 0; row < blocksVer; row++) {
-          totalHeight += getRowHeight(row);
-        }
-      } else {
-        totalHeight = blocksVer * blockHeight;
-      }
+      let totalHeight = 0;
+      for (let r = 0; r < blocksVer; r++) totalHeight += getRowHeight(r);
 
-      // Set canvas size
-      canvas.width = blocksHor * blockWidth + padding * 2;
+      // Left margin for power (dashed) labels, matching manual wiring layout
+      const labelMargin = isDashed ? Math.max(65, Math.round(blockSize * 1.3)) : 0;
+      canvas.width  = blocksHor * blockWidth + padding * 2 + labelMargin;
       canvas.height = totalHeight + padding * 2;
 
-      // Clear and fill background
       ctx.fillStyle = '#fff';
-      ctx.fillRect(padding, padding, blocksHor * blockWidth, totalHeight);
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw grid lines
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 2;
+      // --- Phase 1: Collect chains ---
+      const tileList = generateTilePath(blocksHor, blocksVer, direction, startPosition);
+      const chains = [];
+      let tilesInCurrentChain = 0;
+      let chainNumber = 0;
+      let currentChainTiles = [];
+      let currentChainType = null;
+      let currentChainLimit = chainLimit;
 
-      // Vertical grid lines
-      for (let col = 0; col <= blocksHor; col++) {
-        const x = padding + col * blockWidth;
-        ctx.beginPath();
-        ctx.moveTo(x, padding);
-        ctx.lineTo(x, padding + totalHeight);
-        ctx.stroke();
+      function finishChain() {
+        if (currentChainTiles.length > 0) {
+          chains.push({ number: chainNumber, color: colors[(chainNumber - 1) % colors.length], tiles: currentChainTiles.slice() });
+          currentChainTiles = [];
+          tilesInCurrentChain = 0;
+        }
       }
 
-      // Horizontal grid lines (accounting for different row heights in mixed mode)
-      for (let row = 0; row <= blocksVer; row++) {
-        const y = calculateRowY(row);
+      for (let i = 0; i < tileList.length; i++) {
+        const tile = tileList[i];
+        const tileInfo = getTileTypeForRow(tile.row);
+        const typeChanged = !hasMixedGP2 && currentChainType !== null && currentChainType !== tileInfo.type;
+        if (tilesInCurrentChain === 0 || typeChanged) {
+          if (typeChanged) finishChain();
+          chainNumber++;
+          currentChainType = tileInfo.type;
+          currentChainLimit = hasMixedGP2 ? 5 : tileInfo.chainLimit;
+          tilesInCurrentChain = 0;
+        }
+        currentChainTiles.push(tile);
+        tilesInCurrentChain++;
+        if (tilesInCurrentChain === currentChainLimit || i === tileList.length - 1) finishChain();
+      }
+
+      // Shift all drawing right so the label margin is on the left
+      ctx.save();
+      ctx.translate(labelMargin, 0);
+
+      // --- Phase 2: Tile shading ---
+      chains.forEach(chain => {
+        chain.tiles.forEach(tile => {
+          const rowY = calculateRowY(tile.row);
+          const rh = getRowHeight(tile.row);
+          ctx.fillStyle = chain.color + '28'; // ~16% opacity
+          ctx.fillRect(padding + tile.col * blockWidth + 1, rowY + 1, blockWidth - 2, rh - 2);
+        });
+      });
+
+      // --- Phase 3: Grid lines ---
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([]);
+      for (let c = 0; c <= blocksHor; c++) {
+        ctx.beginPath();
+        ctx.moveTo(padding + c * blockWidth, padding);
+        ctx.lineTo(padding + c * blockWidth, padding + totalHeight);
+        ctx.stroke();
+      }
+      for (let r = 0; r <= blocksVer; r++) {
+        const y = calculateRowY(r);
         ctx.beginPath();
         ctx.moveTo(padding, y);
         ctx.lineTo(padding + blocksHor * blockWidth, y);
         ctx.stroke();
       }
 
-      // Generate tile path
-      const tiles = generateTilePath(blocksHor, blocksVer, direction, startPosition);
-
-      // Draw wiring
-      ctx.lineWidth = 4;
+      // --- Phase 4: Wires, dots, labels, tile numbers ---
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      if (isDashed) ctx.setLineDash([10, 5]);
+      chains.forEach(chain => {
+        if (chain.tiles.length === 0) return;
+        const pts = chain.tiles.map(t => {
+          const ry = calculateRowY(t.row);
+          const rh = getRowHeight(t.row);
+          return { x: padding + t.col * blockWidth + blockWidth / 2, y: ry + rh / 2 };
+        });
 
-      let tilesInCurrentChain = 0;
-      let chainNumber = 0;
-      let chainPath = [];
-      let chainStartX = 0;
-      let chainStartY = 0;
-      let currentChainType = null;
-      let currentChainLimit = chainLimit;
-
-      for (let i = 0; i < tiles.length; i++) {
-        const tile = tiles[i];
-        const tileInfo = getTileTypeForRow(tile.row);
-        const rowY = calculateRowY(tile.row);
-        const rowHeight = getRowHeight(tile.row);
-        const posX = padding + tile.col * blockWidth + blockWidth / 2;
-        const posY = rowY + rowHeight / 2;
-
-        // For GP2 mixed tiles, don't start new chain on type change - allow up to 5 tiles of any type
-        // For other products, check if tile type changed
-        const typeChanged = !hasMixedGP2 && currentChainType !== null && currentChainType !== tileInfo.type;
-
-        if (tilesInCurrentChain === 0 || typeChanged) {
-          // Finish previous chain if type changed
-          if (typeChanged && chainPath.length > 0) {
-            const chainColor = colors[(chainNumber - 1) % colors.length];
-
-            // Draw black outline
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 8;
-            ctx.beginPath();
-            ctx.moveTo(chainPath[0].x, chainPath[0].y);
-            for (let j = 1; j < chainPath.length; j++) {
-              ctx.lineTo(chainPath[j].x, chainPath[j].y);
-            }
-            ctx.stroke();
-
-            // Draw black line
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(chainPath[0].x, chainPath[0].y);
-            for (let j = 1; j < chainPath.length; j++) {
-              ctx.lineTo(chainPath[j].x, chainPath[j].y);
-            }
-            ctx.stroke();
-
-            // Draw label
-            ctx.fillStyle = 'white';
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 3;
-            ctx.font = 'bold 20px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            const labelText = isDashed ? `C${chainNumber}` : chainNumber.toString();
-            ctx.strokeText(labelText, chainStartX, chainStartY);
-            ctx.fillText(labelText, chainStartX, chainStartY);
-
-            tilesInCurrentChain = 0;
-          }
-
-          // Start new chain
-          chainNumber++;
-          chainPath = [{ x: posX, y: posY }];
-          chainStartX = posX;
-          chainStartY = posY;
-          currentChainType = tileInfo.type;
-          // For mixed GP2, always use GP2 Full limit of 5 tiles total (any combination of Full/Half)
-          currentChainLimit = hasMixedGP2 ? 5 : tileInfo.chainLimit;
-          tilesInCurrentChain = 1;
-        } else {
-          chainPath.push({ x: posX, y: posY });
-          tilesInCurrentChain++;
-        }
-
-        if (tilesInCurrentChain === currentChainLimit || i === tiles.length - 1) {
-          const chainColor = colors[(chainNumber - 1) % colors.length];
-
-          // Draw black outline
-          ctx.strokeStyle = 'black';
+        // Wire: white outline + colored line
+        if (pts.length > 1) {
+          if (isDashed) ctx.setLineDash([10, 5]);
+          ctx.strokeStyle = 'white';
           ctx.lineWidth = 8;
-          ctx.beginPath();
-          ctx.moveTo(chainPath[0].x, chainPath[0].y);
-          for (let j = 1; j < chainPath.length; j++) {
-            ctx.lineTo(chainPath[j].x, chainPath[j].y);
-          }
+          ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+          pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
           ctx.stroke();
-
-          // Draw black line (instead of colored line)
-          ctx.strokeStyle = 'black';
+          ctx.strokeStyle = chain.color;
           ctx.lineWidth = 4;
-          ctx.beginPath();
-          ctx.moveTo(chainPath[0].x, chainPath[0].y);
-          for (let j = 1; j < chainPath.length; j++) {
-            ctx.lineTo(chainPath[j].x, chainPath[j].y);
-          }
+          ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+          pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
           ctx.stroke();
-
-          // Draw circle at the end of the line (where it terminates)
-          const endPoint = chainPath[chainPath.length - 1];
-          ctx.fillStyle = chainColor;
-          ctx.strokeStyle = 'black';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(endPoint.x, endPoint.y, 8, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-
-          // Draw port label (with colored text)
-          ctx.fillStyle = chainColor;
-          ctx.strokeStyle = 'black';
-          ctx.lineWidth = 3;
-          ctx.font = `bold ${Math.max(9, blockSize / 5)}px Arial`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          const labelText = isDashed ? `C${chainNumber}` : `P${chainNumber}`;
-          ctx.strokeText(labelText, chainStartX, chainStartY);
-          ctx.fillText(labelText, chainStartX, chainStartY);
-
-          tilesInCurrentChain = 0;
-          chainPath = [];
+          ctx.setLineDash([]);
         }
-      }
 
+        // End-of-chain dot
+        const ep = pts[pts.length - 1];
+        ctx.fillStyle = chain.color;
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(ep.x, ep.y, 8, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+
+        // Port label
+        const sp = pts[0];
+        const labelText = isDashed ? `C${chain.number}` : `P${chain.number}`;
+        const fontSize = Math.max(11, blockSize / 4);
+        ctx.font = `bold ${fontSize}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = chain.color;
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 3;
+        if (isDashed) {
+          ctx.strokeText(labelText, -(labelMargin / 2), sp.y);
+          ctx.fillText(labelText, -(labelMargin / 2), sp.y);
+        } else {
+          ctx.strokeText(labelText, sp.x, sp.y);
+          ctx.fillText(labelText, sp.x, sp.y);
+        }
+
+        // Tile number labels (matching completed-chain style in manual wiring)
+        const numSize = Math.max(16, blockSize / 3);
+        ctx.font = `bold ${numSize}px Arial`;
+        ctx.fillStyle = chain.color;
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        chain.tiles.forEach((t, idx) => {
+          const ry = calculateRowY(t.row);
+          const rh = getRowHeight(t.row);
+          const px = padding + t.col * blockWidth + blockWidth / 2;
+          const py = ry + rh / 2;
+          ctx.strokeText((idx + 1).toString(), px, py + blockSize * 0.25);
+          ctx.fillText((idx + 1).toString(), px, py + blockSize * 0.25);
+        });
+      });
+
+      ctx.restore();
       ctx.setLineDash([]);
     }
 
