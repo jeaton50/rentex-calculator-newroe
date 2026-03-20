@@ -386,6 +386,14 @@
     .soca-btn.s3.active      { background: #1565c0; color: white; }
     .soca-btn.s4             { border-color: #6a1b9a; color: #6a1b9a; }
     .soca-btn.s4.active      { background: #6a1b9a; color: white; }
+    .soca-btn.l1             { border-color: #e65100; color: #e65100; }
+    .soca-btn.l1.active      { background: #e65100; color: white; }
+    .soca-btn.l2             { border-color: #00838f; color: #00838f; }
+    .soca-btn.l2.active      { background: #00838f; color: white; }
+    .soca-btn.l3             { border-color: #558b2f; color: #558b2f; }
+    .soca-btn.l3.active      { background: #558b2f; color: white; }
+    .soca-btn.l4             { border-color: #ad1457; color: #ad1457; }
+    .soca-btn.l4.active      { background: #ad1457; color: white; }
 
     /* Redundancy half-label inputs */
     .redundancy-labels {
@@ -593,6 +601,14 @@
             <button type="button" class="soca-btn s3" id="powerSoca3Btn">SOCA C</button>
             <button type="button" class="soca-btn s4" id="powerSoca4Btn">SOCA D</button>
           </div>
+          <div class="soca-select" id="powerL2130Select">
+            <span class="soca-label">L2130:</span>
+            <button type="button" class="soca-btn l1" id="powerL2130ABtn">L2130 A</button>
+            <button type="button" class="soca-btn l2" id="powerL2130BBtn">L2130 B</button>
+            <button type="button" class="soca-btn l3" id="powerL2130CBtn">L2130 C</button>
+            <button type="button" class="soca-btn l4" id="powerL2130DBtn">L2130 D</button>
+          </div>
+          <span class="chain-limit-warning" id="powerL2130CircuitWarning" style="display:none">Max 3 circuits per L2130</span>
           <p class="manual-instruction" id="powerManualInstruction">Click panels on the diagram to add them to the current power circuit. Click an already-selected panel to remove it. Use <strong>New Power</strong> to finish the current circuit and start the next one.</p>
         </div>
       </div>
@@ -1232,9 +1248,9 @@
             powerChainColors, true,
             params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
             params.gp2HalfManualPosition, params.gp2FullVerticalBlocks,
-            getFlatPowerChains(socaPowerChains), getFlatActiveIdx(socaPowerChains, socaActiveIdxP1),
+            getFlatPowerChains(socaPowerChains, l2130PowerChains), getFlatActiveIdx(socaPowerChains, socaActiveIdxP1, l2130PowerChains, l2130ActiveIdxP1),
             false, 1,
-            getFlatPowerChains(socaPowerChainsP2), getFlatActiveIdx(socaPowerChainsP2, socaActiveIdxP2),
+            getFlatPowerChains(socaPowerChainsP2, l2130PowerChainsP2), getFlatActiveIdx(socaPowerChainsP2, socaActiveIdxP2, l2130PowerChainsP2, l2130ActiveIdxP2),
             'Processor 1', 'Processor 2',
             true /* isExport */);
         } else {
@@ -1508,23 +1524,54 @@
     let socaPowerChainsP2 = makeSocaMap();
     let socaActiveIdxP2   = makeIdxMap();
 
-    // Flatten all SOCA sub-arrays into one list (adds soca property for color lookup)
-    function getFlatPowerChains(socaMap) {
-      return [1, 2, 3, 4].flatMap(s => socaMap[s].map(c => ({ ...c, soca: s })));
+    // L2130 power system state (4 boxes A-D, max 3 circuits each)
+    const l2130Colors  = { 1: '#e65100', 2: '#00838f', 3: '#558b2f', 4: '#ad1457' };
+    const l2130Letters = { 1: 'A', 2: 'B', 3: 'C', 4: 'D' };
+    let activePowerSystem = 'soca'; // 'soca' or 'l2130'
+    let activeL2130 = 1;
+    function makeL2130Map() { return { 1: [{ portNumber: 1, tiles: [] }], 2: [], 3: [], 4: [] }; }
+    let l2130PowerChains   = makeL2130Map();
+    let l2130ActiveIdxP1   = makeIdxMap();
+    let l2130PowerChainsP2 = makeL2130Map();
+    let l2130ActiveIdxP2   = makeIdxMap();
+
+    // Flatten all SOCA + optional L2130 sub-arrays into one list
+    function getFlatPowerChains(socaMap, l2130Map) {
+      const sc = [1, 2, 3, 4].flatMap(s => socaMap[s].map(c => ({ ...c, soca: s })));
+      if (!l2130Map) return sc;
+      const lc = [1, 2, 3, 4].flatMap(b => l2130Map[b].map(c => ({ ...c, l2130: b })));
+      return [...sc, ...lc];
     }
-    // Active flat index into the flattened list for a given SOCA map + idx map
-    function getFlatActiveIdx(socaMap, idxMap) {
+    // Active flat index into the flattened list
+    function getFlatActiveIdx(socaMap, idxMap, l2130Map, l2130IdxMap) {
+      if (activePowerSystem === 'l2130' && l2130Map) {
+        const socaTotal = [1, 2, 3, 4].reduce((s, b) => s + socaMap[b].length, 0);
+        let offset = socaTotal;
+        for (let b = 1; b < activeL2130; b++) offset += (l2130Map[b] || []).length;
+        return offset + ((l2130IdxMap || {})[activeL2130] ?? 0);
+      }
       let offset = 0;
       for (let s = 1; s < activeSoca; s++) offset += socaMap[s].length;
       return offset + (idxMap[activeSoca] ?? 0);
     }
-    // Get the currently active chain object from a SOCA map
-    function getActivePowerChain(socaMap, idxMap) {
+    // Get the currently active chain object
+    function getActivePowerChain(socaMap, idxMap, l2130Map, l2130IdxMap) {
+      if (activePowerSystem === 'l2130' && l2130Map) {
+        const arr = l2130Map[activeL2130];
+        return arr[(l2130IdxMap || {})[activeL2130]] || null;
+      }
       const arr = socaMap[activeSoca];
       return arr[idxMap[activeSoca]] || null;
     }
-    // Ensure the active SOCA has at least one chain to work with
-    function ensureSocaChain(socaMap, idxMap) {
+    // Ensure the active box has at least one chain to work with
+    function ensureSocaChain(socaMap, idxMap, l2130Map, l2130IdxMap) {
+      if (activePowerSystem === 'l2130' && l2130Map) {
+        if (l2130Map[activeL2130].length === 0) {
+          l2130Map[activeL2130].push({ portNumber: 1, tiles: [] });
+          l2130IdxMap[activeL2130] = 0;
+        }
+        return;
+      }
       if (socaMap[activeSoca].length === 0) {
         socaMap[activeSoca].push({ portNumber: 1, tiles: [] });
         idxMap[activeSoca] = 0;
@@ -1633,8 +1680,8 @@
     function updatePowerManualStatus() {
       const isP2 = powerRedundancyMode && activePowerProcessor === 2;
       const chain = isP2
-        ? getActivePowerChain(socaPowerChainsP2, socaActiveIdxP2)
-        : getActivePowerChain(socaPowerChains, socaActiveIdxP1);
+        ? getActivePowerChain(socaPowerChainsP2, socaActiveIdxP2, l2130PowerChainsP2, l2130ActiveIdxP2)
+        : getActivePowerChain(socaPowerChains, socaActiveIdxP1, l2130PowerChains, l2130ActiveIdxP1);
       const limit = getPowerChainLimit();
       const procLabel = powerRedundancyMode ? (isP2 ? 'P2 Power' : 'P1 Power') : 'Power';
       document.getElementById('powerPortNum').previousSibling.textContent = procLabel + ' ';
@@ -1729,8 +1776,9 @@
           const key = `${r},${c}`;
           if (tileAssignment[key] !== undefined) {
             const ci = tileAssignment[key];
-            const color = (isDashed && manualChains[ci] && manualChains[ci].soca)
-              ? socaColors[manualChains[ci].soca]
+            const mc = manualChains[ci];
+            const color = isDashed && mc
+              ? (mc.soca ? socaColors[mc.soca] : (l2130Colors[mc.l2130] || chainColors[ci % chainColors.length]))
               : chainColors[ci % chainColors.length];
             ctx.fillStyle = color + '28'; // ~16% opacity
             ctx.fillRect(padding + c * blockWidth + 1, rowY + 1, blockWidth - 2, rh - 2);
@@ -1763,8 +1811,8 @@
       manualChains.forEach((chain, ci) => {
         if (chain.tiles.length === 0) return;
         const isActive = ci === activeChainIdx;
-        const color = (isDashed && chain.soca)
-          ? socaColors[chain.soca]
+        const color = isDashed
+          ? (chain.soca ? socaColors[chain.soca] : (l2130Colors[chain.l2130] || chainColors[ci % chainColors.length]))
           : chainColors[ci % chainColors.length];
 
         const pts = chain.tiles.map(t => {
@@ -1803,7 +1851,9 @@
         // Port label: power circuits go in the left margin (draggable), data stays on first tile
         const sp = pts[0];
         const labelText = isDashed
-          ? `Soca-${socaLetters[chain.soca] || chain.soca}-${chain.portNumber}`
+          ? (chain.soca
+              ? `Soca-${socaLetters[chain.soca] || chain.soca}-${chain.portNumber}`
+              : `L2130-${l2130Letters[chain.l2130] || chain.l2130}-${chain.portNumber}`)
           : `P${chain.portNumber}`;
         const fontSize = Math.max(11, blockSize / 4);
         ctx.font = `bold ${fontSize}px Arial`;
@@ -1815,7 +1865,9 @@
         if (isDashed) {
           // Power labels are draggable.
           // Offsets are stored normalized by blockSize so they scale correctly at any zoom/export.
-          const chainKey = `${chain.soca}-${chain.portNumber}`;
+          const chainKey = chain.l2130
+            ? `L:${chain.l2130}-${chain.portNumber}`
+            : `${chain.soca}-${chain.portNumber}`;
           if (!powerLabelOffsets[chainKey]) powerLabelOffsets[chainKey] = { dx: 0, dy: 0 };
           const off = powerLabelOffsets[chainKey];
           const defaultLabelX = -(labelMargin / 2);
@@ -1846,9 +1898,10 @@
             ctx.lineWidth = 2;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            if (isDashed && chain.soca) {
-              ctx.strokeText(socaLetters[chain.soca] || chain.soca, px, py - numSize * 0.55);
-              ctx.fillText(socaLetters[chain.soca] || chain.soca, px, py - numSize * 0.55);
+            if (isDashed && (chain.soca || chain.l2130)) {
+              const boxLetter = chain.soca ? (socaLetters[chain.soca] || chain.soca) : (l2130Letters[chain.l2130] || chain.l2130);
+              ctx.strokeText(boxLetter, px, py - numSize * 0.55);
+              ctx.fillText(boxLetter, px, py - numSize * 0.55);
               ctx.strokeText((idx + 1).toString(), px, py + numSize * 0.55);
               ctx.fillText((idx + 1).toString(), px, py + numSize * 0.55);
             } else {
@@ -1873,9 +1926,10 @@
             ctx.lineWidth = 2;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            if (isDashed && chain.soca) {
-              ctx.strokeText(socaLetters[chain.soca] || chain.soca, px, py - numSize * 0.55);
-              ctx.fillText(socaLetters[chain.soca] || chain.soca, px, py - numSize * 0.55);
+            if (isDashed && (chain.soca || chain.l2130)) {
+              const boxLetter = chain.soca ? (socaLetters[chain.soca] || chain.soca) : (l2130Letters[chain.l2130] || chain.l2130);
+              ctx.strokeText(boxLetter, px, py - numSize * 0.55);
+              ctx.fillText(boxLetter, px, py - numSize * 0.55);
               ctx.strokeText((idx + 1).toString(), px, py + numSize * 0.55);
               ctx.fillText((idx + 1).toString(), px, py + numSize * 0.55);
             } else {
@@ -1893,8 +1947,8 @@
         p2Chains.forEach((chain, ci) => {
           if (chain.tiles.length === 0) return;
           const isActive = ci === activeP2ChainIdx && activeProcessor === 2;
-          const color = (isDashed && chain.soca)
-            ? socaColors[chain.soca]
+          const color = isDashed
+            ? (chain.soca ? socaColors[chain.soca] : (l2130Colors[chain.l2130] || chainColors[(ci + p2ColorOffset) % chainColors.length]))
             : chainColors[(ci + p2ColorOffset) % chainColors.length];
 
           const pts = chain.tiles.map(t => {
@@ -1927,7 +1981,9 @@
           if (pts.length > 0) {
             const sp = pts[0];
             const labelText = isDashed
-              ? `Soca-${socaLetters[chain.soca] || chain.soca}-${chain.portNumber}`
+              ? (chain.soca
+                  ? `Soca-${socaLetters[chain.soca] || chain.soca}-${chain.portNumber}`
+                  : `L2130-${l2130Letters[chain.l2130] || chain.l2130}-${chain.portNumber}`)
               : `P${chain.portNumber}`;
             const fontSize = Math.max(11, blockSize / 4);
             ctx.font = `bold ${fontSize}px Arial`;
@@ -1946,9 +2002,10 @@
               ctx.font = `bold ${numSize}px Arial`;
               ctx.fillStyle = 'white'; ctx.strokeStyle = color; ctx.lineWidth = 2;
               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-              if (isDashed && chain.soca) {
-                ctx.strokeText(socaLetters[chain.soca] || chain.soca, px, py - numSize * 0.55);
-                ctx.fillText(socaLetters[chain.soca] || chain.soca, px, py - numSize * 0.55);
+              if (isDashed && (chain.soca || chain.l2130)) {
+                const boxLetter = chain.soca ? (socaLetters[chain.soca] || chain.soca) : (l2130Letters[chain.l2130] || chain.l2130);
+                ctx.strokeText(boxLetter, px, py - numSize * 0.55);
+                ctx.fillText(boxLetter, px, py - numSize * 0.55);
                 ctx.strokeText((idx + 1).toString(), px, py + numSize * 0.55);
                 ctx.fillText((idx + 1).toString(), px, py + numSize * 0.55);
               } else {
@@ -1965,9 +2022,10 @@
               ctx.font = `bold ${numSize}px Arial`;
               ctx.fillStyle = color; ctx.strokeStyle = 'white'; ctx.lineWidth = 2;
               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-              if (isDashed && chain.soca) {
-                ctx.strokeText(socaLetters[chain.soca] || chain.soca, px, py - numSize * 0.55);
-                ctx.fillText(socaLetters[chain.soca] || chain.soca, px, py - numSize * 0.55);
+              if (isDashed && (chain.soca || chain.l2130)) {
+                const boxLetter = chain.soca ? (socaLetters[chain.soca] || chain.soca) : (l2130Letters[chain.l2130] || chain.l2130);
+                ctx.strokeText(boxLetter, px, py - numSize * 0.55);
+                ctx.fillText(boxLetter, px, py - numSize * 0.55);
                 ctx.strokeText((idx + 1).toString(), px, py + numSize * 0.55);
                 ctx.fillText((idx + 1).toString(), px, py + numSize * 0.55);
               } else {
@@ -2058,9 +2116,9 @@
           powerChainColors, true,
           params.productType, params.gp2HalfAutoRows, params.gp2HalfManualRows,
           params.gp2HalfManualPosition, params.gp2FullVerticalBlocks,
-          getFlatPowerChains(socaPowerChains), getFlatActiveIdx(socaPowerChains, socaActiveIdxP1),
+          getFlatPowerChains(socaPowerChains, l2130PowerChains), getFlatActiveIdx(socaPowerChains, socaActiveIdxP1, l2130PowerChains, l2130ActiveIdxP1),
           false, 1,
-          getFlatPowerChains(socaPowerChainsP2), getFlatActiveIdx(socaPowerChainsP2, socaActiveIdxP2),
+          getFlatPowerChains(socaPowerChainsP2, l2130PowerChainsP2), getFlatActiveIdx(socaPowerChainsP2, socaActiveIdxP2, l2130PowerChainsP2, l2130ActiveIdxP2),
           'Processor 1', 'Processor 2');
         document.getElementById('powerZoomLevel').textContent = `Zoom: ${powerZoomLevel}`;
         updatePowerManualStatus();
@@ -2120,10 +2178,12 @@
       }
 
       const useP2 = powerRedundancyMode && activePowerProcessor === 2;
-      const socaMap  = useP2 ? socaPowerChainsP2 : socaPowerChains;
-      const idxMap   = useP2 ? socaActiveIdxP2   : socaActiveIdxP1;
-      ensureSocaChain(socaMap, idxMap);
-      const chain = getActivePowerChain(socaMap, idxMap);
+      const socaMap     = useP2 ? socaPowerChainsP2 : socaPowerChains;
+      const idxMap      = useP2 ? socaActiveIdxP2   : socaActiveIdxP1;
+      const l2130Map    = useP2 ? l2130PowerChainsP2 : l2130PowerChains;
+      const l2130IdxMap = useP2 ? l2130ActiveIdxP2   : l2130ActiveIdxP1;
+      ensureSocaChain(socaMap, idxMap, l2130Map, l2130IdxMap);
+      const chain = getActivePowerChain(socaMap, idxMap, l2130Map, l2130IdxMap);
       const existingIdx = chain.tiles.findIndex(t => t.row === tile.row && t.col === tile.col);
 
       if (existingIdx >= 0) {
@@ -2264,18 +2324,26 @@
     });
 
     document.getElementById('powerNewPort').addEventListener('click', () => {
-      const useP2   = powerRedundancyMode && activePowerProcessor === 2;
-      const socaMap = useP2 ? socaPowerChainsP2 : socaPowerChains;
-      const idxMap  = useP2 ? socaActiveIdxP2   : socaActiveIdxP1;
-      const arr = socaMap[activeSoca];
-      const socaWarn = document.getElementById('powerSocaCircuitWarning');
-      if (arr.length >= 6) {
-        socaWarn.style.display = 'inline';
-        return;
+      const useP2       = powerRedundancyMode && activePowerProcessor === 2;
+      const socaMap     = useP2 ? socaPowerChainsP2 : socaPowerChains;
+      const idxMap      = useP2 ? socaActiveIdxP2   : socaActiveIdxP1;
+      const l2130Map    = useP2 ? l2130PowerChainsP2 : l2130PowerChains;
+      const l2130IdxMap = useP2 ? l2130ActiveIdxP2   : l2130ActiveIdxP1;
+      const socaWarn    = document.getElementById('powerSocaCircuitWarning');
+      const l2130Warn   = document.getElementById('powerL2130CircuitWarning');
+      if (activePowerSystem === 'l2130') {
+        const arr = l2130Map[activeL2130];
+        if (arr.length >= 3) { l2130Warn.style.display = 'inline'; return; }
+        l2130Warn.style.display = 'none';
+        arr.push({ portNumber: arr.length + 1, tiles: [] });
+        l2130IdxMap[activeL2130] = arr.length - 1;
+      } else {
+        const arr = socaMap[activeSoca];
+        if (arr.length >= 6) { socaWarn.style.display = 'inline'; return; }
+        socaWarn.style.display = 'none';
+        arr.push({ portNumber: arr.length + 1, tiles: [] });
+        idxMap[activeSoca] = arr.length - 1;
       }
-      socaWarn.style.display = 'none';
-      arr.push({ portNumber: arr.length + 1, tiles: [] });
-      idxMap[activeSoca] = arr.length - 1;
       renderPowerWiring();
     });
 
@@ -2290,10 +2358,12 @@
     });
 
     document.getElementById('powerUndoTile').addEventListener('click', () => {
-      const useP2 = powerRedundancyMode && activePowerProcessor === 2;
+      const useP2       = powerRedundancyMode && activePowerProcessor === 2;
+      const l2130Map    = useP2 ? l2130PowerChainsP2 : l2130PowerChains;
+      const l2130IdxMap = useP2 ? l2130ActiveIdxP2   : l2130ActiveIdxP1;
       const chain = useP2
-        ? getActivePowerChain(socaPowerChainsP2, socaActiveIdxP2)
-        : getActivePowerChain(socaPowerChains, socaActiveIdxP1);
+        ? getActivePowerChain(socaPowerChainsP2, socaActiveIdxP2, l2130Map, l2130IdxMap)
+        : getActivePowerChain(socaPowerChains, socaActiveIdxP1, l2130Map, l2130IdxMap);
       if (chain) chain.tiles.pop();
       renderPowerWiring();
     });
@@ -2308,13 +2378,21 @@
     });
 
     document.getElementById('powerClearManual').addEventListener('click', () => {
-      socaPowerChains   = makeSocaMap();
-      socaPowerChainsP2 = makeSocaMap();
-      socaActiveIdxP1   = makeIdxMap();
-      socaActiveIdxP2   = makeIdxMap();
+      socaPowerChains    = makeSocaMap();
+      socaPowerChainsP2  = makeSocaMap();
+      socaActiveIdxP1    = makeIdxMap();
+      socaActiveIdxP2    = makeIdxMap();
+      l2130PowerChains   = makeL2130Map();
+      l2130PowerChainsP2 = makeL2130Map();
+      l2130ActiveIdxP1   = makeIdxMap();
+      l2130ActiveIdxP2   = makeIdxMap();
       activeSoca = 1;
+      activeL2130 = 1;
+      activePowerSystem = 'soca';
       [1, 2, 3, 4].forEach(i =>
         document.getElementById(`powerSoca${i}Btn`).classList.toggle('active', i === 1));
+      ['A', 'B', 'C', 'D'].forEach(l =>
+        document.getElementById(`powerL2130${l}Btn`).classList.remove('active'));
       renderPowerWiring();
     });
 
@@ -2360,14 +2438,39 @@
     // SOCA selectors — Power
     [1, 2, 3, 4].forEach(n => {
       document.getElementById(`powerSoca${n}Btn`).addEventListener('click', () => {
+        activePowerSystem = 'soca';
         activeSoca = n;
         [1, 2, 3, 4].forEach(i =>
           document.getElementById(`powerSoca${i}Btn`).classList.toggle('active', i === n));
+        ['A', 'B', 'C', 'D'].forEach(l =>
+          document.getElementById(`powerL2130${l}Btn`).classList.remove('active'));
         document.getElementById('powerSocaCircuitWarning').style.display = 'none';
         // Ensure this SOCA has a chain ready to fill — resets to C1 each time
         const useP2 = powerRedundancyMode && activePowerProcessor === 2;
         ensureSocaChain(useP2 ? socaPowerChainsP2 : socaPowerChains,
-                        useP2 ? socaActiveIdxP2   : socaActiveIdxP1);
+                        useP2 ? socaActiveIdxP2   : socaActiveIdxP1,
+                        useP2 ? l2130PowerChainsP2 : l2130PowerChains,
+                        useP2 ? l2130ActiveIdxP2   : l2130ActiveIdxP1);
+        renderPowerWiring();
+      });
+    });
+
+    // L2130 selectors — Power
+    ['A', 'B', 'C', 'D'].forEach((letter, idx) => {
+      document.getElementById(`powerL2130${letter}Btn`).addEventListener('click', () => {
+        activePowerSystem = 'l2130';
+        activeL2130 = idx + 1;
+        ['A', 'B', 'C', 'D'].forEach(l =>
+          document.getElementById(`powerL2130${l}Btn`).classList.toggle('active', l === letter));
+        [1, 2, 3, 4].forEach(i =>
+          document.getElementById(`powerSoca${i}Btn`).classList.remove('active'));
+        document.getElementById('powerL2130CircuitWarning').style.display = 'none';
+        // Ensure this L2130 box has a chain ready to fill
+        const useP2 = powerRedundancyMode && activePowerProcessor === 2;
+        ensureSocaChain(useP2 ? socaPowerChainsP2 : socaPowerChains,
+                        useP2 ? socaActiveIdxP2   : socaActiveIdxP1,
+                        useP2 ? l2130PowerChainsP2 : l2130PowerChains,
+                        useP2 ? l2130ActiveIdxP2   : l2130ActiveIdxP1);
         renderPowerWiring();
       });
     });
