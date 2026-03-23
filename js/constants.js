@@ -102,7 +102,7 @@ const CONSTANTS = {
     CUBEDIST: 'CUBEDIST',
     TP1: 'TP1',
     VOLTAGE_110: '110',
-    CUSTOMER: '208'
+    VOLTAGE_208: '208'
   },
 
   // Redundancy types
@@ -164,7 +164,7 @@ const EQUIPMENT = {
   BPBO_HEAD2: { code: 'BPBOHEAD2', name: 'ROE Black Pearl header, 2W, 1m', weight: 19, image: 'BPBOHEAD2.png' },
   BPBO_BB1: { code: 'BPBOBB1', name: 'ROE Black Pearl base bar, 1W, 0.5m', weight: 16, image: 'BPBOBB1.png' },
   BPBO_BB2: { code: 'BPBOBB2', name: 'ROE Black Pearl base bar, 2W, 1.0m', weight: 28, image: 'BPBOBB2.png' },
-  BP25DREE: { code: 'BP25DGREE', name: 'ROE Black Pearl 5 Degree Bracket', weight: 0.25, image: 'BP25DGREE.png' },
+  BP25DGREE: { code: 'BP25DGREE', name: 'ROE Black Pearl 5 Degree Bracket', weight: 0.25, image: 'BP25DGREE.png' },
   BPGPUBT: { code: 'BPGPUBT', name: 'ROE Black Pearl universal base truss', weight: 17, image: 'BPGPUBT.png' },
   BPGPREAR1: { code: 'BPGPREAR1', name: 'ROE Black Pearl rear truss', weight: 1, image: 'BPGPREAR1.png' },
   BPGPBRIDGE: { code: 'BPGPBRIDGE', name: 'ROE Black Pearl rear bridge clamp', weight: 1, image: 'BPGPBRIDGE.png' },
@@ -172,8 +172,8 @@ const EQUIPMENT = {
   // ROE GP2 Graphite
   GP2BASE1: { code: 'GP2BASE1', name: 'ROE Graphite GP base bar, 1W', weight: 0, image: 'GP2BASE1.png' },
   GP2BASE2: { code: 'GP2BASE2', name: 'ROE Graphite GP base bar, 2W, V1.5', weight: 0, image: 'GP2BASE2.png' },
-  GP2HEAD1ROE: { code: 'GP2HEAD1ROE', name: 'ROE Graphite GP hanging bar, 1W, clamp and shackle', weight: 0, image: 'GP2HEAD1ROE.png' },
-  GP2HEAD2ROE: { code: 'GP2HEAD2ROE', name: 'ROE Graphite GP hanging bar, 2W, clamp and shackle', weight: 0, image: 'GP2HEAD2ROE.png' },
+  GP2HEAD1ROE: { code: 'GP2HEAD1', name: 'ROE Graphite GP hanging bar, 1W, clamp and shackle', weight: 0, image: 'GP2HEAD1ROE.png' },
+  GP2HEAD2ROE: { code: 'GP2HEAD2', name: 'ROE Graphite GP hanging bar, 2W, clamp and shackle', weight: 0, image: 'GP2HEAD2ROE.png' },
   ROEGP26FULL: { code: 'ROEGP26FULL', name: 'ROE GP2.6 Full LED tile 500x1000mm', weight: 0, image: 'ROEGP26FULL.png' },
 
   // Theatrixx
