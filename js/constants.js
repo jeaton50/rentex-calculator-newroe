@@ -223,8 +223,8 @@ const EQUIPMENT = {
 
   // Misc
   SANDBAG25: { code: 'SANDBAG25', name: 'Sand Bag 25 lbs.', weight: 25, image: 'SANDBAG25.png' },
-  15PIPECPL: { code: 'SANDBAG25', name: '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', weight: 25, image: '15PIPECPL' },
-  LED4FTS40: { code: 'SANDBAG25', name: 'Schedule 40 1.5" non-threaded pipe 4'', weight: 25, image: 'LED4FTS40' }
+  15PIPECPL: { code: 'SANDBAG25', name: '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', weight: 25, image: '15PIPECPL.png' },
+  LED4FTS40: { code: 'SANDBAG25', name: 'Schedule 40 1.5" non-threaded pipe 4'', weight: 25, image: 'LED4FTS40.png' }
   
 };
 
