@@ -495,7 +495,7 @@ const ExportManager = {
       await this.ensurePDFLibraries();
 
       const { jsPDF } = jspdf;
-      const doc = new jsPDF('portrait', 'pt', 'letter');
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter', compress: true });
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 40;
@@ -891,7 +891,7 @@ const ExportManager = {
    * Load technical-view.html in a hidden iframe, render both wiring diagrams
    * at exportZoom, and return their data URLs.
    */
-  renderWiringDiagramsViaIframe(exportParams, exportZoom = 3) {
+  renderWiringDiagramsViaIframe(exportParams, exportZoom = 2) {
     return new Promise((resolve) => {
       const iframe = document.createElement('iframe');
       iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1200px;height:800px;visibility:hidden;pointer-events:none;border:none;';
@@ -1031,7 +1031,7 @@ const ExportManager = {
       } catch (e) { /* logo optional */ }
 
       const { jsPDF } = jspdf;
-      const doc       = new jsPDF('portrait', 'pt', 'letter');
+      const doc       = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter', compress: true });
       const pageW     = doc.internal.pageSize.getWidth();
       const pageH     = doc.internal.pageSize.getHeight();
       const margin    = 40;
