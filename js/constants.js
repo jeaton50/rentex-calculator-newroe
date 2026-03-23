@@ -102,7 +102,7 @@ const CONSTANTS = {
     CUBEDIST: 'CUBEDIST',
     TP1: 'TP1',
     VOLTAGE_110: '110',
-    VOLTAGE_208: '208'
+    CUSTOMER: '208'
   },
 
   // Redundancy types
@@ -164,12 +164,11 @@ const EQUIPMENT = {
   BPBO_HEAD2: { code: 'BPBOHEAD2', name: 'ROE Black Pearl header, 2W, 1m', weight: 19, image: 'BPBOHEAD2.png' },
   BPBO_BB1: { code: 'BPBOBB1', name: 'ROE Black Pearl base bar, 1W, 0.5m', weight: 16, image: 'BPBOBB1.png' },
   BPBO_BB2: { code: 'BPBOBB2', name: 'ROE Black Pearl base bar, 2W, 1.0m', weight: 28, image: 'BPBOBB2.png' },
-  BP25DGREE: { code: 'BP25DGREE', name: 'ROE Black Pearl 5 Degree Bracket', weight: 0.25, image: 'BP25DGREE.png' },
+  BP25DREE: { code: 'BP25DGREE', name: 'ROE Black Pearl 5 Degree Bracket', weight: 0.25, image: 'BP25DGREE.png' },
   BPGPUBT: { code: 'BPGPUBT', name: 'ROE Black Pearl universal base truss', weight: 17, image: 'BPGPUBT.png' },
   BPGPREAR1: { code: 'BPGPREAR1', name: 'ROE Black Pearl rear truss', weight: 1, image: 'BPGPREAR1.png' },
   BPGPBRIDGE: { code: 'BPGPBRIDGE', name: 'ROE Black Pearl rear bridge clamp', weight: 1, image: 'BPGPBRIDGE.png' },
-  BPGPREAR05: { code: 'BPGPREAR05', name: 'ROE BP2 / GP2 rear truss .5 meter', weight: 1, image: 'BPGPREAR05.png' },
-  
+
   // ROE GP2 Graphite
   GP2BASE1: { code: 'GP2BASE1', name: 'ROE Graphite GP base bar, 1W', weight: 0, image: 'GP2BASE1.png' },
   GP2BASE2: { code: 'GP2BASE2', name: 'ROE Graphite GP base bar, 2W, V1.5', weight: 0, image: 'GP2BASE2.png' },
@@ -217,15 +216,12 @@ const EQUIPMENT = {
   ECON050C6: { code: 'ECON050C6', name: "Ethercon (CAT6) 50'", weight: 3, image: 'ECON050C6.png' },
   ECON100C6: { code: 'ECON100C6', name: "Ethercon (CAT6) 100'", weight: 6, image: 'ECON100C6.png' },
   ECON1M: { code: 'ECON1M', name: "Ethercon to Ethercon 1m", weight: 0.25, image: 'ECON1M.png' },
-  T1025: { code: 'T1025', name: "True1 power cable 25'", weight: 4, image: 'T1025.png' },
+  T1025: { code: 'T1025', name: "True1 power cable 25'", weight: 4, image: 'TRUE125FT.png' },
   EDT110M: { code: 'EDT110M', name: "Edison to True1 power cable, 10 meter", weight: 3.2, image: 'EDT110M.png' },
   T1003: { code: 'T1003', name: "True1 power cable 1m (3')", weight: 0.44, image: 'T1003.png' },
 
   // Misc
-  SANDBAG25: { code: 'SANDBAG25', name: 'Sand Bag 25 lbs.', weight: 25, image: 'SANDBAG25.png' },
-  15PIPECPL: { code: 'SANDBAG25', name: '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', weight: 25, image: '15PIPECPL.png' },
-  LED4FTS40: { code: 'SANDBAG25', name: 'Schedule 40 1.5" non-threaded pipe 4'', weight: 25, image: 'LED4FTS40.png' }
-  
+  SANDBAG25: { code: 'SANDBAG25', name: 'Sand Bag 25 lbs.', weight: 25, image: 'SANDBAG25.png' }
 };
 
 // Canonical equipment display order
