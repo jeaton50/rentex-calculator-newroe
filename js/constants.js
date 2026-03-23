@@ -168,13 +168,15 @@ const EQUIPMENT = {
   BPGPUBT: { code: 'BPGPUBT', name: 'ROE Black Pearl universal base truss', weight: 17, image: 'BPGPUBT.png' },
   BPGPREAR1: { code: 'BPGPREAR1', name: 'ROE Black Pearl rear truss', weight: 1, image: 'BPGPREAR1.png' },
   BPGPBRIDGE: { code: 'BPGPBRIDGE', name: 'ROE Black Pearl rear bridge clamp', weight: 1, image: 'BPGPBRIDGE.png' },
-
+  BPGPREAR05: { code: 'BPGPREAR05', name: 'ROE BP2 / GP2 rear truss .5 meter', weight: 1, image: 'BPGPREAR05.png' },
+  
   // ROE GP2 Graphite
   GP2BASE1: { code: 'GP2BASE1', name: 'ROE Graphite GP base bar, 1W', weight: 0, image: 'GP2BASE1.png' },
   GP2BASE2: { code: 'GP2BASE2', name: 'ROE Graphite GP base bar, 2W, V1.5', weight: 0, image: 'GP2BASE2.png' },
-  GP2HEAD1ROE: { code: 'GP2HEAD1', name: 'ROE Graphite GP hanging bar, 1W, clamp and shackle', weight: 0, image: 'GP2HEAD1ROE.png' },
-  GP2HEAD2ROE: { code: 'GP2HEAD2', name: 'ROE Graphite GP hanging bar, 2W, clamp and shackle', weight: 0, image: 'GP2HEAD2ROE.png' },
+  GP2HEAD1: { code: 'GP2HEAD1', name: 'ROE Graphite GP hanging bar, 1W, clamp and shackle', weight: 0, image: 'GP2HEAD1.png' },
+  GP2HEAD2: { code: 'GP2HEAD2', name: 'ROE Graphite GP hanging bar, 2W, clamp and shackle', weight: 0, image: 'GP2HEAD2.png' },
   ROEGP26FULL: { code: 'ROEGP26FULL', name: 'ROE GP2.6 Full LED tile 500x1000mm', weight: 0, image: 'ROEGP26FULL.png' },
+  ROEGP26HALF: { code: 'ROEGP26HALF', name: 'ROE GP2.6 Half LED tile 500x500mm', weight: 0, image: 'ROEGP26HALF.png' },
 
   // Theatrixx
   TX_NOMAD26: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm', weight: 24, image: 'TXNOMAD26.png' },
@@ -192,11 +194,11 @@ const EQUIPMENT = {
   TX_BRACKETC: { code: 'TXBRACKETC', name: 'Theatrixx Nomad Exact bracket-curved', weight: 0, image: 'TXBRACKETC.png' },
   TX_VERTSPRT: { code: 'TXVERTSPRT', name: 'Theatrixx Nomad Exact vertical support', weight: 0, image: 'TXVERTSPRT.png' },
   TX_SKIFTSNG: { code: 'TXSKIFTSNG', name: 'Theatrixx Nomad Exact single foot', weight: 0, image: 'TXSKIFTSNG.png' },
-  TX_M10B: { code: 'TXM10B', name: 'Theatrixx Nomad Exact M10 Screw', weight: 0 },
-  TX_T92T9: { code: 'TXT92TXT9', name: "Theatrixx Nomad XVT9 to XVT9 data 3'", weight: 0 },
-  TX_T32T125: { code: 'TXT32T125', name: "Theatrixx Nomad XVT3 to True1 25'", weight: 0 },
-  TX_T3POWER: { code: 'TXT3POWER', name: "Theatrixx Nomad XVT3 to XVT3 power 4'", weight: 0 },
-  TX_T92ETRCN: { code: 'TXT92ETRCN', name: 'Theatrixx Nomad XVT9 to EtherCon adapter', weight: 0 },
+  TX_M10B: { code: 'TXM10B', name: 'Theatrixx Nomad Exact M10 Screw', weight: 0, image: 'TXM10B.png' },
+  TX_T92T9: { code: 'TXT92TXT9', name: "Theatrixx Nomad XVT9 to XVT9 data 3'", weight: 0, image: 'TXT92TXT9.png' },
+  TX_T32T125: { code: 'TXT32T125', name: "Theatrixx Nomad XVT3 to True1 25'", weight: 0, image: 'TXT32T125.png' },
+  TX_T3POWER: { code: 'TXT3POWER', name: "Theatrixx Nomad XVT3 to XVT3 power 4'", weight: 0, image: 'TXT3POWER.png' },
+  TX_T92ETRCN: { code: 'TXT92ETRCN', name: 'Theatrixx Nomad XVT9 to EtherCon adapter', weight: 0, image: 'TXT92ETRCN.png' },
 
   // Processors
   SX40: { code: 'SX40', name: 'Brompton Tessera SX40 **Kit includes an XD10**', weight: 17, image: 'SX40.png' },
@@ -215,12 +217,15 @@ const EQUIPMENT = {
   ECON050C6: { code: 'ECON050C6', name: "Ethercon (CAT6) 50'", weight: 3, image: 'ECON050C6.png' },
   ECON100C6: { code: 'ECON100C6', name: "Ethercon (CAT6) 100'", weight: 6, image: 'ECON100C6.png' },
   ECON1M: { code: 'ECON1M', name: "Ethercon to Ethercon 1m", weight: 0.25, image: 'ECON1M.png' },
-  T1025: { code: 'T1025', name: "True1 power cable 25'", weight: 4, image: 'TRUE125FT.png' },
+  T1025: { code: 'T1025', name: "True1 power cable 25'", weight: 4, image: 'T1025.png' },
   EDT110M: { code: 'EDT110M', name: "Edison to True1 power cable, 10 meter", weight: 3.2, image: 'EDT110M.png' },
   T1003: { code: 'T1003', name: "True1 power cable 1m (3')", weight: 0.44, image: 'T1003.png' },
 
   // Misc
-  SANDBAG25: { code: 'SANDBAG25', name: 'Sand Bag 25 lbs.', weight: 25, image: 'SANDBAG25.png' }
+  SANDBAG25: { code: 'SANDBAG25', name: 'Sand Bag 25 lbs.', weight: 25, image: 'SANDBAG25.png' },
+  15PIPECPL: { code: 'SANDBAG25', name: '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', weight: 25, image: '15PIPECPL.png' },
+  LED4FTS40: { code: 'SANDBAG25', name: 'Schedule 40 1.5" non-threaded pipe 4'', weight: 25, image: 'LED4FTS40.png' }
+  
 };
 
 // Canonical equipment display order
