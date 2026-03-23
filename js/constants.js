@@ -169,6 +169,7 @@ const EQUIPMENT = {
   BPGPREAR1: { code: 'BPGPREAR1', name: 'ROE Black Pearl rear truss', weight: 1, image: 'BPGPREAR1.png' },
   BPGPBRIDGE: { code: 'BPGPBRIDGE', name: 'ROE Black Pearl rear bridge clamp', weight: 1, image: 'BPGPBRIDGE.png' },
   BPGPREAR05: { code: 'BPGPREAR05', name: 'ROE BP2 / GP2 rear truss .5 meter', weight: 1, image: 'BPGPREAR05.png' },
+  
   // ROE GP2 Graphite
   GP2BASE1: { code: 'GP2BASE1', name: 'ROE Graphite GP base bar, 1W', weight: 0, image: 'GP2BASE1.png' },
   GP2BASE2: { code: 'GP2BASE2', name: 'ROE Graphite GP base bar, 2W, V1.5', weight: 0, image: 'GP2BASE2.png' },
@@ -221,7 +222,10 @@ const EQUIPMENT = {
   T1003: { code: 'T1003', name: "True1 power cable 1m (3')", weight: 0.44, image: 'T1003.png' },
 
   // Misc
-  SANDBAG25: { code: 'SANDBAG25', name: 'Sand Bag 25 lbs.', weight: 25, image: 'SANDBAG25.png' }
+  SANDBAG25: { code: 'SANDBAG25', name: 'Sand Bag 25 lbs.', weight: 25, image: 'SANDBAG25.png' },
+  15PIPECPL: { code: 'SANDBAG25', name: '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', weight: 25, image: '15PIPECPL' },
+  LED4FTS40: { code: 'SANDBAG25', name: 'Schedule 40 1.5" non-threaded pipe 4'', weight: 25, image: 'LED4FTS40' }
+  
 };
 
 // Canonical equipment display order
