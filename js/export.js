@@ -885,6 +885,268 @@ const ExportManager = {
         // Restore original zoom level even on error
         htmlElement.style.zoom = originalZoom || '90%';
       });
+  },
+
+  /**
+   * Load technical-view.html in a hidden iframe, render both wiring diagrams
+   * at exportZoom, and return their data URLs.
+   */
+  renderWiringDiagramsViaIframe(exportParams, exportZoom = 3) {
+    return new Promise((resolve) => {
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1200px;height:800px;visibility:hidden;pointer-events:none;border:none;';
+      document.body.appendChild(iframe);
+
+      const {
+        productType, blocksHor, blocksVer, powerDistroType,
+        gp2HalfAutoRows = 0, gp2HalfManualRows = 0,
+        gp2HalfManualPosition = 'bottom', gp2FullVerticalBlocks
+      } = exportParams;
+
+      const blocksVerInt = Math.floor(parseFloat(blocksVer) || 0);
+      const fullVBlocks = gp2FullVerticalBlocks != null ? gp2FullVerticalBlocks : blocksVerInt;
+      let url = `technical-view.html?product=${encodeURIComponent(productType)}&blocksHor=${blocksHor}&blocksVer=${blocksVerInt}&powerDistroType=${powerDistroType}`;
+      url += `&gp2HalfAutoRows=${gp2HalfAutoRows}&gp2HalfManualRows=${gp2HalfManualRows}&gp2HalfManualPosition=${encodeURIComponent(gp2HalfManualPosition)}&gp2FullVerticalBlocks=${fullVBlocks}`;
+
+      iframe.addEventListener('load', () => {
+        // Allow inline scripts to fully execute and canvases to paint
+        setTimeout(() => {
+          try {
+            const iwin = iframe.contentWindow;
+            const idoc = iframe.contentDocument;
+
+            const dataCanvas = idoc.createElement('canvas');
+            iwin.renderDiagramToCanvas(dataCanvas, 'data', exportZoom);
+
+            const powerCanvas = idoc.createElement('canvas');
+            iwin.renderDiagramToCanvas(powerCanvas, 'power', exportZoom);
+
+            resolve({
+              dataImage:   dataCanvas.width  > 0 ? dataCanvas.toDataURL('image/png')  : null,
+              dataWidth:   dataCanvas.width,
+              dataHeight:  dataCanvas.height,
+              powerImage:  powerCanvas.width > 0 ? powerCanvas.toDataURL('image/png') : null,
+              powerWidth:  powerCanvas.width,
+              powerHeight: powerCanvas.height,
+            });
+          } catch (e) {
+            console.error('Wiring diagram render error:', e);
+            resolve({ dataImage: null, powerImage: null });
+          } finally {
+            setTimeout(() => iframe.remove(), 200);
+          }
+        }, 400);
+      });
+
+      iframe.src = url;
+    });
+  },
+
+  /**
+   * Export a combined PDF: equipment list with images, then data and power
+   * wiring diagrams from technical view on separate pages.
+   */
+  async exportCombinedPDF() {
+    const equipmentItems = this.getCurrentEquipmentData();
+    if (equipmentItems.length === 0) {
+      alert('No equipment to export. Please configure a wall first.');
+      return;
+    }
+
+    // Collect current calculator params
+    const productType      = document.getElementById('productType')?.value || 'absen';
+    const blocksHorRaw     = parseInt(document.getElementById('blocksHor')?.value)  || 10;
+    const blocksVerRaw     = parseFloat(document.getElementById('blocksVer')?.value) || 6;
+    const powerDistroType  = document.getElementById('powerDistroType')?.value || '208';
+    const blocksVerInt     = Math.floor(blocksVerRaw);
+
+    let gp2HalfAutoRows    = 0;
+    let gp2HalfManualRows  = 0;
+    let gp2HalfManualPosition = 'bottom';
+    let gp2FullVerticalBlocks = blocksVerInt;
+
+    if (productType === 'ROEGP26Full') {
+      if ((blocksVerRaw % 1) !== 0) {
+        gp2HalfAutoRows       = Math.round((blocksVerRaw % 1) * 2);
+        gp2FullVerticalBlocks = Math.floor(blocksVerRaw);
+      }
+      const cb = document.getElementById('gp2HalfCheckbox');
+      if (cb?.checked) {
+        gp2HalfManualRows    = parseInt(document.getElementById('gp2HalfCount')?.value  || 1, 10);
+        gp2HalfManualPosition = document.getElementById('gp2HalfPosition')?.value || 'bottom';
+      }
+    }
+
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'pdfLoadingIndicator';
+    loadingDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;';
+    loadingDiv.innerHTML = '<div style="background:white;padding:30px 50px;border-radius:10px;font-size:18px;font-family:Arial,sans-serif;">Generating combined PDF…</div>';
+    document.body.appendChild(loadingDiv);
+
+    try {
+      await this.ensurePDFLibraries();
+
+      // Run equipment image loading and wiring diagram rendering in parallel
+      const imageMap   = this.buildImageMap();
+      const imageCache = {};
+      const uniqueEcodes = [...new Set(equipmentItems.map(i => i.ecode))];
+
+      const [wiringImages] = await Promise.all([
+        this.renderWiringDiagramsViaIframe({
+          productType, blocksHor: blocksHorRaw, blocksVer: blocksVerInt,
+          powerDistroType, gp2HalfAutoRows, gp2HalfManualRows,
+          gp2HalfManualPosition, gp2FullVerticalBlocks
+        }),
+        Promise.all(uniqueEcodes.map(async (ecode) => {
+          const path = imageMap[ecode];
+          if (path) imageCache[ecode] = await this.loadImageAsBase64(path);
+        }))
+      ]);
+
+      let logoData = null;
+      try {
+        const r = await this.loadImageAsBase64('static/images/rentexLogo.png');
+        if (r) logoData = r.data;
+      } catch (e) { /* logo optional */ }
+
+      const { jsPDF } = jspdf;
+      const doc       = new jsPDF('portrait', 'pt', 'letter');
+      const pageW     = doc.internal.pageSize.getWidth();
+      const pageH     = doc.internal.pageSize.getHeight();
+      const margin    = 40;
+
+      // ── Header helpers ──────────────────────────────────────────────────
+      const orderNumber = document.getElementById('orderNumber')?.value || '';
+      const orderDate   = document.getElementById('orderDate')?.value   || '';
+      const location    = document.getElementById('location')?.value    || '';
+      const productTypeSelect = document.getElementById('productType');
+      const productTypeName   = productTypeSelect
+        ? productTypeSelect.options[productTypeSelect.selectedIndex].text : '';
+
+      const drawPageHeader = (d, w, title) => {
+        let y = margin;
+        if (logoData) d.addImage(logoData, 'PNG', margin, y, 120, 38);
+        d.setFontSize(10); d.setTextColor(100);
+        const rx = w - margin;
+        if (orderNumber) d.text(`Order #: ${orderNumber}`, rx, y + 12, { align: 'right' });
+        if (orderDate)   d.text(`Date: ${orderDate}`,      rx, y + 24, { align: 'right' });
+        if (location)    d.text(`Location: ${location}`,   rx, y + 36, { align: 'right' });
+        y += 50;
+        d.setFontSize(16); d.setTextColor(0);
+        d.text(title, w / 2, y, { align: 'center' });
+        if (productTypeName) {
+          d.setFontSize(11); d.setTextColor(80);
+          d.text(productTypeName, w / 2, y + 16, { align: 'center' });
+        }
+        y += 30;
+        d.setDrawColor(200); d.setLineWidth(0.5);
+        d.line(margin, y, w - margin, y);
+        return y + 10;
+      };
+
+      // ── Page 1+: Equipment list ──────────────────────────────────────────
+      let yPos = drawPageHeader(doc, pageW, 'Equipment List');
+
+      const imgCellSize  = 60;
+      const rowPadding   = 5;
+      const rowHeight    = imgCellSize + rowPadding * 2;
+      const rowHasImage  = equipmentItems.map(item => !!(imageCache[item.ecode]?.data));
+
+      doc.autoTable({
+        startY: yPos,
+        columns: [
+          { header: 'Image',             dataKey: 'image'    },
+          { header: 'Ecode',             dataKey: 'ecode'    },
+          { header: 'Equipment Name',    dataKey: 'name'     },
+          { header: 'Qty',               dataKey: 'quantity' },
+          { header: 'Total Weight (lbs)', dataKey: 'weight'  },
+        ],
+        body: equipmentItems.map(item => ({
+          image:    '',
+          ecode:    item.ecode,
+          name:     item.name,
+          quantity: item.quantity.toString(),
+          weight:   item.weight ? (Number(item.weight) * item.quantity).toFixed(2) : '0.00',
+        })),
+        margin: { left: margin, right: margin },
+        theme: 'grid',
+        headStyles: { fillColor: [44, 62, 80], textColor: [255, 255, 255], fontSize: 10, fontStyle: 'bold', halign: 'center', valign: 'middle' },
+        styles: { overflow: 'linebreak', cellPadding: 5, lineColor: [220, 220, 220], lineWidth: 0.5 },
+        columnStyles: {
+          image:    { cellWidth: imgCellSize + 10 },
+          ecode:    { cellWidth: 70, valign: 'middle', fontSize: 9 },
+          name:     { valign: 'middle', fontSize: 9 },
+          quantity: { cellWidth: 30, halign: 'center', valign: 'middle', fontSize: 10, fontStyle: 'bold' },
+          weight:   { cellWidth: 55, halign: 'right',  valign: 'middle', fontSize: 9 },
+        },
+        alternateRowStyles: { fillColor: [248, 249, 250] },
+        didDrawCell: (data) => {
+          if (data.column.dataKey === 'image' && data.section === 'body') {
+            try {
+              const item   = equipmentItems[data.row.index];
+              const cached = imageCache[item?.ecode];
+              if (cached?.data) {
+                const maxSize = imgCellSize;
+                const scale   = Math.min(maxSize / (cached.width || maxSize), maxSize / (cached.height || maxSize));
+                const drawW   = (cached.width  || maxSize) * scale;
+                const drawH   = (cached.height || maxSize) * scale;
+                const innerW  = data.cell.width  - rowPadding * 2;
+                const innerH  = data.cell.height - rowPadding * 2;
+                doc.addImage(cached.data, 'PNG',
+                  data.cell.x + rowPadding + (innerW - drawW) / 2,
+                  data.cell.y + rowPadding + (innerH - drawH) / 2,
+                  drawW, drawH);
+              }
+            } catch (e) { /* skip bad image */ }
+          }
+        },
+        didParseCell: (data) => {
+          if (data.column.dataKey === 'image' && data.section === 'body') {
+            if (rowHasImage[data.row.index]) data.cell.styles.minCellHeight = rowHeight;
+          }
+        },
+      });
+
+      // ── Wiring diagram pages (landscape) ──────────────────────────────────
+      const addWiringPage = (imgData, imgNativeW, imgNativeH, title) => {
+        if (!imgData) return;
+        doc.addPage([792, 612]); // landscape letter
+        const lw = doc.internal.pageSize.getWidth();
+        const lh = doc.internal.pageSize.getHeight();
+        const headerBottom = drawPageHeader(doc, lw, title);
+        const availW = lw - margin * 2;
+        const availH = lh - headerBottom - margin;
+        const scale  = Math.min(availW / imgNativeW, availH / imgNativeH, 1);
+        const drawW  = imgNativeW * scale;
+        const drawH  = imgNativeH * scale;
+        const x      = margin + (availW - drawW) / 2;
+        const y      = headerBottom + (availH - drawH) / 2;
+        doc.addImage(imgData, 'PNG', x, y, drawW, drawH);
+      };
+
+      addWiringPage(wiringImages.dataImage,  wiringImages.dataWidth,  wiringImages.dataHeight,  'Data Wiring Diagram');
+      addWiringPage(wiringImages.powerImage, wiringImages.powerWidth, wiringImages.powerHeight, 'Power Wiring Diagram');
+
+      // ── Footer on every page ───────────────────────────────────────────────
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        const w = doc.internal.pageSize.getWidth();
+        const h = doc.internal.pageSize.getHeight();
+        doc.setFontSize(8); doc.setTextColor(150);
+        doc.text(`Generated ${new Date().toLocaleDateString()} | Page ${i} of ${totalPages}`, w / 2, h - 20, { align: 'center' });
+      }
+
+      const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      doc.save(`Combined_Export_${ts}.pdf`);
+
+    } catch (err) {
+      console.error('Combined PDF export error:', err);
+      alert('Failed to generate combined PDF. Error: ' + err.message);
+    } finally {
+      const ind = document.getElementById('pdfLoadingIndicator');
+      if (ind) ind.remove();
+    }
   }
 };
 
@@ -894,6 +1156,7 @@ if (typeof window !== 'undefined') {
   window.exportToExcel = () => ExportManager.exportToExcel();
   window.captureEntireScreen = () => ExportManager.captureEntireScreen();
   window.exportEquipmentPDF = () => ExportManager.exportToPDF();
+  window.exportCombinedPDF  = () => ExportManager.exportCombinedPDF();
   window.getEquipmentForScreen = (config) => ExportManager.getEquipmentForScreen(config);
 }
 
