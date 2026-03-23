@@ -921,6 +921,26 @@ const ExportManager = {
             const powerCanvas = idoc.createElement('canvas');
             iwin.renderDiagramToCanvas(powerCanvas, 'power', exportZoom);
 
+            // Collect screen info from the iframe DOM
+            const g = (id) => idoc.getElementById(id)?.textContent?.trim() || '';
+            const screenInfo = {
+              productName:    g('productInfo').replace(/^Product:\s*/i, ''),
+              tileDimensions: g('tileDimensions'),
+              sizeFeet:       g('sizeFeet'),
+              sizeMeters:     g('sizeMeters'),
+              pixelsHor:      g('pixelsHor'),
+              pixelsVer:      g('pixelsVer'),
+              pixelsTotal:    g('pixelsTotal'),
+              totalTiles:     g('totalTiles'),
+              totalWeight:    g('totalWeight'),
+              powerVoltage:   g('powerVoltage'),
+              powerAmps:      g('powerAmps'),
+              powerWatts:     g('powerWatts'),
+              maxDataChain:   g('maxDataChain'),
+              maxPowerChain:  g('maxPowerChain'),
+              powerDistroType: idoc.getElementById('powerDistroType')?.value || '',
+            };
+
             resolve({
               dataImage:   dataCanvas.width  > 0 ? dataCanvas.toDataURL('image/png')  : null,
               dataWidth:   dataCanvas.width,
@@ -928,6 +948,7 @@ const ExportManager = {
               powerImage:  powerCanvas.width > 0 ? powerCanvas.toDataURL('image/png') : null,
               powerWidth:  powerCanvas.width,
               powerHeight: powerCanvas.height,
+              screenInfo,
             });
           } catch (e) {
             console.error('Wiring diagram render error:', e);
@@ -1108,24 +1129,99 @@ const ExportManager = {
       });
 
       // ── Wiring diagram pages (landscape) ──────────────────────────────────
+      const si = wiringImages.screenInfo || {};
+
+      const drawWiringHeader = (d, w) => {
+        let y = margin;
+        // Logo
+        if (logoData) d.addImage(logoData, 'PNG', margin, y, 100, 32);
+        // Order info top-right
+        d.setFontSize(9); d.setTextColor(100);
+        const rx = w - margin;
+        if (orderNumber) d.text(`Order #: ${orderNumber}`, rx, y + 10, { align: 'right' });
+        if (orderDate)   d.text(`Date: ${orderDate}`,      rx, y + 20, { align: 'right' });
+        if (location)    d.text(`Location: ${location}`,   rx, y + 30, { align: 'right' });
+        y += 38;
+        // Product title
+        d.setFontSize(18); d.setTextColor(0); d.setFont(undefined, 'bold');
+        d.text(si.productName || productTypeName, w / 2, y, { align: 'center' });
+        d.setFont(undefined, 'normal');
+        y += 14;
+        // Separator
+        d.setDrawColor(200); d.setLineWidth(0.5);
+        d.line(margin, y, w - margin, y);
+        y += 8;
+        // 5-column info grid
+        const colW  = (w - margin * 2) / 5;
+        const c1 = margin, c2 = margin + colW, c3 = margin + colW * 2,
+              c4 = margin + colW * 3, c5 = margin + colW * 4;
+        const lh = 13; // line height pt
+        d.setFontSize(9); d.setTextColor(0);
+
+        const col = (x, label, lines) => {
+          d.setFont(undefined, 'bold');
+          d.text(label, x, y);
+          d.setFont(undefined, 'normal');
+          d.setFontSize(8); d.setTextColor(60);
+          lines.forEach((ln, i) => { if (ln) d.text(ln, x, y + lh * (i + 1)); });
+          d.setFontSize(9); d.setTextColor(0);
+        };
+
+        col(c1, 'Screen Size', [
+          `Tiles: ${si.tileDimensions}`,
+          `Size: ${si.sizeFeet}`,
+          si.sizeMeters,
+        ]);
+        col(c2, 'Pixels', [
+          `Horizontal: ${si.pixelsHor}`,
+          `Vertical: ${si.pixelsVer}`,
+          `Total: ${si.pixelsTotal}`,
+        ]);
+        col(c3, 'Tiles', [
+          `Total: ${si.totalTiles}`,
+          `Weight: ${si.totalWeight}`,
+        ]);
+        col(c4, 'Power', [
+          `Voltage: ${si.powerVoltage}`,
+          `Amps: ${si.powerAmps}`,
+          `Watts: ${si.powerWatts}`,
+        ]);
+        col(c5, 'Daisy Chain Limits', [
+          `Max Data Chain: ${si.maxDataChain} tiles`,
+          `Max Power Chain: ${si.maxPowerChain} tiles`,
+        ]);
+
+        y += lh * 4 + 6;
+        d.setDrawColor(220); d.setLineWidth(0.3);
+        d.line(margin, y, w - margin, y);
+        return y + 6;
+      };
+
       const addWiringPage = (imgData, imgNativeW, imgNativeH, title) => {
         if (!imgData) return;
         doc.addPage([792, 612]); // landscape letter
         const lw = doc.internal.pageSize.getWidth();
         const lh = doc.internal.pageSize.getHeight();
-        const headerBottom = drawPageHeader(doc, lw, title);
+        const headerBottom = drawWiringHeader(doc, lw);
+
+        // Diagram title label
+        doc.setFontSize(13); doc.setFont(undefined, 'bold'); doc.setTextColor(0);
+        doc.text(title, lw / 2, headerBottom + 12, { align: 'center' });
+        doc.setFont(undefined, 'normal');
+
         const availW = lw - margin * 2;
-        const availH = lh - headerBottom - margin;
+        const availH = lh - headerBottom - 22 - margin;
         const scale  = Math.min(availW / imgNativeW, availH / imgNativeH, 1);
         const drawW  = imgNativeW * scale;
         const drawH  = imgNativeH * scale;
         const x      = margin + (availW - drawW) / 2;
-        const y      = headerBottom + (availH - drawH) / 2;
+        const y      = headerBottom + 20 + (availH - drawH) / 2;
         doc.addImage(imgData, 'PNG', x, y, drawW, drawH);
       };
 
+      const powerLabel = `Power Wiring Diagram (${si.powerDistroType || powerDistroType}V)`;
       addWiringPage(wiringImages.dataImage,  wiringImages.dataWidth,  wiringImages.dataHeight,  'Data Wiring Diagram');
-      addWiringPage(wiringImages.powerImage, wiringImages.powerWidth, wiringImages.powerHeight, 'Power Wiring Diagram');
+      addWiringPage(wiringImages.powerImage, wiringImages.powerWidth, wiringImages.powerHeight, powerLabel);
 
       // ── Footer on every page ───────────────────────────────────────────────
       const totalPages = doc.internal.getNumberOfPages();
