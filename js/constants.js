@@ -222,6 +222,7 @@ const EQUIPMENT = {
   ECON100C6: { code: 'ECON100C6', name: "Ethercon (CAT6) 100'", weight: 6, image: 'ECON100C6.png' },
   ECON1M: { code: 'ECON1M', name: "Ethercon to Ethercon 1m", weight: 0.25, image: 'ECON1M.png' },
   T1025: { code: 'T1025', name: "True1 power cable 25'", weight: 4, image: 'T1025.png' },
+  T1016: { code: 'T1016', name: "True1 Power Cable 16' (5m)", weight: 2, image: 'T1016.png' },
   EDT110M: { code: 'EDT110M', name: "Edison to True1 power cable, 10 meter", weight: 3.2, image: 'EDT110M.png' },
   T1003: { code: 'T1003', name: "True1 power cable 1m (3')", weight: 0.44, image: 'T1003.png' },
 
