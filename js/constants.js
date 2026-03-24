@@ -169,6 +169,7 @@ const EQUIPMENT = {
   BPGPREAR1: { code: 'BPGPREAR1', name: 'ROE Black Pearl rear truss', weight: 1, image: 'BPGPREAR1.png' },
   BPGPREAR05: { code: 'BPGPREAR1', name: 'ROE BP2 / GP2 rear truss .5 meter', weight: 1, image: 'BPGPREAR05.png' },
   BPGPBRIDGE: { code: 'BPGPBRIDGE', name: 'ROE Black Pearl rear bridge clamp', weight: 1, image: 'BPGPBRIDGE.png' },
+  LED10FTS40: { code: 'LED10FTS40', name: 'Schedule 40 1.5" non-threaded pipe 10\'', weight: 2.5, image: 'LED10FTS40.png' },
   LED4FTS40: { code: 'LED4FTS40', name: 'Schedule 40 1.5" non-threaded pipe 4\'', weight: 1, image: 'LED4FTS40.png' },
   '15PIPECPL': { code: '15PIPECPL', name: '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', weight: 1, image: '15PIPECPL.png' },
   
@@ -248,7 +249,7 @@ const CANONICAL_EQUIPMENT_ORDER = [
   'BPGPUBT', 'BPGPREAR05', 'BPGPREAR1', 'BPGPBRIDGE',
   'TXSKIFRAME', 'TXSTAKEXT', 'TXLADDER', 'TXBRACKETS', 'TXVERTSPRT', 'TXSKIFTSNG', 'TXBRACKETC', 'TXM10B',
   'PL25OUT', 'PL25LAD1M', 'PL25CLAMP', 'PL25BEAM50', 'PL25BEAM1K', 'PL25BEAMAD', 'PL25PLAT',
-  'BP25DGREE', 'BP2BBOLT', 'LED4FTS40', '15PIPECPL',
+  'BP25DGREE', 'BP2BBOLT', 'LED10FTS40', 'LED4FTS40', '15PIPECPL',
   'SANDBAG25',
 
   // Cables

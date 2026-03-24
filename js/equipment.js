@@ -1156,13 +1156,17 @@ function addROEEquipment(config, tbody) {
   if (sandbags > 0) addEquipmentRow("SANDBAG25", "Sand Bag 25 lbs.", 25, sandbags, tbody);
 
   // Black Pearl lateral support (only for ground support, walls 9-12 blocks tall)
+  // Use 10' pipes first, fill remainder with 4' pipes
   if (supportType === "Ground" && verticalBlocks >= 9 && verticalBlocks <= 12) {
-    const pipeLength = 4; // 4 feet per pipe
     const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each block is 0.5m wide
-    const singleTubes = Math.floor(screenWidthFeet / pipeLength); // Only pipes that fit within screen width
-    const swivelCouplers = singleTubes * 2; // 2 couplers per pipe
+    const tenFootPipes = Math.floor(screenWidthFeet / 10);
+    const remainingFeet = screenWidthFeet - (tenFootPipes * 10);
+    const fourFootPipes = Math.floor(remainingFeet / 4);
+    const totalPipes = tenFootPipes + fourFootPipes;
+    const swivelCouplers = totalPipes * 2; // 2 couplers per pipe
 
-    if (singleTubes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, singleTubes, tbody);
+    if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
+    if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
     if (swivelCouplers > 0) addEquipmentRow("15PIPECPL", '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', 1.5, swivelCouplers, tbody);
   }
 
@@ -1346,13 +1350,17 @@ function addROEGP26Equipment(config, tbody) {
   if (sandbags > 0) addEquipmentRow("SANDBAG25", "Sand Bag 25 lbs.", 25, sandbags, tbody);
 
   // GP2 Full lateral support (only for ground support, not flown, 4+ blocks tall)
+  // Use 10' pipes first, fill remainder with 4' pipes
   if (productType === "ROEGP26Full" && supportType === "Ground" && verticalBlocks >= 4) {
-    const pipeLength = 4; // 4 feet per pipe
     const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each block is 0.5m wide
-    const singleTubes = Math.floor(screenWidthFeet / pipeLength); // Only pipes that fit within screen width
-    const swivelCouplers = singleTubes * 2; // 2 couplers per pipe
+    const tenFootPipes = Math.floor(screenWidthFeet / 10);
+    const remainingFeet = screenWidthFeet - (tenFootPipes * 10);
+    const fourFootPipes = Math.floor(remainingFeet / 4);
+    const totalPipes = tenFootPipes + fourFootPipes;
+    const swivelCouplers = totalPipes * 2; // 2 couplers per pipe
 
-    if (singleTubes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, singleTubes, tbody);
+    if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
+    if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
     if (swivelCouplers > 0) addEquipmentRow("15PIPECPL", '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', 1.5, swivelCouplers, tbody);
   }
 
