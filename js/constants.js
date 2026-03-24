@@ -167,7 +167,7 @@ const EQUIPMENT = {
   BP25DREE: { code: 'BP25DGREE', name: 'ROE Black Pearl 5 Degree Bracket', weight: 0.25, image: 'BP25DGREE.png' },
   BPGPUBT: { code: 'BPGPUBT', name: 'ROE Black Pearl universal base truss', weight: 17, image: 'BPGPUBT.png' },
   BPGPREAR1: { code: 'BPGPREAR1', name: 'ROE Black Pearl rear truss', weight: 1, image: 'BPGPREAR1.png' },
-  BPGPREAR05: { code: 'BPGPREAR1', name: 'ROE BP2 / GP2 rear truss .5 meter', weight: 1, image: 'BPGPREAR05.png' },
+  BPGPREAR05: { code: 'BPGPREAR05', name: 'ROE BP2 / GP2 rear truss .5 meter', weight: 1, image: 'BPGPREAR05.png' },
   BPGPBRIDGE: { code: 'BPGPBRIDGE', name: 'ROE Black Pearl rear bridge clamp', weight: 1, image: 'BPGPBRIDGE.png' },
   LED4FTS40: { code: 'LED4FTS40', name: 'Schedule 40 1.5" non-threaded pipe 4\'', weight: 1, image: 'LED4FTS40.png' },
   '15PIPECPL': { code: '15PIPECPL', name: '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', weight: 1, image: '15PIPECPL.png' },
