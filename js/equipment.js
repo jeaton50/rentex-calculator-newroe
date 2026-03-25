@@ -1160,8 +1160,9 @@ function addROEEquipment(config, tbody) {
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
-    if (swivelCouplers > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, swivelCouplers, tbody);
   }
+
+  if (universalBaseTruss > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, universalBaseTruss, tbody);
 
   if (wallType === "Convex" || wallType === "Concave") {
     const fiveDegBrackets = totalTiles / 2;
@@ -1351,8 +1352,9 @@ function addROEGP26Equipment(config, tbody) {
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
-    if (swivelCouplers > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, swivelCouplers, tbody);
   }
+
+  if (universalBaseTruss > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, universalBaseTruss, tbody);
 
   if ((wallType === "Convex" || wallType === "Concave") && productType !== "ROEGP26Full") {
     const fiveDegBrackets = totalTiles / 2;
@@ -1710,6 +1712,7 @@ function addROEGraphiteMixEquipment(config, tbody) {
   if (universalBaseTruss > 0) addEquipmentRow("BPGPUBT", "ROE BP2 /GP2 universal base truss", 17, universalBaseTruss, tbody);
   if (rearTruss > 0) addEquipmentRow("BPGPREAR1", "ROE BP2 / GP2 rear truss 1 meter", 1, rearTruss, tbody);
   if (rearBridge > 0) addEquipmentRow("BPGPBRIDGE", "ROE BP2 / GP2 rear bridge clamp", 1, rearBridge, tbody);
+  if (universalBaseTruss > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, universalBaseTruss, tbody);
 
   if (sandbags > 0) addEquipmentRow("SANDBAG25", "Sand Bag 25 lbs.", 25, sandbags, tbody);
 
