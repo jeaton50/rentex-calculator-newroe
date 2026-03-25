@@ -799,7 +799,12 @@ const EquipmentCalculator = {
         rearTruss = Math.floor((effectiveVerticalBlocks + (blankRows || 0)) / 2) * universalBaseTruss;
       }
 
-      rearBridge = rearTruss;
+      // rearBridge = total of all rear trusses (1m + 0.5m)
+      // 0.5m trusses (BPGPREAR05) are added for odd-height BP screens or GP2 Half bottom row
+      const hasHalfMeterRearTruss =
+        (productType !== "ROEGP26Full" && verticalBlocks % 2 === 1 && verticalBlocks >= 3) ||
+        gp2HalfBottomRow;
+      rearBridge = rearTruss + (hasHalfMeterRearTruss ? universalBaseTruss : 0);
     }
 
     if (supportType === "Flyware") {
@@ -1138,12 +1143,9 @@ function addROEEquipment(config, tbody) {
 
   if (rearTruss > 0) addEquipmentRow("BPGPREAR1", "ROE BP2 / GP2 rear truss 1 meter", 1, rearTruss, tbody);
 
-  // Combine BPGPBRIDGE quantities: rearBridge + GP2 Half universalBaseTruss
-  const totalBridgeClamps = (rearBridge || 0) + (gp2HalfBottomRow && universalBaseTruss > 0 ? universalBaseTruss : 0);
-  console.log('🔴 COMBINING BPGPBRIDGE - rearBridge:', rearBridge, '+ GP2Half universalBaseTruss:', (gp2HalfBottomRow && universalBaseTruss > 0 ? universalBaseTruss : 0), '= totalBridgeClamps:', totalBridgeClamps);
-  if (totalBridgeClamps > 0) {
-    console.log('🔴 Adding SINGLE BPGPBRIDGE line with quantity:', totalBridgeClamps);
-    addEquipmentRow("BPGPBRIDGE", "ROE BP2 / GP2 rear bridge clamp", 1, totalBridgeClamps, tbody);
+  // rearBridge now includes both 1m and 0.5m rear trusses
+  if (rearBridge > 0) {
+    addEquipmentRow("BPGPBRIDGE", "ROE BP2 / GP2 rear bridge clamp", 1, rearBridge, tbody);
   }
 
   if (wallType === "Convex" || wallType === "Concave") {
@@ -1167,7 +1169,7 @@ function addROEEquipment(config, tbody) {
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
-    if (swivelCouplers > 0) addEquipmentRow("15PIPECPL", '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', 1.5, swivelCouplers, tbody);
+    if (swivelCouplers > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, swivelCouplers, tbody);
   }
 
   if (cables.CAT5ES005 > 0) addEquipmentRow("CAT5ES005", "CAT5e ethernet cable 5'", 1, cables.CAT5ES005, tbody);
@@ -1332,12 +1334,9 @@ function addROEGP26Equipment(config, tbody) {
 
   if (rearTruss > 0) addEquipmentRow("BPGPREAR1", "ROE BP2 / GP2 rear truss 1 meter", 1, rearTruss, tbody);
 
-  // Combine BPGPBRIDGE quantities: rearBridge + GP2 Half universalBaseTruss
-  const totalBridgeClamps = (rearBridge || 0) + (gp2HalfBottomRow && universalBaseTruss > 0 ? universalBaseTruss : 0);
-  console.log('🔴 COMBINING BPGPBRIDGE - rearBridge:', rearBridge, '+ GP2Half universalBaseTruss:', (gp2HalfBottomRow && universalBaseTruss > 0 ? universalBaseTruss : 0), '= totalBridgeClamps:', totalBridgeClamps);
-  if (totalBridgeClamps > 0) {
-    console.log('🔴 Adding SINGLE BPGPBRIDGE line with quantity:', totalBridgeClamps);
-    addEquipmentRow("BPGPBRIDGE", "ROE BP2 / GP2 rear bridge clamp", 1, totalBridgeClamps, tbody);
+  // rearBridge now includes both 1m and 0.5m rear trusses
+  if (rearBridge > 0) {
+    addEquipmentRow("BPGPBRIDGE", "ROE BP2 / GP2 rear bridge clamp", 1, rearBridge, tbody);
   }
 
   if ((wallType === "Convex" || wallType === "Concave") && productType !== "ROEGP26Full") {
@@ -1361,7 +1360,7 @@ function addROEGP26Equipment(config, tbody) {
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
-    if (swivelCouplers > 0) addEquipmentRow("15PIPECPL", '1 1/2" ID pipe coupler with 1/2 Cheesborough clamp', 1.5, swivelCouplers, tbody);
+    if (swivelCouplers > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, swivelCouplers, tbody);
   }
 
   // GP2 Full specific cables (one per column)
