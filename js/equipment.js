@@ -1135,7 +1135,6 @@ function addROEEquipment(config, tbody) {
   if (singleBases > 0) addEquipmentRow("BPBOBB1", "ROE Black Pearl base bar, 1W, 0.5m", 16, singleBases, tbody);
   if (doubleBases > 0) addEquipmentRow("BPBOBB2", "ROE Black Pearl base bar, 2W, 1.0m", 28, doubleBases, tbody);
   if (universalBaseTruss > 0) addEquipmentRow("BPGPUBT", "ROE BP2 /GP2 universal base truss", 17, universalBaseTruss, tbody);
-  if (universalBaseTruss > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, universalBaseTruss, tbody);
 
   // Add BPGPREAR05 for odd heights (3, 5, 7, 9, 11) or GP2 Half bottom row
   if (universalBaseTruss > 0 && (gp2HalfBottomRow || (verticalBlocks % 2 === 1 && verticalBlocks >= 3))) {
@@ -1149,15 +1148,6 @@ function addROEEquipment(config, tbody) {
     addEquipmentRow("BPGPBRIDGE", "ROE BP2 / GP2 rear bridge clamp", 1, rearBridge, tbody);
   }
 
-  if (wallType === "Convex" || wallType === "Concave") {
-    const fiveDegBrackets = totalTiles / 2;
-    const m10Bolts = fiveDegBrackets * 4;
-    addEquipmentRow("BP25DGREE", "ROE Black Pearl 5 Degree Bracket", 0.25, fiveDegBrackets, tbody);
-    addEquipmentRow("BP2BBOLT", "M10x30 bolts for ROE brackets", 0.2, m10Bolts, tbody);
-  }
-
-  if (sandbags > 0) addEquipmentRow("SANDBAG25", "Sand Bag 25 lbs.", 25, sandbags, tbody);
-
   // Black Pearl lateral support (only for ground support, walls 9-12 blocks tall)
   // Use 10' pipes first, fill remainder with 4' pipes
   if (supportType === "Ground" && verticalBlocks >= 9 && verticalBlocks <= 12) {
@@ -1170,7 +1160,17 @@ function addROEEquipment(config, tbody) {
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
+    if (swivelCouplers > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, swivelCouplers, tbody);
   }
+
+  if (wallType === "Convex" || wallType === "Concave") {
+    const fiveDegBrackets = totalTiles / 2;
+    const m10Bolts = fiveDegBrackets * 4;
+    addEquipmentRow("BP25DGREE", "ROE Black Pearl 5 Degree Bracket", 0.25, fiveDegBrackets, tbody);
+    addEquipmentRow("BP2BBOLT", "M10x30 bolts for ROE brackets", 0.2, m10Bolts, tbody);
+  }
+
+  if (sandbags > 0) addEquipmentRow("SANDBAG25", "Sand Bag 25 lbs.", 25, sandbags, tbody);
 
   if (cables.CAT5ES005 > 0) addEquipmentRow("CAT5ES005", "CAT5e ethernet cable 5'", 1, cables.CAT5ES005, tbody);
   if (cables.ECON010C6 > 0) addEquipmentRow("ECON010C6", "Ethercon (CAT6) 10'", 1, cables.ECON010C6, tbody);
@@ -1324,7 +1324,6 @@ function addROEGP26Equipment(config, tbody) {
   if (singleBases > 0) addEquipmentRow("GP2BASE1", "ROE Graphite GP base bar, 1W", 16, singleBases, tbody);
   if (doubleBases > 0) addEquipmentRow("GP2BASE2", "ROE Graphite GP base bar, 2W, V1.5", 28, doubleBases, tbody);
   if (universalBaseTruss > 0) addEquipmentRow("BPGPUBT", "ROE BP2 /GP2 universal base truss", 17, universalBaseTruss, tbody);
-  if (universalBaseTruss > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, universalBaseTruss, tbody);
 
   console.log('GP2 Half rear support check - universalBaseTruss:', universalBaseTruss, 'gp2HalfBottomRow:', gp2HalfBottomRow, 'position:', gp2HalfPosition);
   if (universalBaseTruss > 0 && gp2HalfBottomRow) {
@@ -1340,15 +1339,6 @@ function addROEGP26Equipment(config, tbody) {
     addEquipmentRow("BPGPBRIDGE", "ROE BP2 / GP2 rear bridge clamp", 1, rearBridge, tbody);
   }
 
-  if ((wallType === "Convex" || wallType === "Concave") && productType !== "ROEGP26Full") {
-    const fiveDegBrackets = totalTiles / 2;
-    const m10Bolts = fiveDegBrackets * 4;
-    addEquipmentRow("BP25DGREE", "ROE Black Pearl 5 Degree Bracket", 0.25, fiveDegBrackets, tbody);
-    addEquipmentRow("BP2BBOLT", "M10x30 bolts for ROE brackets", 0.2, m10Bolts, tbody);
-  }
-
-  if (sandbags > 0) addEquipmentRow("SANDBAG25", "Sand Bag 25 lbs.", 25, sandbags, tbody);
-
   // GP2 Full lateral support (only for ground support, not flown, 4+ blocks tall)
   // Use 10' pipes first, fill remainder with 4' pipes
   if (productType === "ROEGP26Full" && supportType === "Ground" && verticalBlocks >= 4) {
@@ -1361,7 +1351,17 @@ function addROEGP26Equipment(config, tbody) {
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
+    if (swivelCouplers > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, swivelCouplers, tbody);
   }
+
+  if ((wallType === "Convex" || wallType === "Concave") && productType !== "ROEGP26Full") {
+    const fiveDegBrackets = totalTiles / 2;
+    const m10Bolts = fiveDegBrackets * 4;
+    addEquipmentRow("BP25DGREE", "ROE Black Pearl 5 Degree Bracket", 0.25, fiveDegBrackets, tbody);
+    addEquipmentRow("BP2BBOLT", "M10x30 bolts for ROE brackets", 0.2, m10Bolts, tbody);
+  }
+
+  if (sandbags > 0) addEquipmentRow("SANDBAG25", "Sand Bag 25 lbs.", 25, sandbags, tbody);
 
   // GP2 Full specific cables (one per column)
   if (productType === "ROEGP26Full") {
@@ -1708,7 +1708,6 @@ function addROEGraphiteMixEquipment(config, tbody) {
   if (singleBases > 0) addEquipmentRow("GP2BASE1", "ROE Graphite GP base bar, 1W", 16, singleBases, tbody);
   if (doubleBases > 0) addEquipmentRow("GP2BASE2", "ROE Graphite GP base bar, 2W, V1.5", 28, doubleBases, tbody);
   if (universalBaseTruss > 0) addEquipmentRow("BPGPUBT", "ROE BP2 /GP2 universal base truss", 17, universalBaseTruss, tbody);
-  if (universalBaseTruss > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, universalBaseTruss, tbody);
   if (rearTruss > 0) addEquipmentRow("BPGPREAR1", "ROE BP2 / GP2 rear truss 1 meter", 1, rearTruss, tbody);
   if (rearBridge > 0) addEquipmentRow("BPGPBRIDGE", "ROE BP2 / GP2 rear bridge clamp", 1, rearBridge, tbody);
 
