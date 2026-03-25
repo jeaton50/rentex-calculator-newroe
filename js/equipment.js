@@ -1170,7 +1170,6 @@ function addROEEquipment(config, tbody) {
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
-    if (swivelCouplers > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, swivelCouplers, tbody);
   }
 
   if (cables.CAT5ES005 > 0) addEquipmentRow("CAT5ES005", "CAT5e ethernet cable 5'", 1, cables.CAT5ES005, tbody);
@@ -1362,7 +1361,6 @@ function addROEGP26Equipment(config, tbody) {
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
-    if (swivelCouplers > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, swivelCouplers, tbody);
   }
 
   // GP2 Full specific cables (one per column)
