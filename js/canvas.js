@@ -440,6 +440,37 @@ const CanvasRenderer = {
               ctx.stroke();
             }
           }
+
+          // Draw 'D' labels on GP2 Half tile cells (top and bottom)
+          ctx.font = `bold ${Math.max(10, Math.min(blockWidth, halfBlockHeight) / 4)}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if (topHalfRows > 0) {
+            for (let row = 0; row < topHalfRows; row++) {
+              for (let col = 0; col < wallData.blocksHor; col++) {
+                const textX = xOffset + col * blockWidth + blockWidth / 2;
+                const textY = topHalfY + row * halfBlockHeight + halfBlockHeight / 2;
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 3;
+                ctx.strokeText('D', textX, textY);
+                ctx.fillStyle = 'white';
+                ctx.fillText('D', textX, textY);
+              }
+            }
+          }
+          if (bottomHalfRows > 0) {
+            for (let row = 0; row < bottomHalfRows; row++) {
+              for (let col = 0; col < wallData.blocksHor; col++) {
+                const textX = xOffset + col * blockWidth + blockWidth / 2;
+                const textY = bottomHalfY + row * halfBlockHeight + halfBlockHeight / 2;
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 3;
+                ctx.strokeText('D', textX, textY);
+                ctx.fillStyle = 'white';
+                ctx.fillText('D', textX, textY);
+              }
+            }
+          }
         } else {
           // Normal mode: single tile type
           const wallWidth = wallData.blocksHor * blockWidth;
@@ -566,7 +597,8 @@ const CanvasRenderer = {
       }
 
       if (wallData.groundSupport && !mixedTileMode) {
-        this.drawGroundBases(ctx, wallData.blocksHor, wallData.blocksVer, blockWidth, blockHeight, xOffset, supportHeight, zoomLevel);
+        const totalVerWithDummies = wallData.blocksVer + (wallData.blankRows || 0);
+        this.drawGroundBases(ctx, wallData.blocksHor, totalVerWithDummies, blockWidth, blockHeight, xOffset, supportHeight, zoomLevel);
       }
 
       // Restore context
