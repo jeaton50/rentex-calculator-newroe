@@ -401,6 +401,22 @@
               <option value="top">Top</option>
             </select>
           </div>
+
+          <!-- GP2 Full Row Option (for GP2.6 Full) -->
+          <div style="margin-top: 8px;">
+            <input type="checkbox" id="gp2FullRowCheckbox" name="gp2FullRowCheckbox">
+            <label for="gp2FullRowCheckbox">Add GP2.6 Full Row</label>
+            <div id="gp2FullRowCountContainer" style="display: none; margin-top: 5px;">
+              <label for="gp2FullRowCount">Number of Full Rows:</label>
+              <input type="number" id="gp2FullRowCount" name="gp2FullRowCount" min="1" max="2" value="1" style="width: 60px;">
+              <br>
+              <label for="gp2FullRowPosition" style="margin-top: 5px; display: inline-block;">Position:</label>
+              <select id="gp2FullRowPosition" name="gp2FullRowPosition" style="margin-top: 5px;">
+                <option value="bottom">Bottom</option>
+                <option value="top">Top</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <!-- Wall Type Selection with Radio Buttons -->

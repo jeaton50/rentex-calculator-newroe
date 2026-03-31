@@ -1231,19 +1231,25 @@ function addROEGP26Equipment(config, tbody) {
     gp2HalfBottomRow,
     gp2HalfRows,
     gp2HalfPosition,
+    gp2FullRowManualRows = 0,
+    gp2FullRowManualPosition = 'bottom',
   } = config;
 
   const tileWeight = productType === "ROEGP26Full" ? 19.84 : 11.44;
   const pixelWidth = 192;
   const pixelHeight = productType === "ROEGP26Full" ? 384 : 192;
 
-  // Calculate total weight including GP2 Half tiles if present
+  // Calculate total weight including GP2 Half tiles and additional full rows if present
   totalWeight = tileWeight * totalTiles;
   if (gp2HalfBottomRow && gp2HalfRows > 0) {
     const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows;
     const gp2HalfWeight = 11.44; // GP2 Half tile weight
     totalWeight += gp2HalfWeight * gp2HalfTilesNeeded;
     console.log('Adding GP2 Half weight:', gp2HalfTilesNeeded, 'tiles x', gp2HalfWeight, 'lbs =', gp2HalfWeight * gp2HalfTilesNeeded, 'lbs');
+  }
+  if (gp2FullRowManualRows > 0) {
+    const fullRowTilesNeeded = horizontalBlocks * gp2FullRowManualRows;
+    totalWeight += 19.84 * fullRowTilesNeeded;
   }
 
   // Calculate total pixels - account for mixed GP2 Full + GP2 Half configurations
@@ -1300,6 +1306,25 @@ function addROEGP26Equipment(config, tbody) {
       }
     } else {
       console.log('NOT adding GP2 Half equipment - gp2HalfBottomRow:', gp2HalfBottomRow, 'gp2HalfRows:', gp2HalfRows);
+    }
+
+    // Add GP2 Full tiles for the additional full rows checkbox
+    if (gp2FullRowManualRows > 0) {
+      const fullRowTilesNeeded = horizontalBlocks * gp2FullRowManualRows;
+      const packageSize = 6;
+      const fullRowActiveCases = Math.ceil(fullRowTilesNeeded / packageSize);
+      const fullRowTotalCases = fullRowActiveCases + 1; // Guarantee at least 1 spare case
+      const fullRowWithSpare = fullRowTotalCases * packageSize;
+      const fullRowSpareTiles = fullRowWithSpare - fullRowTilesNeeded;
+      const fullRowSpareCases = fullRowTotalCases - fullRowActiveCases;
+
+      const rowLabel = gp2FullRowManualRows === 1 ? "row" : "rows";
+      const positionLabel = gp2FullRowManualPosition === 'top' ? 'top' : 'bottom';
+      addEquipmentRow("6GP2FULL", `ROE GP2.6 Full 6x tile package (${fullRowActiveCases} active + ${fullRowSpareCases} spare) (for ${positionLabel} ${gp2FullRowManualRows} ${rowLabel})`, 0, fullRowTotalCases, tbody);
+      addEquipmentRow("ROEGP26FULL", `ROE GP2.6 Full LED tile 500x1000mm (${positionLabel} ${gp2FullRowManualRows} ${rowLabel})`, 19.84, fullRowTilesNeeded, tbody);
+      if (fullRowSpareTiles > 0) {
+        addEquipmentRow("ROEGP26FULL", `ROE GP2.6 Full LED tile 500x1000mm **SPARE** (${positionLabel} ${gp2FullRowManualRows} ${rowLabel})`, 19.84, fullRowSpareTiles, tbody);
+      }
     }
   } else {
     const packageCount = Math.ceil(totalTilesWithSpares / 12);
