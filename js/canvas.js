@@ -177,7 +177,8 @@ const CanvasRenderer = {
     } else {
       // Normal mode
       singleScreenWidth = wallData.blocksHor * blockWidth;
-      totalWallHeight = wallData.blocksVer * blockHeight;
+      const blankRowsCount = wallData.blankRows || 0;
+      totalWallHeight = (wallData.blocksVer + blankRowsCount) * blockHeight;
     }
 
     canvas.width = (singleScreenWidth * numScreens) + (this.config.screenSpacing * (numScreens - 1)) + (gridLinePadding * 2);
@@ -475,6 +476,52 @@ const CanvasRenderer = {
             ctx.moveTo(wallX, lineY);
             ctx.lineTo(wallX + wallWidth, lineY);
             ctx.stroke();
+          }
+
+          // Draw dummy tile rows at the bottom, marked with 'D'
+          const blankRows = wallData.blankRows || 0;
+          if (blankRows > 0) {
+            const dummyStartY = wallY + wallData.blocksVer * blockHeight;
+
+            // Dark background for dummy tiles
+            ctx.globalAlpha = 0.45;
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(wallX, dummyStartY, wallWidth, blankRows * blockHeight);
+            ctx.globalAlpha = 1.0;
+
+            // Grid lines for dummy rows
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 2;
+            for (let col = 0; col <= wallData.blocksHor; col++) {
+              const lineX = xOffset + col * blockWidth;
+              ctx.beginPath();
+              ctx.moveTo(lineX, dummyStartY);
+              ctx.lineTo(lineX, dummyStartY + blankRows * blockHeight);
+              ctx.stroke();
+            }
+            for (let row = 0; row <= blankRows; row++) {
+              const lineY = dummyStartY + row * blockHeight;
+              ctx.beginPath();
+              ctx.moveTo(wallX, lineY);
+              ctx.lineTo(wallX + wallWidth, lineY);
+              ctx.stroke();
+            }
+
+            // 'D' labels for each dummy tile cell
+            ctx.font = `bold ${Math.max(12, Math.min(blockWidth, blockHeight) / 4)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            for (let row = 0; row < blankRows; row++) {
+              for (let col = 0; col < wallData.blocksHor; col++) {
+                const textX = xOffset + col * blockWidth + blockWidth / 2;
+                const textY = dummyStartY + row * blockHeight + blockHeight / 2;
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 3;
+                ctx.strokeText('D', textX, textY);
+                ctx.fillStyle = 'white';
+                ctx.fillText('D', textX, textY);
+              }
+            }
           }
         }
       }

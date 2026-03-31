@@ -406,6 +406,23 @@ function generateWall() {
   let blankRows = 0;
   if (document.getElementById('dummyTilesCheckbox')?.checked) {
     blankRows = parseInt(document.getElementById('dummyTileCount')?.value || 0, 10) || 1;
+    // Clamp blankRows so total height doesn't exceed the product max
+    const maxTilesAttr = document.getElementById('blocksVer')?.getAttribute('max');
+    if (maxTilesAttr) {
+      const maxTiles = parseInt(maxTilesAttr, 10);
+      const availableForDummy = Math.max(0, maxTiles - blocksVer);
+      if (blankRows > availableForDummy) {
+        blankRows = availableForDummy;
+        const dummyCountEl = document.getElementById('dummyTileCount');
+        if (dummyCountEl) dummyCountEl.value = Math.max(1, blankRows);
+        if (blankRows === 0) {
+          const dummyCb = document.getElementById('dummyTilesCheckbox');
+          if (dummyCb) dummyCb.checked = false;
+          const container = document.getElementById('dummyTileCountContainer');
+          if (container) container.style.display = 'none';
+        }
+      }
+    }
   }
 
   // Get GP2 Half configuration for GP2 Full
@@ -448,8 +465,26 @@ function generateWall() {
     gp2FullRowManualRows = parseInt(gp2FullRowCountElement?.value || 1, 10);
     gp2FullRowManualPosition = gp2FullRowPositionElement?.value || 'bottom';
 
+    // Clamp gp2FullRowManualRows so total height doesn't exceed the product max
+    const maxTilesAttrFull = document.getElementById('blocksVer')?.getAttribute('max');
+    if (maxTilesAttrFull) {
+      const maxTilesFull = parseInt(maxTilesAttrFull, 10);
+      const availableForFullRow = Math.max(0, maxTilesFull - blocksVer);
+      if (gp2FullRowManualRows > availableForFullRow) {
+        gp2FullRowManualRows = availableForFullRow;
+        if (gp2FullRowCountElement) gp2FullRowCountElement.value = Math.max(1, gp2FullRowManualRows);
+        if (gp2FullRowManualRows === 0) {
+          if (gp2FullRowCheckboxElement) gp2FullRowCheckboxElement.checked = false;
+          const container = document.getElementById('gp2FullRowCountContainer');
+          if (container) container.style.display = 'none';
+        }
+      }
+    }
+
     // Update display blocks to include additional full rows
-    displayBlocksVer = displayBlocksVer + gp2FullRowManualRows;
+    if (gp2FullRowManualRows > 0) {
+      displayBlocksVer = displayBlocksVer + gp2FullRowManualRows;
+    }
   }
 
   // Check if ROE Graphite Mix mode is enabled
