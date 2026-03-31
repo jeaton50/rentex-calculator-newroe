@@ -325,6 +325,8 @@ function generateWall() {
   let hasFractionalInput = false;
   let blocksVerRaw = 0;
   let displayBlocksVer = 0;
+  let gp2FullRowManualRows = 0;
+  let gp2FullRowManualPosition = 'bottom';
 
   var widthAsFeet = document.getElementById('widthFeet').value;
   var heightAsFeet = document.getElementById('heightFeet').value;
@@ -437,6 +439,19 @@ function generateWall() {
   const gp2HalfBottomRow = (gp2HalfAutoRows > 0) || (gp2HalfManualRows > 0);
   const gp2HalfRows = gp2HalfAutoRows + gp2HalfManualRows; // Total for equipment calculations
 
+  // Check if GP2 Full Row is enabled via manual checkbox (additive full rows)
+  const gp2FullRowCheckboxElement = document.getElementById('gp2FullRowCheckbox');
+  const gp2FullRowCountElement = document.getElementById('gp2FullRowCount');
+  const gp2FullRowPositionElement = document.getElementById('gp2FullRowPosition');
+
+  if (gp2FullRowCheckboxElement?.checked && productType === 'ROEGP26Full') {
+    gp2FullRowManualRows = parseInt(gp2FullRowCountElement?.value || 1, 10);
+    gp2FullRowManualPosition = gp2FullRowPositionElement?.value || 'bottom';
+
+    // Update display blocks to include additional full rows
+    displayBlocksVer = displayBlocksVer + gp2FullRowManualRows;
+  }
+
   // Check if ROE Graphite Mix mode is enabled
   const roeGraphiteMixEnabled = document.getElementById('roeGraphicMix')?.checked || false;
   let graphiteMixData = null;
@@ -548,6 +563,8 @@ function generateWall() {
     gp2HalfManualRows,
     gp2HalfManualPosition,
     gp2FullVerticalBlocks, // Reduced GP2 Full blocks (after replacing top rows with Half)
+    gp2FullRowManualRows,
+    gp2FullRowManualPosition,
     roeGraphiteMixEnabled,
     graphiteMixData
   };
@@ -1671,6 +1688,11 @@ function saveFormState() {
   const gp2HalfCount = document.getElementById('gp2HalfCount')?.value || '1';
   const gp2HalfPosition = document.getElementById('gp2HalfPosition')?.value || 'bottom';
 
+  // GP2 Full Row settings
+  const gp2FullRowCheckbox = document.getElementById('gp2FullRowCheckbox')?.checked || false;
+  const gp2FullRowCount = document.getElementById('gp2FullRowCount')?.value || '1';
+  const gp2FullRowPosition = document.getElementById('gp2FullRowPosition')?.value || 'bottom';
+
   // Screen options (single vs multiple)
   const multipleScreens = document.getElementById('multipleScreens')?.checked || false;
   const numScreens = document.getElementById('numScreens')?.value || '1';
@@ -1686,6 +1708,9 @@ function saveFormState() {
   localStorage.setItem('calc_gp2HalfCheckbox', gp2HalfCheckbox);
   localStorage.setItem('calc_gp2HalfCount', gp2HalfCount);
   localStorage.setItem('calc_gp2HalfPosition', gp2HalfPosition);
+  localStorage.setItem('calc_gp2FullRowCheckbox', gp2FullRowCheckbox);
+  localStorage.setItem('calc_gp2FullRowCount', gp2FullRowCount);
+  localStorage.setItem('calc_gp2FullRowPosition', gp2FullRowPosition);
   localStorage.setItem('calc_multipleScreens', multipleScreens);
   localStorage.setItem('calc_numScreens', numScreens);
 
@@ -1788,6 +1813,26 @@ function restoreFormState() {
   if (gp2HalfPosition) {
     const gp2HalfPositionSelect = document.getElementById('gp2HalfPosition');
     if (gp2HalfPositionSelect) gp2HalfPositionSelect.value = gp2HalfPosition;
+  }
+
+  // Restore GP2 Full Row settings
+  const gp2FullRowCheckbox = localStorage.getItem('calc_gp2FullRowCheckbox') === 'true';
+  const gp2FullRowCheckboxEl = document.getElementById('gp2FullRowCheckbox');
+  if (gp2FullRowCheckboxEl) {
+    gp2FullRowCheckboxEl.checked = gp2FullRowCheckbox;
+    gp2FullRowCheckboxEl.dispatchEvent(new Event('change'));
+  }
+
+  const gp2FullRowCount = localStorage.getItem('calc_gp2FullRowCount');
+  if (gp2FullRowCount) {
+    const gp2FullRowCountInput = document.getElementById('gp2FullRowCount');
+    if (gp2FullRowCountInput) gp2FullRowCountInput.value = gp2FullRowCount;
+  }
+
+  const gp2FullRowPosition = localStorage.getItem('calc_gp2FullRowPosition');
+  if (gp2FullRowPosition) {
+    const gp2FullRowPositionSelect = document.getElementById('gp2FullRowPosition');
+    if (gp2FullRowPositionSelect) gp2FullRowPositionSelect.value = gp2FullRowPosition;
   }
 
   // Restore screen options
@@ -2535,6 +2580,24 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('gp2HalfPosition')?.addEventListener('change', function () {
+    generateWall();
+  });
+
+  document.getElementById('gp2FullRowCheckbox')?.addEventListener('change', function () {
+    const countContainer = document.getElementById('gp2FullRowCountContainer');
+    if (this.checked) {
+      countContainer.style.display = 'block';
+    } else {
+      countContainer.style.display = 'none';
+    }
+    generateWall();
+  });
+
+  document.getElementById('gp2FullRowCount')?.addEventListener('input', function () {
+    generateWall();
+  });
+
+  document.getElementById('gp2FullRowPosition')?.addEventListener('change', function () {
     generateWall();
   });
 
