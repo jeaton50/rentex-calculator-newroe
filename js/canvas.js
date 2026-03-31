@@ -511,6 +511,34 @@ const CanvasRenderer = {
             ctx.stroke();
           }
 
+          // Draw 'D' labels on extra GP2 Full rows added via checkbox
+          const gp2FullRowManualRows = wallData.gp2FullRowManualRows || 0;
+          if (gp2FullRowManualRows > 0) {
+            const gp2FullRowPosition = wallData.gp2FullRowManualPosition || 'bottom';
+            const extraRowStartRow = gp2FullRowPosition === 'top' ? 0 : wallData.blocksVer - gp2FullRowManualRows;
+
+            // Semi-transparent overlay to distinguish extra rows
+            ctx.globalAlpha = 0.25;
+            ctx.fillStyle = '#2e1a1a';
+            ctx.fillRect(wallX, wallY + extraRowStartRow * blockHeight, wallWidth, gp2FullRowManualRows * blockHeight);
+            ctx.globalAlpha = 1.0;
+
+            ctx.font = `bold ${Math.max(12, Math.min(blockWidth, blockHeight) / 4)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            for (let row = 0; row < gp2FullRowManualRows; row++) {
+              for (let col = 0; col < wallData.blocksHor; col++) {
+                const textX = xOffset + col * blockWidth + blockWidth / 2;
+                const textY = wallY + (extraRowStartRow + row) * blockHeight + blockHeight / 2;
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 3;
+                ctx.strokeText('D', textX, textY);
+                ctx.fillStyle = 'white';
+                ctx.fillText('D', textX, textY);
+              }
+            }
+          }
+
           // Draw dummy tile rows at the bottom, marked with 'D'
           const blankRows = wallData.blankRows || 0;
           if (blankRows > 0) {
