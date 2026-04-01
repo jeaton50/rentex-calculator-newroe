@@ -522,13 +522,16 @@ const CanvasRenderer = {
             }
           }
 
-          // Draw 'D' labels on GP2 Half tile cells only when manually added via checkbox
+          // Draw 'D' labels only on manually-added GP2 Half rows (not auto rows from fractional input)
           if (gp2HalfManualRows > 0) {
             ctx.font = `bold ${Math.max(10, Math.min(blockWidth, halfBlockHeight) / 4)}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            if (topHalfRows > 0) {
-              for (let row = 0; row < topHalfRows; row++) {
+
+            // Top section: manual rows follow auto rows, so skip the first gp2HalfAutoRows
+            if (topHalfRows > 0 && gp2HalfManualPosition === 'top') {
+              const manualStartRow = gp2HalfAutoRows; // auto rows are first; manual come after
+              for (let row = manualStartRow; row < topHalfRows; row++) {
                 for (let col = 0; col < wallData.blocksHor; col++) {
                   const textX = xOffset + col * blockWidth + blockWidth / 2;
                   const textY = topHalfY + row * halfBlockHeight + halfBlockHeight / 2;
@@ -540,6 +543,8 @@ const CanvasRenderer = {
                 }
               }
             }
+
+            // Bottom section: always manual (auto rows always go to top)
             if (bottomHalfRows > 0) {
               for (let row = 0; row < bottomHalfRows; row++) {
                 for (let col = 0; col < wallData.blocksHor; col++) {
