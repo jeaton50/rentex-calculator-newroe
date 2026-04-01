@@ -1148,19 +1148,19 @@ function addROEEquipment(config, tbody) {
     addEquipmentRow("BPGPBRIDGE", "ROE BP2 / GP2 rear bridge clamp", 1, rearBridge, tbody);
   }
 
-  // Black Pearl lateral support (only for ground support, walls 9-12 blocks tall)
-  // Use 10' pipes first, fill remainder with 4' pipes
+  // Black Pearl lateral support (only for ground support, walls 9+ blocks tall)
+  // Add a row of pipes and clamps for each tile of height beyond 8
   if (supportType === "Ground" && verticalBlocks >= 9 && verticalBlocks <= 12) {
+    const lateralRows = verticalBlocks - 8;
     const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each block is 0.5m wide
-    const tenFootPipes = Math.floor(screenWidthFeet / 10);
-    const remainingFeet = screenWidthFeet - (tenFootPipes * 10);
-    const fourFootPipes = Math.floor(remainingFeet / 4);
-    const totalPipes = tenFootPipes + fourFootPipes;
-    const swivelCouplers = totalPipes * 2; // 2 couplers per pipe
+    const tenFootPipes = Math.floor(screenWidthFeet / 10) * lateralRows;
+    const remainingFeet = screenWidthFeet - (Math.floor(screenWidthFeet / 10) * 10);
+    const fourFootPipes = Math.floor(remainingFeet / 4) * lateralRows;
+    const swivelCheeseboros = universalBaseTruss * lateralRows;
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
-    if (universalBaseTruss > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, universalBaseTruss, tbody);
+    if (swivelCheeseboros > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, swivelCheeseboros, tbody);
   }
 
   if (wallType === "Convex" || wallType === "Concave") {
@@ -1339,19 +1339,19 @@ function addROEGP26Equipment(config, tbody) {
     addEquipmentRow("BPGPBRIDGE", "ROE BP2 / GP2 rear bridge clamp", 1, rearBridge, tbody);
   }
 
-  // GP2 Full lateral support (only for ground support, not flown, 4+ blocks tall)
-  // Use 10' pipes first, fill remainder with 4' pipes
-  if (productType === "ROEGP26Full" && supportType === "Ground" && verticalBlocks >= 4) {
+  // GP2 Full lateral support (only for ground support, not flown, 5+ blocks tall)
+  // Each GP2 block = 1m = 2 tile equivalents; add a row for each tile equiv beyond 8
+  if (productType === "ROEGP26Full" && supportType === "Ground" && verticalBlocks >= 5) {
+    const lateralRows = (verticalBlocks * 2) - 8;
     const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each block is 0.5m wide
-    const tenFootPipes = Math.floor(screenWidthFeet / 10);
-    const remainingFeet = screenWidthFeet - (tenFootPipes * 10);
-    const fourFootPipes = Math.floor(remainingFeet / 4);
-    const totalPipes = tenFootPipes + fourFootPipes;
-    const swivelCouplers = totalPipes * 2; // 2 couplers per pipe
+    const tenFootPipes = Math.floor(screenWidthFeet / 10) * lateralRows;
+    const remainingFeet = screenWidthFeet - (Math.floor(screenWidthFeet / 10) * 10);
+    const fourFootPipes = Math.floor(remainingFeet / 4) * lateralRows;
+    const swivelCheeseboros = universalBaseTruss * lateralRows;
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
-    if (universalBaseTruss > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, universalBaseTruss, tbody);
+    if (swivelCheeseboros > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, swivelCheeseboros, tbody);
   }
 
   if ((wallType === "Convex" || wallType === "Concave") && productType !== "ROEGP26Full") {
@@ -1556,13 +1556,14 @@ function addTheatrixxEquipment(config, tbody) {
     }
 
     // Theatrixx lateral support (ground support, walls 9+ tiles tall)
-    // Use 10' pipes first, fill remainder with 4' pipes
+    // Add a row of pipes and clamps for each tile of height beyond 8
     if (verticalBlocks >= 9) {
+      const lateralRows = verticalBlocks - 8;
       const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each tile is 0.5m wide
-      const tenFootPipes = Math.floor(screenWidthFeet / 10);
-      const remainingFeet = screenWidthFeet - (tenFootPipes * 10);
-      const fourFootPipes = Math.floor(remainingFeet / 4);
-      const halfSlimCB = H49 * 2; // 2 per vertical support
+      const tenFootPipes = Math.floor(screenWidthFeet / 10) * lateralRows;
+      const remainingFeet = screenWidthFeet - (Math.floor(screenWidthFeet / 10) * 10);
+      const fourFootPipes = Math.floor(remainingFeet / 4) * lateralRows;
+      const halfSlimCB = H49 * 2 * lateralRows; // 2 per vertical support per row
 
       if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
       if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
