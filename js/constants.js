@@ -180,8 +180,8 @@ const EQUIPMENT = {
   GP2BASE2: { code: 'GP2BASE2', name: 'ROE Graphite GP base bar, 2W, V1.5', weight: 0, image: 'GP2BASE2.png' },
   GP2HEAD1: { code: 'GP2HEAD1', name: 'ROE Graphite GP hanging bar, 1W, clamp and shackle', weight: 0, image: 'GP2HEAD1.png' },
   GP2HEAD2: { code: 'GP2HEAD2', name: 'ROE Graphite GP hanging bar, 2W, clamp and shackle', weight: 0, image: 'GP2HEAD2.png' },
-  ROEGP26FULL: { code: 'ROEGP26FULL', name: 'ROE GP2.6 Full LED tile 500x1000mm', weight: 0, image: 'ROEGP26FULL.png' },
-  ROEGP26HALF: { code: 'ROEGP26HALF', name: 'ROE GP2.6 Half LED tile 500x500mm', weight: 0, image: 'ROEGP26HALF.png' },
+  GP2FULL: { code: 'GP2FULL', name: 'ROE GP2.6 Full LED tile 500x1000mm', weight: 0, image: 'ROEGP26FULL.png' },
+  GP2HALF: { code: 'GP2HALF', name: 'ROE GP2.6 Half LED tile 500x500mm', weight: 0, image: 'ROEGP26HALF.png' },
 
   // Theatrixx
   TX_NOMAD26: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm', weight: 24, image: 'TXNOMAD26.png' },
@@ -235,11 +235,11 @@ const EQUIPMENT = {
 // Canonical equipment display order
 const CANONICAL_EQUIPMENT_ORDER = [
   // Tile packages/cases
-  '8PPL25', '8PBP2B1', '8PBP2B2', '8PBP2V2', '6GP2FULL', '6GP2HALF', '10PTXNOMAD',
+  '8PPL25', '8PBP2B1', '8PBP2B2', '8PBP2V2', '6PGP2FULL', '12PGP2HALF', '10PTXNOMAD',
   'PL25CASE', 'BP2V2CASE', 'CATXLED', 'BP2DTCASE',
 
   // Tiles
-  'PL25', 'BP2B1', 'BP2B2', 'BP2V2', 'ROEGP26FULL', 'ROEGP26HALF', 'TXNOMAD26', 'BP2DT',
+  'PL25', 'BP2B1', 'BP2B2', 'BP2V2', 'GP2FULL', 'GP2HALF', 'TXNOMAD26', 'BP2DT',
 
   // Processors
   'SX40', 'XD10', 'S8', 'MX40PRO',
