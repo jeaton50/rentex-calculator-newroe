@@ -1579,6 +1579,20 @@ function addTheatrixxEquipment(config, tbody) {
     if (H52 > 0) {
       addEquipmentRow("TXM10B", "Theatrixx Nomad Exact M10 Screw", 0, H52, tbody);
     }
+
+    // Theatrixx lateral support (ground support, walls 9+ tiles tall)
+    // Use 10' pipes first, fill remainder with 4' pipes
+    if (verticalBlocks >= 9) {
+      const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each tile is 0.5m wide
+      const tenFootPipes = Math.floor(screenWidthFeet / 10);
+      const remainingFeet = screenWidthFeet - (tenFootPipes * 10);
+      const fourFootPipes = Math.floor(remainingFeet / 4);
+      const halfSlimCB = H49 * 2; // 2 per vertical support
+
+      if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
+      if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
+      if (halfSlimCB > 0) addEquipmentRow("HALFSLIMCB", "Slim Half Cheeseboro clamp - Black", 1.5, halfSlimCB, tbody);
+    }
   }
 
   // Headers for flown support
