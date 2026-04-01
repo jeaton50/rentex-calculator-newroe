@@ -168,12 +168,13 @@ const CanvasRenderer = {
       const gp2HalfManualRows = wallData.gp2HalfManualRows || 0;
       const gp2FullRows = wallData.gp2FullVerticalBlocks || 0;
       const totalHalfRows = gp2HalfAutoRows + gp2HalfManualRows;
+      const extraFullRows = wallData.gp2FullRowManualRows || 0;
 
       singleScreenWidth = wallData.blocksHor * blockWidth;
       // blockHeight is already 2x for ROEGP26Full (1000mm)
       const fullBlockHeight = blockHeight; // 1000mm
       const halfBlockHeight = blockHeight / 2; // 500mm
-      totalWallHeight = (gp2FullRows * fullBlockHeight) + (totalHalfRows * halfBlockHeight);
+      totalWallHeight = (gp2FullRows * fullBlockHeight) + (totalHalfRows * halfBlockHeight) + (extraFullRows * fullBlockHeight);
     } else {
       // Normal mode
       singleScreenWidth = wallData.blocksHor * blockWidth;
@@ -345,14 +346,35 @@ const CanvasRenderer = {
 
           const topHalfHeight = topHalfRows * halfBlockHeight;
           const bottomHalfHeight = bottomHalfRows * halfBlockHeight;
+          const extraFullRowManualRows = wallData.gp2FullRowManualRows || 0;
+          const extraFullRowPosition = wallData.gp2FullRowManualPosition || 'bottom';
+          const extraFullRowHeight = extraFullRowManualRows * fullBlockHeight;
 
-          // Calculate Y positions
+          // Calculate Y positions (extra GP2 Full rows sit at very top or very bottom)
           let currentY = wallY;
+          const extraFullTopY = (extraFullRowManualRows > 0 && extraFullRowPosition === 'top') ? currentY : null;
+          if (extraFullRowManualRows > 0 && extraFullRowPosition === 'top') currentY += extraFullRowHeight;
           const topHalfY = topHalfRows > 0 ? currentY : null;
           currentY += topHalfHeight;
           const fullY = currentY;
           currentY += fullSectionHeight;
           const bottomHalfY = bottomHalfRows > 0 ? currentY : null;
+          currentY += bottomHalfHeight;
+          const extraFullBottomY = (extraFullRowManualRows > 0 && extraFullRowPosition === 'bottom') ? currentY : null;
+
+          // Draw extra GP2 Full rows at top if applicable
+          if (extraFullTopY !== null) {
+            if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+              ctx.globalAlpha = 0.55;
+              ctx.drawImage(imageToUse, wallX, extraFullTopY, wallWidth, extraFullRowHeight);
+              ctx.globalAlpha = 1.0;
+            } else {
+              ctx.globalAlpha = 0.55;
+              ctx.fillStyle = '#555';
+              ctx.fillRect(wallX, extraFullTopY, wallWidth, extraFullRowHeight);
+              ctx.globalAlpha = 1.0;
+            }
+          }
 
           // Draw top Half section if it exists
           if (topHalfRows > 0) {
@@ -398,16 +420,45 @@ const CanvasRenderer = {
           ctx.strokeStyle = '#FFFFFF';
           ctx.lineWidth = 2;
 
-          // Calculate total wall height
-          const totalWallHeight = topHalfHeight + fullSectionHeight + bottomHalfHeight;
+          // Draw extra GP2 Full rows at bottom if applicable
+          if (extraFullBottomY !== null) {
+            if (imageToUse && imageToUse.complete && imageToUse.naturalHeight !== 0) {
+              ctx.globalAlpha = 0.55;
+              ctx.drawImage(imageToUse, wallX, extraFullBottomY, wallWidth, extraFullRowHeight);
+              ctx.globalAlpha = 1.0;
+            } else {
+              ctx.globalAlpha = 0.55;
+              ctx.fillStyle = '#555';
+              ctx.fillRect(wallX, extraFullBottomY, wallWidth, extraFullRowHeight);
+              ctx.globalAlpha = 1.0;
+            }
+          }
+
+          // Draw grid lines
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 2;
+
+          // Total wall height including all sections
+          const trueWallHeight = topHalfHeight + fullSectionHeight + bottomHalfHeight + extraFullRowHeight;
 
           // Vertical grid lines (full height)
           for (let col = 0; col <= wallData.blocksHor; col++) {
             const lineX = xOffset + col * blockWidth;
             ctx.beginPath();
             ctx.moveTo(lineX, wallY);
-            ctx.lineTo(lineX, wallY + totalWallHeight);
+            ctx.lineTo(lineX, wallY + trueWallHeight);
             ctx.stroke();
+          }
+
+          // Horizontal grid lines for extra GP2 Full rows at top
+          if (extraFullTopY !== null) {
+            for (let row = 0; row <= extraFullRowManualRows; row++) {
+              const lineY = extraFullTopY + row * fullBlockHeight;
+              ctx.beginPath();
+              ctx.moveTo(wallX, lineY);
+              ctx.lineTo(wallX + wallWidth, lineY);
+              ctx.stroke();
+            }
           }
 
           // Horizontal grid lines for top Half section
@@ -438,6 +489,36 @@ const CanvasRenderer = {
               ctx.moveTo(wallX, lineY);
               ctx.lineTo(wallX + wallWidth, lineY);
               ctx.stroke();
+            }
+          }
+
+          // Horizontal grid lines for extra GP2 Full rows at bottom
+          if (extraFullBottomY !== null) {
+            for (let row = 0; row <= extraFullRowManualRows; row++) {
+              const lineY = extraFullBottomY + row * fullBlockHeight;
+              ctx.beginPath();
+              ctx.moveTo(wallX, lineY);
+              ctx.lineTo(wallX + wallWidth, lineY);
+              ctx.stroke();
+            }
+          }
+
+          // 'D' labels on extra GP2 Full rows
+          if (extraFullRowManualRows > 0) {
+            ctx.font = `bold ${Math.max(12, Math.min(blockWidth, fullBlockHeight) / 4)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const extraStartY = extraFullTopY !== null ? extraFullTopY : extraFullBottomY;
+            for (let row = 0; row < extraFullRowManualRows; row++) {
+              for (let col = 0; col < wallData.blocksHor; col++) {
+                const textX = xOffset + col * blockWidth + blockWidth / 2;
+                const textY = extraStartY + row * fullBlockHeight + fullBlockHeight / 2;
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 3;
+                ctx.strokeText('D', textX, textY);
+                ctx.fillStyle = 'white';
+                ctx.fillText('D', textX, textY);
+              }
             }
           }
 
