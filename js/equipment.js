@@ -1270,10 +1270,10 @@ function addROEGP26Equipment(config, tbody) {
     const activeCases = Math.ceil(totalTiles / 6);
     const spareCases = packageCount - activeCases;
 
-    addEquipmentRow("6GP2FULL", `ROE GP2.6 Full 6x tile package (${activeCases} active + ${spareCases} spare)`, 0, packageCount, tbody);
-    addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm", 19.84, totalTiles, tbody);
+    addEquipmentRow("6PGP2FULL", `ROE GP2.6 Full 6x tile package (${activeCases} active + ${spareCases} spare)`, 0, packageCount, tbody);
+    addEquipmentRow("GP2FULL", "ROE GP2.6 Full LED tile 500x1000mm", 19.84, totalTiles, tbody);
     if (totalSpareTiles > 0) {
-      addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm **SPARE**", 19.84, totalSpareTiles, tbody);
+      addEquipmentRow("GP2FULL", "ROE GP2.6 Full LED tile 500x1000mm **SPARE**", 19.84, totalSpareTiles, tbody);
     }
 
     // Add GP2 Half tiles for fractional input (e.g., 4.5 = 4 Full + 1 Half)
@@ -1299,10 +1299,10 @@ function addROEGP26Equipment(config, tbody) {
 
       const rowLabel = gp2HalfRows === 1 ? "row" : "rows";
       const positionLabel = gp2HalfPosition === 'top' ? 'top' : 'bottom';
-      addEquipmentRow("6GP2HALF", `ROE GP2.6 Half 12x tile package (${halfActiveCases} active + ${halfSpareCases} spare) (for ${positionLabel} ${gp2HalfRows} ${rowLabel})`, 0, halfTotalCases, tbody);
-      addEquipmentRow("ROEGP26HALF", `ROE GP2.6 Half LED tile 500x500mm (${positionLabel} ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfTilesNeeded, tbody);
+      addEquipmentRow("12PGP2HALF", `ROE GP2.6 Half 12x tile package (${halfActiveCases} active + ${halfSpareCases} spare) (for ${positionLabel} ${gp2HalfRows} ${rowLabel})`, 0, halfTotalCases, tbody);
+      addEquipmentRow("GP2HALF", `ROE GP2.6 Half LED tile 500x500mm (${positionLabel} ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfTilesNeeded, tbody);
       if (gp2HalfSpareTiles > 0) {
-        addEquipmentRow("ROEGP26HALF", `ROE GP2.6 Half LED tile 500x500mm **SPARE** (${positionLabel} ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfSpareTiles, tbody);
+        addEquipmentRow("GP2HALF", `ROE GP2.6 Half LED tile 500x500mm **SPARE** (${positionLabel} ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfSpareTiles, tbody);
       }
     } else {
       console.log('NOT adding GP2 Half equipment - gp2HalfBottomRow:', gp2HalfBottomRow, 'gp2HalfRows:', gp2HalfRows);
@@ -1331,10 +1331,10 @@ function addROEGP26Equipment(config, tbody) {
     const activeCases = Math.ceil(totalTiles / 12);
     const spareCases = packageCount - activeCases;
 
-    addEquipmentRow("6GP2HALF", `ROE GP2.6 Half 12x tile package (${activeCases} active + ${spareCases} spare)`, 0, packageCount, tbody);
-    addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm", 11.44, totalTiles, tbody);
+    addEquipmentRow("12PGP2HALF", `ROE GP2.6 Half 12x tile package (${activeCases} active + ${spareCases} spare)`, 0, packageCount, tbody);
+    addEquipmentRow("GP2HALF", "ROE GP2.6 Half LED tile 500x500mm", 11.44, totalTiles, tbody);
     if (totalSpareTiles > 0) {
-      addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm **SPARE**", 11.44, totalSpareTiles, tbody);
+      addEquipmentRow("GP2HALF", "ROE GP2.6 Half LED tile 500x500mm **SPARE**", 11.44, totalSpareTiles, tbody);
     }
   }
 
@@ -1716,10 +1716,10 @@ function addROEGraphiteMixEquipment(config, tbody) {
     const halfActiveCases = Math.ceil(halfTiles / 12);
     const halfSpareCases = halfPackageCount - halfActiveCases;
 
-    addEquipmentRow("6GP2HALF", `ROE GP2.6 Half 12x tile package (${halfActiveCases} active + ${halfSpareCases} spare) (Graphite Mix)`, 0, halfPackageCount, tbody);
-    addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm", 11.44, halfTiles, tbody);
+    addEquipmentRow("12PGP2HALF", `ROE GP2.6 Half 12x tile package (${halfActiveCases} active + ${halfSpareCases} spare) (Graphite Mix)`, 0, halfPackageCount, tbody);
+    addEquipmentRow("GP2HALF", "ROE GP2.6 Half LED tile 500x500mm", 11.44, halfTiles, tbody);
     if (halfSpares > 0) {
-      addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm **SPARE**", 11.44, halfSpares, tbody);
+      addEquipmentRow("GP2HALF", "ROE GP2.6 Half LED tile 500x500mm **SPARE**", 11.44, halfSpares, tbody);
     }
   }
 
@@ -1729,10 +1729,10 @@ function addROEGraphiteMixEquipment(config, tbody) {
     const fullActiveCases = Math.ceil(fullTiles / 6);
     const fullSpareCases = fullPackageCount - fullActiveCases;
 
-    addEquipmentRow("6GP2FULL", `ROE GP2.6 Full 6x tile package (${fullActiveCases} active + ${fullSpareCases} spare) (Graphite Mix)`, 0, fullPackageCount, tbody);
-    addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm", 19.84, fullTiles, tbody);
+    addEquipmentRow("6PGP2FULL", `ROE GP2.6 Full 6x tile package (${fullActiveCases} active + ${fullSpareCases} spare) (Graphite Mix)`, 0, fullPackageCount, tbody);
+    addEquipmentRow("GP2FULL", "ROE GP2.6 Full LED tile 500x1000mm", 19.84, fullTiles, tbody);
     if (fullSpares > 0) {
-      addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm **SPARE**", 19.84, fullSpares, tbody);
+      addEquipmentRow("GP2FULL", "ROE GP2.6 Full LED tile 500x1000mm **SPARE**", 19.84, fullSpares, tbody);
     }
   }
 
