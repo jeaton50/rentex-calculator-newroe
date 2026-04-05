@@ -180,8 +180,8 @@ const EQUIPMENT = {
   GP2BASE2: { code: 'GP2BASE2', name: 'ROE Graphite GP base bar, 2W, V1.5', weight: 0, image: 'GP2BASE2.png' },
   GP2HEAD1: { code: 'GP2HEAD1', name: 'ROE Graphite GP hanging bar, 1W, clamp and shackle', weight: 0, image: 'GP2HEAD1.png' },
   GP2HEAD2: { code: 'GP2HEAD2', name: 'ROE Graphite GP hanging bar, 2W, clamp and shackle', weight: 0, image: 'GP2HEAD2.png' },
-  ROEGP26FULL: { code: 'ROEGP26FULL', name: 'ROE GP2.6 Full LED tile 500x1000mm', weight: 0, image: 'ROEGP26FULL.png' },
-  ROEGP26HALF: { code: 'ROEGP26HALF', name: 'ROE GP2.6 Half LED tile 500x500mm', weight: 0, image: 'ROEGP26HALF.png' },
+  GP2FULL: { code: 'GP2FULL', name: 'ROE GP2.6 Full LED tile 500x1000mm', weight: 0, image: 'ROEGP26FULL.png' },
+  GP2HALF: { code: 'GP2HALF', name: 'ROE GP2.6 Half LED tile 500x500mm', weight: 0, image: 'ROEGP26HALF.png' },
 
   // Theatrixx
   TX_NOMAD26: { code: 'TXNOMAD26', name: 'Theatrixx Nomad LED panel 500x500 2.6mm', weight: 24, image: 'TXNOMAD26.png' },
@@ -200,6 +200,7 @@ const EQUIPMENT = {
   TX_VERTSPRT: { code: 'TXVERTSPRT', name: 'Theatrixx Nomad Exact vertical support', weight: 0, image: 'TXVERTSPRT.png' },
   TX_SKIFTSNG: { code: 'TXSKIFTSNG', name: 'Theatrixx Nomad Exact single foot', weight: 0, image: 'TXSKIFTSNG.png' },
   TX_M10B: { code: 'TXM10B', name: 'Theatrixx Nomad Exact M10 Screw', weight: 0, image: 'TXM10B.png' },
+  HALFSLIMCB: { code: 'HALFSLIMCB', name: 'Slim Half Cheeseboro clamp - Black', weight: 1.5, image: 'HALFSLIMCB.png' },
   TX_T92T9: { code: 'TXT92TXT9', name: "Theatrixx Nomad XVT9 to XVT9 data 3'", weight: 0, image: 'TXT92TXT9.png' },
   TX_T32T125: { code: 'TXT32T125', name: "Theatrixx Nomad XVT3 to True1 25'", weight: 0, image: 'TXT32T125.png' },
   TX_T3POWER: { code: 'TXT3POWER', name: "Theatrixx Nomad XVT3 to XVT3 power 4'", weight: 0, image: 'TXT3POWER.png' },
@@ -234,11 +235,11 @@ const EQUIPMENT = {
 // Canonical equipment display order
 const CANONICAL_EQUIPMENT_ORDER = [
   // Tile packages/cases
-  '8PPL25', '8PBP2B1', '8PBP2B2', '8PBP2V2', '6GP2FULL', '6GP2HALF', '10PTXNOMAD',
+  '8PPL25', '8PBP2B1', '8PBP2B2', '8PBP2V2', '6PGP2FULL', '12PGP2HALF', '10PTXNOMAD',
   'PL25CASE', 'BP2V2CASE', 'CATXLED', 'BP2DTCASE',
 
   // Tiles
-  'PL25', 'BP2B1', 'BP2B2', 'BP2V2', 'ROEGP26FULL', 'ROEGP26HALF', 'TXNOMAD26', 'BP2DT',
+  'PL25', 'BP2B1', 'BP2B2', 'BP2V2', 'GP2FULL', 'GP2HALF', 'TXNOMAD26', 'BP2DT',
 
   // Processors
   'SX40', 'XD10', 'S8', 'MX40PRO',
@@ -249,7 +250,7 @@ const CANONICAL_EQUIPMENT_ORDER = [
   'BPGPUBT', 'BPGPREAR05', 'BPGPREAR1', 'BPGPBRIDGE',
   'TXSKIFRAME', 'TXSTAKEXT', 'TXLADDER', 'TXBRACKETS', 'TXVERTSPRT', 'TXSKIFTSNG', 'TXBRACKETC', 'TXM10B',
   'PL25OUT', 'PL25LAD1M', 'PL25CLAMP', 'PL25BEAM50', 'PL25BEAM1K', 'PL25BEAMAD', 'PL25PLAT',
-  'BP25DGREE', 'BP2BBOLT', 'LED10FTS40', 'LED4FTS40', 'SWVLCHEESB',
+  'BP25DGREE', 'BP2BBOLT', 'LED10FTS40', 'LED4FTS40', 'SWVLCHEESB', 'HALFSLIMCB',
   'SANDBAG25',
 
   // Cables

@@ -1148,19 +1148,19 @@ function addROEEquipment(config, tbody) {
     addEquipmentRow("BPGPBRIDGE", "ROE BP2 / GP2 rear bridge clamp", 1, rearBridge, tbody);
   }
 
-  // Black Pearl lateral support (only for ground support, walls 9-12 blocks tall)
-  // Use 10' pipes first, fill remainder with 4' pipes
+  // Black Pearl lateral support (only for ground support, walls 9+ blocks tall)
+  // Add a row of pipes and clamps for each tile of height beyond 8
   if (supportType === "Ground" && verticalBlocks >= 9 && verticalBlocks <= 12) {
+    const lateralRows = verticalBlocks - 8;
     const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each block is 0.5m wide
-    const tenFootPipes = Math.floor(screenWidthFeet / 10);
-    const remainingFeet = screenWidthFeet - (tenFootPipes * 10);
-    const fourFootPipes = Math.floor(remainingFeet / 4);
-    const totalPipes = tenFootPipes + fourFootPipes;
-    const swivelCouplers = totalPipes * 2; // 2 couplers per pipe
+    const tenFootPipes = Math.floor(screenWidthFeet / 10) * lateralRows;
+    const remainingFeet = screenWidthFeet - (Math.floor(screenWidthFeet / 10) * 10);
+    const fourFootPipes = Math.floor(remainingFeet / 4) * lateralRows;
+    const swivelCheeseboros = universalBaseTruss * lateralRows;
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
-    if (universalBaseTruss > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, universalBaseTruss, tbody);
+    if (swivelCheeseboros > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, swivelCheeseboros, tbody);
   }
 
   if (wallType === "Convex" || wallType === "Concave") {
@@ -1270,10 +1270,10 @@ function addROEGP26Equipment(config, tbody) {
     const activeCases = Math.ceil(totalTiles / 6);
     const spareCases = packageCount - activeCases;
 
-    addEquipmentRow("6GP2FULL", `ROE GP2.6 Full 6x tile package (${activeCases} active + ${spareCases} spare)`, 0, packageCount, tbody);
-    addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm", 19.84, totalTiles, tbody);
+    addEquipmentRow("6PGP2FULL", `ROE GP2.6 Full 6x tile package (${activeCases} active + ${spareCases} spare)`, 0, packageCount, tbody);
+    addEquipmentRow("GP2FULL", "ROE GP2.6 Full LED tile 500x1000mm", 19.84, totalTiles, tbody);
     if (totalSpareTiles > 0) {
-      addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm **SPARE**", 19.84, totalSpareTiles, tbody);
+      addEquipmentRow("GP2FULL", "ROE GP2.6 Full LED tile 500x1000mm **SPARE**", 19.84, totalSpareTiles, tbody);
     }
 
     // Add GP2 Half tiles for fractional input (e.g., 4.5 = 4 Full + 1 Half)
@@ -1299,10 +1299,10 @@ function addROEGP26Equipment(config, tbody) {
 
       const rowLabel = gp2HalfRows === 1 ? "row" : "rows";
       const positionLabel = gp2HalfPosition === 'top' ? 'top' : 'bottom';
-      addEquipmentRow("6GP2HALF", `ROE GP2.6 Half 12x tile package (${halfActiveCases} active + ${halfSpareCases} spare) (for ${positionLabel} ${gp2HalfRows} ${rowLabel})`, 0, halfTotalCases, tbody);
-      addEquipmentRow("ROEGP26HALF", `ROE GP2.6 Half LED tile 500x500mm (${positionLabel} ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfTilesNeeded, tbody);
+      addEquipmentRow("12PGP2HALF", `ROE GP2.6 Half 12x tile package (${halfActiveCases} active + ${halfSpareCases} spare) (for ${positionLabel} ${gp2HalfRows} ${rowLabel})`, 0, halfTotalCases, tbody);
+      addEquipmentRow("GP2HALF", `ROE GP2.6 Half LED tile 500x500mm (${positionLabel} ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfTilesNeeded, tbody);
       if (gp2HalfSpareTiles > 0) {
-        addEquipmentRow("ROEGP26HALF", `ROE GP2.6 Half LED tile 500x500mm **SPARE** (${positionLabel} ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfSpareTiles, tbody);
+        addEquipmentRow("GP2HALF", `ROE GP2.6 Half LED tile 500x500mm **SPARE** (${positionLabel} ${gp2HalfRows} ${rowLabel})`, 11.44, gp2HalfSpareTiles, tbody);
       }
     } else {
       console.log('NOT adding GP2 Half equipment - gp2HalfBottomRow:', gp2HalfBottomRow, 'gp2HalfRows:', gp2HalfRows);
@@ -1331,10 +1331,10 @@ function addROEGP26Equipment(config, tbody) {
     const activeCases = Math.ceil(totalTiles / 12);
     const spareCases = packageCount - activeCases;
 
-    addEquipmentRow("6GP2HALF", `ROE GP2.6 Half 12x tile package (${activeCases} active + ${spareCases} spare)`, 0, packageCount, tbody);
-    addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm", 11.44, totalTiles, tbody);
+    addEquipmentRow("12PGP2HALF", `ROE GP2.6 Half 12x tile package (${activeCases} active + ${spareCases} spare)`, 0, packageCount, tbody);
+    addEquipmentRow("GP2HALF", "ROE GP2.6 Half LED tile 500x500mm", 11.44, totalTiles, tbody);
     if (totalSpareTiles > 0) {
-      addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm **SPARE**", 11.44, totalSpareTiles, tbody);
+      addEquipmentRow("GP2HALF", "ROE GP2.6 Half LED tile 500x500mm **SPARE**", 11.44, totalSpareTiles, tbody);
     }
   }
 
@@ -1368,15 +1368,14 @@ function addROEGP26Equipment(config, tbody) {
   // Use 10' pipes first, fill remainder with 4' pipes
   if (productType === "ROEGP26Full" && supportType === "Ground" && verticalBlocks >= 3) {
     const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each block is 0.5m wide
-    const tenFootPipes = Math.floor(screenWidthFeet / 10);
-    const remainingFeet = screenWidthFeet - (tenFootPipes * 10);
-    const fourFootPipes = Math.floor(remainingFeet / 4);
-    const totalPipes = tenFootPipes + fourFootPipes;
-    const swivelCouplers = totalPipes * 2; // 2 couplers per pipe
+    const tenFootPipes = Math.floor(screenWidthFeet / 10) * lateralRows;
+    const remainingFeet = screenWidthFeet - (Math.floor(screenWidthFeet / 10) * 10);
+    const fourFootPipes = Math.floor(remainingFeet / 4) * lateralRows;
+    const swivelCheeseboros = universalBaseTruss * lateralRows;
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
-    if (universalBaseTruss > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, universalBaseTruss, tbody);
+    if (swivelCheeseboros > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, swivelCheeseboros, tbody);
   }
 
   if ((wallType === "Convex" || wallType === "Concave") && productType !== "ROEGP26Full") {
@@ -1579,6 +1578,21 @@ function addTheatrixxEquipment(config, tbody) {
     if (H52 > 0) {
       addEquipmentRow("TXM10B", "Theatrixx Nomad Exact M10 Screw", 0, H52, tbody);
     }
+
+    // Theatrixx lateral support (ground support, walls 9+ tiles tall)
+    // Add a row of pipes and clamps for each tile of height beyond 8
+    if (verticalBlocks >= 9) {
+      const lateralRows = verticalBlocks - 8;
+      const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each tile is 0.5m wide
+      const tenFootPipes = Math.floor(screenWidthFeet / 10) * lateralRows;
+      const remainingFeet = screenWidthFeet - (Math.floor(screenWidthFeet / 10) * 10);
+      const fourFootPipes = Math.floor(remainingFeet / 4) * lateralRows;
+      const halfSlimCB = H49 * 2 * lateralRows; // 2 per vertical support per row
+
+      if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
+      if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
+      if (halfSlimCB > 0) addEquipmentRow("HALFSLIMCB", "Slim Half Cheeseboro clamp - Black", 1.5, halfSlimCB, tbody);
+    }
   }
 
   // Headers for flown support
@@ -1701,10 +1715,10 @@ function addROEGraphiteMixEquipment(config, tbody) {
     const halfActiveCases = Math.ceil(halfTiles / 12);
     const halfSpareCases = halfPackageCount - halfActiveCases;
 
-    addEquipmentRow("6GP2HALF", `ROE GP2.6 Half 12x tile package (${halfActiveCases} active + ${halfSpareCases} spare) (Graphite Mix)`, 0, halfPackageCount, tbody);
-    addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm", 11.44, halfTiles, tbody);
+    addEquipmentRow("12PGP2HALF", `ROE GP2.6 Half 12x tile package (${halfActiveCases} active + ${halfSpareCases} spare) (Graphite Mix)`, 0, halfPackageCount, tbody);
+    addEquipmentRow("GP2HALF", "ROE GP2.6 Half LED tile 500x500mm", 11.44, halfTiles, tbody);
     if (halfSpares > 0) {
-      addEquipmentRow("ROEGP26HALF", "ROE GP2.6 Half LED tile 500x500mm **SPARE**", 11.44, halfSpares, tbody);
+      addEquipmentRow("GP2HALF", "ROE GP2.6 Half LED tile 500x500mm **SPARE**", 11.44, halfSpares, tbody);
     }
   }
 
@@ -1714,10 +1728,10 @@ function addROEGraphiteMixEquipment(config, tbody) {
     const fullActiveCases = Math.ceil(fullTiles / 6);
     const fullSpareCases = fullPackageCount - fullActiveCases;
 
-    addEquipmentRow("6GP2FULL", `ROE GP2.6 Full 6x tile package (${fullActiveCases} active + ${fullSpareCases} spare) (Graphite Mix)`, 0, fullPackageCount, tbody);
-    addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm", 19.84, fullTiles, tbody);
+    addEquipmentRow("6PGP2FULL", `ROE GP2.6 Full 6x tile package (${fullActiveCases} active + ${fullSpareCases} spare) (Graphite Mix)`, 0, fullPackageCount, tbody);
+    addEquipmentRow("GP2FULL", "ROE GP2.6 Full LED tile 500x1000mm", 19.84, fullTiles, tbody);
     if (fullSpares > 0) {
-      addEquipmentRow("ROEGP26FULL", "ROE GP2.6 Full LED tile 500x1000mm **SPARE**", 19.84, fullSpares, tbody);
+      addEquipmentRow("GP2FULL", "ROE GP2.6 Full LED tile 500x1000mm **SPARE**", 19.84, fullSpares, tbody);
     }
   }
 
