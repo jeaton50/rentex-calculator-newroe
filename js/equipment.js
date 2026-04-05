@@ -1160,7 +1160,7 @@ function addROEEquipment(config, tbody) {
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
-    if (universalBaseTruss > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, universalBaseTruss, tbody);
+    if (swivelCouplers > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, swivelCouplers, tbody);
   }
 
   if (wallType === "Convex" || wallType === "Concave") {
@@ -1364,7 +1364,7 @@ function addROEGP26Equipment(config, tbody) {
     addEquipmentRow("BPGPBRIDGE", "ROE BP2 / GP2 rear bridge clamp", 1, rearBridge, tbody);
   }
 
-  // GP2 Full lateral support (only for ground support, not flown, 4+ blocks tall)
+  // GP2 Full lateral support (only for ground support, not flown, 3+ blocks tall)
   // Use 10' pipes first, fill remainder with 4' pipes
   if (productType === "ROEGP26Full" && supportType === "Ground" && verticalBlocks >= 3) {
     const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each block is 0.5m wide
@@ -1376,7 +1376,7 @@ function addROEGP26Equipment(config, tbody) {
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
-    if (universalBaseTruss > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, universalBaseTruss, tbody);
+    if (swivelCouplers > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, swivelCouplers, tbody);
   }
 
   if ((wallType === "Convex" || wallType === "Concave") && productType !== "ROEGP26Full") {
@@ -1821,6 +1821,8 @@ function displayEquipment(data) {
     const gp2HalfRows = data.gp2HalfRows || 0;
     const gp2HalfPosition = data.gp2HalfPosition || 'bottom';
     const gp2FullVerticalBlocks = data.gp2FullVerticalBlocks || verticalBlocks;
+    const gp2FullRowManualRows = data.gp2FullRowManualRows || 0;
+    const gp2FullRowManualPosition = data.gp2FullRowManualPosition || 'bottom';
     const roeGraphiteMixEnabled = data.roeGraphiteMixEnabled || false;
     const graphiteMixData = data.graphiteMixData || null;
 
@@ -1979,6 +1981,8 @@ function displayEquipment(data) {
       gp2HalfBottomRow,
       gp2HalfRows,
       gp2HalfPosition,
+      gp2FullRowManualRows,
+      gp2FullRowManualPosition,
       processors,
       cables,
       sandbags,
