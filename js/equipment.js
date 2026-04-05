@@ -1366,7 +1366,7 @@ function addROEGP26Equipment(config, tbody) {
 
   // GP2 Full lateral support (only for ground support, not flown, 4+ blocks tall)
   // Use 10' pipes first, fill remainder with 4' pipes
-  if (productType === "ROEGP26Full" && supportType === "Ground" && verticalBlocks >= 4) {
+  if (productType === "ROEGP26Full" && supportType === "Ground" && verticalBlocks >= 3) {
     const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each block is 0.5m wide
     const tenFootPipes = Math.floor(screenWidthFeet / 10);
     const remainingFeet = screenWidthFeet - (tenFootPipes * 10);
