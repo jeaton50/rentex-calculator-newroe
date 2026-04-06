@@ -1231,6 +1231,7 @@ function addROEGP26Equipment(config, tbody) {
     gp2HalfBottomRow,
     gp2HalfRows,
     gp2HalfPosition,
+    gp2FullVerticalBlocks,
     gp2FullRowManualRows = 0,
     gp2FullRowManualPosition = 'bottom',
   } = config;
@@ -1365,9 +1366,11 @@ function addROEGP26Equipment(config, tbody) {
   }
 
   // GP2 Full lateral support (only for ground support, not flown, 4+ blocks tall)
+  // Use gp2FullVerticalBlocks (not verticalBlocks) since verticalBlocks includes GP2 Half rows for display
   // Compute effective height in 0.5m half-block units (GP2 Full = 2 per block, GP2 Half = 1 per row)
   // Trigger at 8+ half-blocks (4.0m); add a row for each half-block beyond 4
-  const gp2LateralHalfBlocks = (verticalBlocks * 2) + (gp2HalfRows || 0);
+  const gp2FullBlocks = gp2FullVerticalBlocks || verticalBlocks;
+  const gp2LateralHalfBlocks = (gp2FullBlocks * 2) + (gp2HalfRows || 0);
   if (productType === "ROEGP26Full" && supportType === "Ground" && gp2LateralHalfBlocks >= 8) {
     const lateralRows = gp2LateralHalfBlocks - 4;
     const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each block is 0.5m wide
@@ -1996,6 +1999,7 @@ function displayEquipment(data) {
       gp2HalfBottomRow,
       gp2HalfRows,
       gp2HalfPosition,
+      gp2FullVerticalBlocks,
       processors,
       cables,
       sandbags,
