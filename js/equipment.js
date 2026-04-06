@@ -1364,11 +1364,11 @@ function addROEGP26Equipment(config, tbody) {
     addEquipmentRow("BPGPBRIDGE", "ROE BP2 / GP2 rear bridge clamp", 1, rearBridge, tbody);
   }
 
-  // GP2 Full lateral support (only for ground support, not flown, 3.5+ blocks tall)
+  // GP2 Full lateral support (only for ground support, not flown, 4+ blocks tall)
   // Compute effective height in 0.5m half-block units (GP2 Full = 2 per block, GP2 Half = 1 per row)
-  // Trigger at 7+ half-blocks (3.5m); add a row for each half-block beyond 4
+  // Trigger at 8+ half-blocks (4.0m); add a row for each half-block beyond 4
   const gp2LateralHalfBlocks = (verticalBlocks * 2) + (gp2HalfRows || 0);
-  if (productType === "ROEGP26Full" && supportType === "Ground" && gp2LateralHalfBlocks >= 7) {
+  if (productType === "ROEGP26Full" && supportType === "Ground" && gp2LateralHalfBlocks >= 8) {
     const lateralRows = gp2LateralHalfBlocks - 4;
     const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each block is 0.5m wide
     const tenFootPipes = Math.floor(screenWidthFeet / 10) * lateralRows;
