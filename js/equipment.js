@@ -1156,7 +1156,7 @@ function addROEEquipment(config, tbody) {
     const tenFootPipes = Math.floor(screenWidthFeet / 10) * lateralRows;
     const remainingFeet = screenWidthFeet - (Math.floor(screenWidthFeet / 10) * 10);
     const fourFootPipes = Math.floor(remainingFeet / 4) * lateralRows;
-    const swivelCheeseboros = (tenFootPipes + fourFootPipes) * 2; // 2 couplers per pipe
+    const swivelCheeseboros = universalBaseTruss * lateralRows; // 1 coupler per universal base truss per lateral row
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
@@ -1376,8 +1376,7 @@ function addROEGP26Equipment(config, tbody) {
     const tenFootPipes = Math.floor(screenWidthFeet / 10);
     const remainingFeet = screenWidthFeet - (tenFootPipes * 10);
     const fourFootPipes = Math.floor(remainingFeet / 4);
-    const totalPipes = tenFootPipes + fourFootPipes;
-    const swivelCouplers = totalPipes * 2; // 2 couplers per pipe
+    const swivelCouplers = universalBaseTruss; // 1 coupler per universal base truss
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
