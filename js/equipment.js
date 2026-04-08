@@ -1156,7 +1156,7 @@ function addROEEquipment(config, tbody) {
     const tenFootPipes = Math.floor(screenWidthFeet / 10) * lateralRows;
     const remainingFeet = screenWidthFeet - (Math.floor(screenWidthFeet / 10) * 10);
     const fourFootPipes = Math.floor(remainingFeet / 4) * lateralRows;
-    const swivelCheeseboros = universalBaseTruss * lateralRows;
+    const swivelCheeseboros = (tenFootPipes + fourFootPipes) * 2; // 2 couplers per pipe
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
@@ -1368,20 +1368,20 @@ function addROEGP26Equipment(config, tbody) {
   // GP2 Full lateral support (only for ground support, not flown, 4+ blocks tall)
   // Use gp2FullVerticalBlocks (not verticalBlocks) since verticalBlocks includes GP2 Half rows for display
   // Compute effective height in 0.5m half-block units (GP2 Full = 2 per block, GP2 Half = 1 per row)
-  // Trigger at 8+ half-blocks (4.0m); add a row for each half-block beyond 4
+  // Trigger at 8+ half-blocks (4.0m = 4 full blocks); one set of pipes spanning the full width
   const gp2FullBlocks = gp2FullVerticalBlocks || verticalBlocks;
   const gp2LateralHalfBlocks = (gp2FullBlocks * 2) + (gp2HalfRows || 0);
   if (productType === "ROEGP26Full" && supportType === "Ground" && gp2LateralHalfBlocks >= 8) {
-    const lateralRows = gp2LateralHalfBlocks - 4;
     const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each block is 0.5m wide
-    const tenFootPipes = Math.floor(screenWidthFeet / 10) * lateralRows;
-    const remainingFeet = screenWidthFeet - (Math.floor(screenWidthFeet / 10) * 10);
-    const fourFootPipes = Math.floor(remainingFeet / 4) * lateralRows;
-    const swivelCheeseboros = universalBaseTruss * lateralRows;
+    const tenFootPipes = Math.floor(screenWidthFeet / 10);
+    const remainingFeet = screenWidthFeet - (tenFootPipes * 10);
+    const fourFootPipes = Math.floor(remainingFeet / 4);
+    const totalPipes = tenFootPipes + fourFootPipes;
+    const swivelCouplers = totalPipes * 2; // 2 couplers per pipe
 
     if (tenFootPipes > 0) addEquipmentRow("LED10FTS40", 'Schedule 40 1.5" non-threaded pipe 10\'', 8.75, tenFootPipes, tbody);
     if (fourFootPipes > 0) addEquipmentRow("LED4FTS40", 'Schedule 40 1.5" non-threaded pipe 4\'', 3.5, fourFootPipes, tbody);
-    if (swivelCheeseboros > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, swivelCheeseboros, tbody);
+    if (swivelCouplers > 0) addEquipmentRow("SWVLCHEESB", "Swivel Aluminum Cheeseboro - Black", 1.5, swivelCouplers, tbody);
   }
 
   if ((wallType === "Convex" || wallType === "Concave") && productType !== "ROEGP26Full") {
@@ -1841,6 +1841,8 @@ function displayEquipment(data) {
     const gp2HalfRows = data.gp2HalfRows || 0;
     const gp2HalfPosition = data.gp2HalfPosition || 'bottom';
     const gp2FullVerticalBlocks = data.gp2FullVerticalBlocks || verticalBlocks;
+    const gp2FullRowManualRows = data.gp2FullRowManualRows || 0;
+    const gp2FullRowManualPosition = data.gp2FullRowManualPosition || 'bottom';
     const roeGraphiteMixEnabled = data.roeGraphiteMixEnabled || false;
     const graphiteMixData = data.graphiteMixData || null;
 
@@ -1999,6 +2001,8 @@ function displayEquipment(data) {
       gp2HalfBottomRow,
       gp2HalfRows,
       gp2HalfPosition,
+      gp2FullRowManualRows,
+      gp2FullRowManualPosition,
       gp2FullVerticalBlocks,
       processors,
       cables,
