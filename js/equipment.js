@@ -662,8 +662,7 @@ const EquipmentCalculator = {
       console.log('GP2 cable calculation - tiles with spares:', {
         gp2FullWithSpares: totalTilesWithSpares,
         gp2HalfTiles: gp2HalfTilesNeeded,
-        gp2HalfActiveCases: halfActiveCases,
-        gp2HalfTotalCases: halfTotalCases,
+        gp2HalfSpares: halfSparesCable,
         gp2HalfWithSpares,
         totalWithSpares: totalTilesWithSparesIncludingHalf
       });
