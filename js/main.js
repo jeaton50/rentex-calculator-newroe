@@ -504,16 +504,13 @@ function generateWall() {
     const halfTiles = halfHorizontal * halfVertical;
     const fullTiles = fullHorizontal * fullVertical;
 
-    // Calculate spares for each type (always add at least 1 spare case if tiles exist)
-    // GP2 Half: packages of 12
-    const halfPackageSize = 12;
+    // Calculate spares for each type
+    // GP2 Half: same percentage formula as Black Pearl, rounded to nearest multiple of 12
     let halfTilesWithSpares = 0;
     let halfSpares = 0;
     if (halfTiles > 0) {
-      const halfActiveCases = Math.ceil(halfTiles / halfPackageSize);
-      const halfTotalCases = halfActiveCases + 1; // Guarantee at least 1 spare case
-      halfTilesWithSpares = halfTotalCases * halfPackageSize;
-      halfSpares = halfTilesWithSpares - halfTiles;
+      halfSpares = calcSpares(halfTiles, 12, 1.5);
+      halfTilesWithSpares = halfTiles + halfSpares;
     }
 
     // GP2 Full: packages of 6
@@ -561,13 +558,9 @@ function generateWall() {
       totalSpares = roundedTotal - totalBlocks;
       totalBlocksWithSpares = roundedTotal;
     } else if (productType === 'ROEGP26Half') {
-      // GP2 Half: packages of 12, always add at least 1 spare case
-      const packageSize = 12;
-      const activeCases = Math.ceil(totalBlocks / packageSize);
-      const totalCases = activeCases + 1; // Guarantee at least 1 spare case
-      const roundedTotal = totalCases * packageSize;
-      totalSpares = roundedTotal - totalBlocks;
-      totalBlocksWithSpares = roundedTotal;
+      // GP2 Half: same percentage formula as Black Pearl, rounded to nearest multiple of 12
+      totalSpares = calcSpares(totalBlocks, 12, 1.5);
+      totalBlocksWithSpares = totalBlocks + totalSpares;
     } else {
       // Black Pearl, Theatrixx, etc: use original calcSpares function
       totalSpares = calcSpares(totalBlocks, productType === "theatrixx" ? 10 : 8, productType === "theatrixx" ? 2 : 1.5);
