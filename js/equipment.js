@@ -653,12 +653,9 @@ const EquipmentCalculator = {
     if (productType === "ROEGP26Full" && gp2HalfBottomRow && gp2HalfRows > 0) {
       const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows;
 
-      // GP2 Half: Use package-based spare calculation (same as equipment display)
-      // Always add at least 1 spare case (12 tiles per case)
-      const packageSize = 12;
-      const halfActiveCases = Math.ceil(gp2HalfTilesNeeded / packageSize);
-      const halfTotalCases = halfActiveCases + 1; // Guarantee at least 1 spare case
-      const gp2HalfWithSpares = halfTotalCases * packageSize;
+      // GP2 Half: same percentage formula as Black Pearl, rounded to nearest multiple of 12
+      const halfSparesCable = window.calcSpares(gp2HalfTilesNeeded, 12, 1.5);
+      const gp2HalfWithSpares = gp2HalfTilesNeeded + halfSparesCable;
 
       totalTilesWithSparesIncludingHalf = totalTilesWithSpares + gp2HalfWithSpares;
 
@@ -1282,12 +1279,12 @@ function addROEGP26Equipment(config, tbody) {
       console.log('Adding GP2 Half equipment - rows:', gp2HalfRows, 'horizontalBlocks:', horizontalBlocks);
       const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows;
 
-      // GP2 Half: Always add at least 1 spare case
-      const packageSize = 12;
-      const halfActiveCases = Math.ceil(gp2HalfTilesNeeded / packageSize);
-      const halfTotalCases = halfActiveCases + 1; // Guarantee at least 1 spare case
-      const gp2HalfWithSpare = halfTotalCases * packageSize;
-      const gp2HalfSpareTiles = gp2HalfWithSpare - gp2HalfTilesNeeded;
+      // GP2 Half: same percentage formula as Black Pearl, rounded to nearest multiple of 12
+      const gp2HalfSpares = window.calcSpares(gp2HalfTilesNeeded, 12, 1.5);
+      const gp2HalfWithSpare = gp2HalfTilesNeeded + gp2HalfSpares;
+      const gp2HalfSpareTiles = gp2HalfSpares;
+      const halfActiveCases = Math.ceil(gp2HalfTilesNeeded / 12);
+      const halfTotalCases = Math.ceil(gp2HalfWithSpare / 12);
       const halfSpareCases = halfTotalCases - halfActiveCases;
 
       console.log('GP2 Half spare calculation:', {
