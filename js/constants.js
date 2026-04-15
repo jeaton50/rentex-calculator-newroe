@@ -146,7 +146,7 @@ const EQUIPMENT = {
   PL25_BB1: { code: 'PL25BB1', name: 'Absen PL2.5 base bar, 1W, 0.5m', weight: 16, image: 'PL25BB1.png' },
   PL25_BB2: { code: 'PL25BB2', name: 'Absen PL2.5 base bar, 2W, 1m', weight: 37, image: 'PL25BB2.png' },
   PL25_HEAD1: { code: 'PL25HEAD1', name: 'Absen PL2.5 header, 1W, 0.5m', weight: 12, image: 'PL25HEAD1.png' },
-  PL25_HEAD2: { code: 'PL25HEAD2', name: 'Absen PL2.5 header, 2W, 1m', weight: 19, image: 'PL25HEAD2.png' },
+  PL25_HEAD2: { code: 'PL25HEAD2', name: 'Absen PL2.5 header, 2W, 1m', weight: 17, image: 'PL25HEAD2.png' },
   PL25_CLAMP: { code: 'PL25CLAMP', name: 'Absen PL2.5 clamp', weight: 0, image: 'PL25CLAMP.png' },
   PL25_BEAM1K: { code: 'PL25BEAM1K', name: 'Absen PL2.5 support beam, 1000 mm', weight: 0, image: 'PL25BEAM1K.png' },
   PL25_OUT: { code: 'PL25OUT', name: 'Absen PL2.5 outrigger', weight: 0, image: 'PL25OUT.png' },
