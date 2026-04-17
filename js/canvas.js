@@ -1773,6 +1773,16 @@ const CanvasRenderer = {
       gp2FullVerticalBlocks = verticalBlocks;
     }
 
+    // Also add manual GP2 Half rows from checkbox
+    if (productType === 'ROEGP26Full') {
+      const gp2HalfCheckbox = document.getElementById('gp2HalfCheckbox');
+      if (gp2HalfCheckbox?.checked) {
+        const manualRows = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
+        gp2HalfRows += manualRows;
+        gp2HalfBottomRow = true;
+      }
+    }
+
     console.log('Blocks:', { horizontalBlocks, verticalBlocks, numScreens, gp2HalfBottomRow, gp2HalfRows, gp2FullVerticalBlocks });
 
     // Get product-specific pixel size and dimensions
