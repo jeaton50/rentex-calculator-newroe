@@ -1745,6 +1745,12 @@ const CanvasRenderer = {
 
     const numScreens = parseInt(document.getElementById('numScreens')?.value || 1, 10);
 
+    // Read dummy tile rows (blank rows added for structure)
+    let blankRows = 0;
+    if (document.getElementById('dummyTilesCheckbox')?.checked) {
+      blankRows = parseInt(document.getElementById('dummyTileCount')?.value || 0, 10) || 0;
+    }
+
     // Check for GP2 Half bottom rows (for GP2 Full only)
     let gp2HalfBottomRow = false;
     let gp2HalfRows = 0;
@@ -1824,32 +1830,39 @@ const CanvasRenderer = {
     let totalHeightFeet;
 
     // Calculate height differently for GP2 Full with GP2 Half bottom rows
+    // blankRows (dummy tiles) always use the product's standard tile height
     if (productType === 'ROEGP26Full' && gp2HalfBottomRow && gp2HalfRows > 0) {
       // GP2 Full section: gp2FullVerticalBlocks × 384px (1000mm)
       // GP2 Half section: gp2HalfRows × 192px (500mm)
-      totalHeightPixels = (gp2FullVerticalBlocks * 384) + (gp2HalfRows * 192);
+      // Dummy rows: blankRows × 384px (same as GP2 Full tile height)
+      totalHeightPixels = (gp2FullVerticalBlocks * 384) + (gp2HalfRows * 192) + (blankRows * 384);
 
       // GP2 Full section: gp2FullVerticalBlocks × 3.28' (1000mm)
       // GP2 Half section: gp2HalfRows × 1.64' (500mm)
-      totalHeightFeet = ((gp2FullVerticalBlocks * 3.28) + (gp2HalfRows * 1.64)).toFixed(2);
+      // Dummy rows: blankRows × 3.28'
+      totalHeightFeet = ((gp2FullVerticalBlocks * 3.28) + (gp2HalfRows * 1.64) + (blankRows * 3.28)).toFixed(2);
     } else {
-      totalHeightPixels = verticalBlocks * pixelsPerTileHeight;
-      totalHeightFeet = (verticalBlocks * tileHeightFeet).toFixed(2);
+      totalHeightPixels = (verticalBlocks + blankRows) * pixelsPerTileHeight;
+      totalHeightFeet = ((verticalBlocks + blankRows) * tileHeightFeet).toFixed(2);
     }
 
     const totalPixels = (totalWidthPixels * totalHeightPixels).toLocaleString();
     const totalWidthFeet = (horizontalBlocks * tileWidthFeet * numScreens).toFixed(2);
 
     // Calculate total tiles - show GP2 Full and GP2 Half separately when applicable
+    // Dummy tiles are shown separately (they are structural, not display tiles)
     let totalTilesDisplay;
+    const dummyTileCount = blankRows * horizontalBlocks * numScreens;
     if (productType === 'ROEGP26Full' && gp2HalfBottomRow && gp2HalfRows > 0) {
       const gp2FullTiles = horizontalBlocks * gp2FullVerticalBlocks * numScreens;
       const gp2HalfTiles = horizontalBlocks * gp2HalfRows * numScreens;
       const totalTiles = gp2FullTiles + gp2HalfTiles;
       totalTilesDisplay = `${totalTiles} (${gp2FullTiles} GP2 Full + ${gp2HalfTiles} GP2 Half)`;
+      if (dummyTileCount > 0) totalTilesDisplay += ` + ${dummyTileCount} Dummy`;
     } else {
       const totalTiles = horizontalBlocks * verticalBlocks * numScreens;
       totalTilesDisplay = `${totalTiles}`;
+      if (dummyTileCount > 0) totalTilesDisplay += ` + ${dummyTileCount} Dummy`;
     }
 
     console.log('Calculated dimensions:', {
