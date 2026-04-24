@@ -1146,8 +1146,10 @@ function addROEEquipment(config, tbody) {
 
   // Black Pearl lateral support (only for ground support, walls 9+ blocks tall)
   // Add a row of pipes and clamps for each tile of height beyond 8
-  if (supportType === "Ground" && verticalBlocks >= 9 && verticalBlocks <= 12) {
-    const lateralRows = verticalBlocks - 8;
+  // Include dummy rows in effective height since they add to physical wall height
+  const bpEffectiveHeight = verticalBlocks + (blankRows || 0);
+  if (supportType === "Ground" && bpEffectiveHeight >= 9 && bpEffectiveHeight <= 12) {
+    const lateralRows = bpEffectiveHeight - 8;
     const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each block is 0.5m wide
     const tenFootPipes = Math.floor(screenWidthFeet / 10) * lateralRows;
     const remainingFeet = screenWidthFeet - (Math.floor(screenWidthFeet / 10) * 10);
@@ -1224,6 +1226,7 @@ function addROEGP26Equipment(config, tbody) {
     powerDistro,
     voltage,
     supportType,
+    blankRows,
     gp2HalfBottomRow,
     gp2HalfRows,
     gp2HalfPosition,
@@ -1366,7 +1369,8 @@ function addROEGP26Equipment(config, tbody) {
   // Compute effective height in 0.5m half-block units (GP2 Full = 2 per block, GP2 Half = 1 per row)
   // Trigger at 8+ half-blocks (4.0m = 4 full blocks); one set of pipes spanning the full width
   const gp2FullBlocks = gp2FullVerticalBlocks || verticalBlocks;
-  const gp2LateralHalfBlocks = (gp2FullBlocks * 2) + (gp2HalfRows || 0);
+  // Each GP2 Full dummy row is 1000mm = 2 half-blocks; include in effective height
+  const gp2LateralHalfBlocks = (gp2FullBlocks * 2) + (gp2HalfRows || 0) + ((blankRows || 0) * 2);
   if (productType === "ROEGP26Full" && supportType === "Ground" && gp2LateralHalfBlocks >= 8) {
     const screenWidthFeet = horizontalBlocks * 0.5 * 3.28084; // Each block is 0.5m wide
     const tenFootPipes = Math.floor(screenWidthFeet / 10);
