@@ -743,7 +743,12 @@ const EquipmentCalculator = {
         heightInMeters = verticalBlocks * 0.5;
       }
 
-      const needsDenseSupport = heightInMeters > 4.0;
+      // Include dummy rows in effective height for support threshold and truss calculations
+      // BP/Half tiles = 0.5m each; GP2 Full tiles = 1.0m each
+      const dummyHeightMeters = (blankRows || 0) * (productType === "ROEGP26Full" ? 1.0 : 0.5);
+      const effectiveHeightInMeters = heightInMeters + dummyHeightMeters;
+
+      const needsDenseSupport = effectiveHeightInMeters > 4.0;
 
       if (groundSupportType === "Double Base" && wallType === "Flat") {
         doubleBases = Math.floor(horizontalBlocks / 2);
@@ -788,17 +793,19 @@ const EquipmentCalculator = {
 
       if (needsDenseSupport) {
         universalBaseTruss = horizontalBlocks;
-        const rearTrussRows = Math.floor(heightInMeters);
-        rearTruss = (rearTrussRows + (blankRows || 0)) * universalBaseTruss;
+        // Use effectiveHeightInMeters (already includes dummy rows) — no separate blankRows addition
+        const rearTrussRows = Math.floor(effectiveHeightInMeters);
+        rearTruss = rearTrussRows * universalBaseTruss;
       } else {
         universalBaseTruss = Math.ceil(horizontalBlocks / 1.9);
         rearTruss = Math.floor((effectiveVerticalBlocks + (blankRows || 0)) / 2) * universalBaseTruss;
       }
 
       // rearBridge = total of all rear trusses (1m + 0.5m)
-      // 0.5m trusses (BPGPREAR05) are added for odd-height BP screens or GP2 Half bottom row
+      // 0.5m trusses (BPGPREAR05) are added for odd effective height (tiles + dummy) or GP2 Half bottom row
+      const effectiveTotalBlocks = verticalBlocks + (blankRows || 0);
       const hasHalfMeterRearTruss =
-        (productType !== "ROEGP26Full" && verticalBlocks % 2 === 1 && verticalBlocks >= 3) ||
+        (productType !== "ROEGP26Full" && effectiveTotalBlocks % 2 === 1 && effectiveTotalBlocks >= 3) ||
         gp2HalfBottomRow;
       rearBridge = rearTruss + (hasHalfMeterRearTruss ? universalBaseTruss : 0);
     }
