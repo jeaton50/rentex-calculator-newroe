@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LED Wall Equipment Validator</title>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -260,11 +261,21 @@
 
     <!-- Upload card -->
     <div class="card">
-        <div class="card-header">1 — Upload Quote PDF</div>
+        <div class="card-header">1 — Upload Quote</div>
         <div class="card-body">
+            <div style="display:flex;gap:8px;margin-bottom:12px;">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 14px;border:1px solid var(--border);border-radius:6px;flex:1;justify-content:center;" id="lbl-pdf">
+                    <input type="radio" name="upload-type" value="pdf" id="radio-pdf" checked style="accent-color:var(--accent)">
+                    📄 PDF
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:7px 14px;border:1px solid var(--border);border-radius:6px;flex:1;justify-content:center;" id="lbl-excel">
+                    <input type="radio" name="upload-type" value="excel" id="radio-excel" style="accent-color:var(--accent)">
+                    📊 Excel (.xlsx / .xls)
+                </label>
+            </div>
             <div id="drop-zone">
-                <div class="icon">📄</div>
-                <strong>Drag & drop a PDF here</strong>
+                <div class="icon" id="drop-icon">📄</div>
+                <strong id="drop-label">Drag & drop a PDF here</strong>
                 <p>or click to browse</p>
                 <div id="file-name"></div>
             </div>

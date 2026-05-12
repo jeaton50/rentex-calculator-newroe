@@ -34,9 +34,29 @@ function setStatus(msg, type = 'info') {
 // ============================================================
 // Upload handling
 // ============================================================
+function getSelectedUploadType() {
+    return $('radio-excel').checked ? 'excel' : 'pdf';
+}
+
+function syncUploadTypeUI() {
+    const isExcel = getSelectedUploadType() === 'excel';
+    $('drop-icon').textContent  = isExcel ? '📊' : '📄';
+    $('drop-label').textContent = isExcel ? 'Drag & drop an Excel file here' : 'Drag & drop a PDF here';
+    $('file-input').accept = isExcel ? '.xlsx,.xls' : '.pdf';
+
+    // Highlight active radio label
+    $('lbl-pdf').style.borderColor   = !isExcel ? 'var(--accent)' : 'var(--border)';
+    $('lbl-excel').style.borderColor = isExcel  ? 'var(--accent)' : 'var(--border)';
+}
+
 function initUpload() {
-    const zone = $('drop-zone');
+    const zone  = $('drop-zone');
     const input = $('file-input');
+
+    // Radio toggle
+    $('radio-pdf').addEventListener('change', syncUploadTypeUI);
+    $('radio-excel').addEventListener('change', syncUploadTypeUI);
+    syncUploadTypeUI(); // set initial state
 
     zone.addEventListener('click', () => input.click());
     zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
@@ -45,32 +65,56 @@ function initUpload() {
         e.preventDefault();
         zone.classList.remove('drag-over');
         const file = e.dataTransfer.files[0];
-        if (file) handleFile(file);
+        if (file) autoDetectTypeAndHandle(file);
     });
     input.addEventListener('change', () => {
-        if (input.files[0]) handleFile(input.files[0]);
+        if (input.files[0]) handleFile(input.files[0], getSelectedUploadType());
     });
 }
 
-async function handleFile(file) {
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-        setStatus('Please upload a PDF file.', 'error');
-        return;
+// When dragging a file in, auto-detect type from extension
+function autoDetectTypeAndHandle(file) {
+    const name = file.name.toLowerCase();
+    if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+        $('radio-excel').checked = true;
+        syncUploadTypeUI();
+        handleFile(file, 'excel');
+    } else if (name.endsWith('.pdf')) {
+        $('radio-pdf').checked = true;
+        syncUploadTypeUI();
+        handleFile(file, 'pdf');
+    } else {
+        setStatus('Unsupported file type. Please upload a PDF or Excel file (.xlsx/.xls).', 'error');
     }
+}
+
+async function handleFile(file, type) {
     state.fileName = file.name;
     $('file-name').textContent = file.name;
-    setStatus('Extracting text from PDF…', 'info');
+
+    const label = type === 'excel' ? 'Excel' : 'PDF';
+    setStatus(`Extracting text from ${label}…`, 'info');
 
     try {
-        const text = await extractPDFText(file);
+        let text;
+        if (type === 'excel') {
+            text = await extractExcelText(file);
+        } else {
+            text = await extractPDFText(file);
+        }
+
         if (!text || text.trim().length < 20) {
-            setStatus('Could not extract text. The PDF may be a scanned image — try an OCR tool first.', 'error');
+            const hint = type === 'pdf'
+                ? 'The PDF may be a scanned image — try an OCR tool first.'
+                : 'The spreadsheet appears to be empty.';
+            setStatus(`Could not extract text. ${hint}`, 'error');
             return;
         }
+
         state.rawText = text;
         state.parsedItems = parseLineItems(text);
 
-        // Auto-detect
+        // Auto-detect wall configuration
         const product = detectProduct(text);
         const { H, V } = detectDimensions(text);
         const { supportType, voltage } = detectConfig(text);
@@ -86,9 +130,12 @@ async function handleFile(file) {
         showSection('config-section');
         showSection('raw-section');
         hideSection('results-section');
-        setStatus(`PDF loaded. ${state.parsedItems.length} line items detected. Confirm settings below, then validate.`, 'success');
+        setStatus(
+            `${label} loaded — ${state.parsedItems.length} line items detected. Confirm settings below, then validate.`,
+            'success'
+        );
     } catch (err) {
-        setStatus('Error reading PDF: ' + err.message, 'error');
+        setStatus(`Error reading ${label}: ${err.message}`, 'error');
         console.error(err);
     }
 }
