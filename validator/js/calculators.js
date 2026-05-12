@@ -1,0 +1,411 @@
+// ============================================================
+// Shared: processor selection
+// ============================================================
+function selectProcessors(totalTiles, H, V, pixW, pixH) {
+    const maxSX40 = Math.floor(4096 / pixW) * Math.floor(2160 / pixH);
+    const minForPixels = Math.ceil(H * pixW / 4096) * Math.ceil(V * pixH / 2160);
+    const tilesPerCascade = Math.ceil(totalTiles / 10);
+    const base = Math.max(Math.ceil(totalTiles / maxSX40), Math.ceil(tilesPerCascade / 40), minForPixels);
+    if (totalTiles <= 80) return { S8: 1, SX40: 0, XD10: 0, count: 1 };
+    const distrib = Math.max(base, Math.ceil(totalTiles / 100));
+    return { S8: 0, SX40: base, XD10: Math.max(0, distrib - base), count: distrib };
+}
+
+// Shared: ROE truss hardware
+function roeHardware(H, V, tileHeightM, gp2HalfRows, blankRows, isGP2Full) {
+    const halfHeightM = (gp2HalfRows || 0) * 0.5;
+    const dummyHeightM = (blankRows || 0) * tileHeightM;
+    const tileHeightTotal = V * tileHeightM;
+    const effectiveHeightM = tileHeightTotal + halfHeightM + dummyHeightM;
+    const dense = effectiveHeightM > 4.0;
+
+    let universalBaseTruss, rearTruss;
+    if (dense) {
+        universalBaseTruss = H;
+        rearTruss = Math.floor(effectiveHeightM) * H;
+    } else {
+        universalBaseTruss = Math.ceil(H / 1.9);
+        const effectiveV = V + (blankRows || 0);
+        rearTruss = Math.floor(effectiveV / 2) * universalBaseTruss;
+    }
+
+    // Half-meter row flag
+    const effectiveTotalBlocks = V + (blankRows || 0);
+    const hasHalf = isGP2Full
+        ? (gp2HalfRows || 0) > 0
+        : (effectiveTotalBlocks % 2 === 1 && effectiveTotalBlocks >= 3);
+
+    const rearBridge = rearTruss + (hasHalf ? universalBaseTruss : 0);
+    const rearHalf = hasHalf ? universalBaseTruss : 0;
+
+    return { universalBaseTruss, rearTruss, rearBridge, rearHalf, dense, effectiveHeightM };
+}
+
+// Shared: power distro (208V logic)
+function powerDistro(totalTiles, wattsPerTile) {
+    const watts = totalTiles * wattsPerTile;
+    const amps208 = watts / 208;
+    const circuits = Math.ceil(totalTiles / 16);
+
+    if (amps208 > 200) {
+        const tp1 = Math.ceil(amps208 / 400);
+        const soca = Math.ceil(circuits / 6);
+        return {
+            TP1: Math.max(tp1, Math.ceil(soca / 4)),
+            SOCA6XTRU1: soca,
+            CUBEDIST: 0, L2130T1FB: 0
+        };
+    }
+    const cube = Math.ceil(amps208 / 200) || 1;
+    const l2130 = Math.ceil(circuits / 3);
+    return {
+        CUBEDIST: Math.max(cube, Math.ceil(l2130 / 6)),
+        L2130T1FB: l2130,
+        TP1: 0, SOCA6XTRU1: 0
+    };
+}
+
+// Shared: data cable type based on geometric distance
+function dataCableType(H, V, processorCount, tileWidthFt, tileHeightFt) {
+    const B41 = processorCount || 1;
+    const B42 = (H * tileWidthFt) / (B41 * 2);
+    const B39 = V * tileHeightFt;
+    const dist = Math.sqrt(B42 * B42 + B39 * B39);
+    if (dist < 7) return 'CAT5ES005';
+    if (dist < 11) return 'ECON010C6';
+    if (dist < 51) return 'ECON050C6';
+    return 'ECON100C6';
+}
+
+const CABLE_DESCS = {
+    CAT5ES005: "CAT5e ethernet cable 5'",
+    ECON010C6: "Ethercon (CAT6) 10'",
+    ECON050C6: "Ethercon (CAT6) 50'",
+    ECON100C6: "Ethercon (CAT6) 100'",
+};
+
+// ============================================================
+// ABSEN PL2.5
+// ============================================================
+function calcAbsen(H, V, opts = {}) {
+    const { supportType = 'Ground', voltage = 208, groundSupportType = 'Single Base' } = opts;
+    const items = [];
+    const add = (sku, desc, qty, cat, kw) => {
+        if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
+    };
+
+    // Tiles & cases
+    const totalTiles = H * V;
+    const totalSpares = calcSpares(totalTiles, 8, 1.5);
+    const totalWithSpares = totalTiles + totalSpares;
+    const casesNeeded = Math.ceil(totalWithSpares / 8);
+
+    add('8PPL25', 'Absen PL2.5 8× tile package', casesNeeded, 'Tiles', ['8ppl25', 'absen', 'package', '8x']);
+    add('PL25', 'Absen PL2.5 tile (active)', totalTiles, 'Tiles', ['pl25', 'absen', 'pl2.5', 'tile']);
+    add('PL25', 'Absen PL2.5 tile (spares)', totalSpares, 'Tiles', ['pl25', 'absen', 'spare', 'pl2.5']);
+    add('PL25CASE', 'Case, Absen PL2.5, 8×', casesNeeded, 'Tiles', ['pl25case', 'case', 'absen']);
+
+    // Processor
+    const proc = selectProcessors(totalTiles, H, V, 200, 200);
+    if (proc.S8 > 0) add('S8', 'Brompton Tessera S8', proc.S8, 'Processor', ['s8', 'brompton', 'tessera']);
+    if (proc.SX40 > 0) add('SX40', 'Brompton Tessera SX40', proc.SX40, 'Processor', ['sx40', 'brompton', 'tessera']);
+    if (proc.XD10 > 0) add('XD10', 'Brompton Tessera XD10G', proc.XD10, 'Processor', ['xd10', 'brompton', 'distribution']);
+
+    // Ground support
+    if (supportType === 'Ground') {
+        const singleBases = groundSupportType === 'Double Base' ? H % 2 : H;
+        const doubleBases = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
+        const outriggers = Math.ceil(H / 1.9);
+        const clamps = Math.floor(V / 2) * outriggers;
+
+        const O13 = Math.ceil((H / 2) - 1);
+        const O14 = Math.ceil((H / 2) - O13);
+        const P13 = Math.ceil(O13 - O13 * 0.25);
+        const P15 = Math.ceil(P13 * 0.25);
+        const N12 = V > 5.1 ? 2 : 0;
+        const supportBeams1000mm = Math.max(0, (O13 * N12) - (P15 * N12));
+        const supportBeams50mm = O14 * N12;
+        const beamConnectors = P15 * N12;
+        const platforms = N12 > 0 ? Math.ceil(O13 / 2) : 0;
+
+        add('PL25BB1', 'Absen PL2.5 base bar, 1W, 0.5m', singleBases, 'Hardware', ['pl25bb1', 'base bar', '0.5m', '1w']);
+        add('PL25BB2', 'Absen PL2.5 base bar, 2W, 1m', doubleBases, 'Hardware', ['pl25bb2', 'base bar', '1m', '2w']);
+        add('PL25OUT', 'Absen PL2.5 outrigger', outriggers, 'Hardware', ['pl25out', 'outrigger', 'absen']);
+        add('PL25LAD1M', 'Absen PL2.5 ladder 1m', clamps, 'Hardware', ['pl25lad', 'ladder', '1m']);
+        add('PL25CLAMP', 'Absen PL2.5 clamp', clamps, 'Hardware', ['pl25clamp', 'clamp', 'absen']);
+        add('PL25BEAM50', 'Absen PL2.5 support beam 500mm', supportBeams50mm, 'Hardware', ['pl25beam50', 'beam', '500']);
+        add('PL25BEAM1K', 'Absen PL2.5 support beam 1000mm', supportBeams1000mm, 'Hardware', ['pl25beam1k', 'beam', '1000']);
+        add('PL25BEAMAD', 'Absen PL2.5 support beam connector', beamConnectors, 'Hardware', ['pl25beamad', 'connector', 'beam', 'adjustable']);
+        add('PL25PLAT', 'Absen PL2.5 platform', platforms, 'Hardware', ['pl25plat', 'platform', 'absen']);
+
+        // Sandbags
+        const sbTable = [0, 0, 0, 4, 6, 8, 11, 15, 17, 19, 21, 23];
+        const idx = Math.min(V - 1, sbTable.length - 1);
+        const baseCount = singleBases + doubleBases;
+        const sandbags = Math.ceil(sbTable[Math.max(0, idx)] * baseCount / 1.0525);
+        add('SANDBAG25', 'Sand Bag 25 lbs.', sandbags, 'Hardware', ['sandbag', 'sand bag', '25']);
+    } else {
+        add('PL25HEAD1', 'Absen PL2.5 header, 1W, 0.5m', H % 2 ? H : 0, 'Hardware', ['pl25head1', 'header', '1w']);
+        add('PL25HEAD2', 'Absen PL2.5 header, 2W, 1m', Math.floor(H / 2), 'Hardware', ['pl25head2', 'header', '2w']);
+    }
+
+    // Cables
+    const circuits = Math.ceil(totalTiles / 16);
+    const cableType = dataCableType(H, V, proc.count, 0.5 * 3.28084, 0.5 * 3.28084);
+    const numDataCables = proc.count * 10;
+
+    add(cableType, CABLE_DESCS[cableType], numDataCables, 'Cables', [cableType.toLowerCase(), 'data', 'cable']);
+    add('ECON1M', 'Ethercon to Ethercon 1m', totalWithSpares, 'Cables', ['econ1m', 'ethercon', '1m']);
+    add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
+    add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m', "3'"]);
+    if (voltage === 120) {
+        add('EDT110M', 'Edison to True1 power cable 10m', Math.ceil(casesNeeded * 1.05), 'Cables', ['edt110m', 'edison', 'true1']);
+    }
+
+    // Power distro
+    const pd = powerDistro(totalTiles, 192);
+    add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
+    add('L2130T1FB', 'L2130 floor box to 3× True1', pd.L2130T1FB, 'Power', ['l2130', 'floor box', 'true1']);
+    add('TP1', 'Indu Electric 400A Power Distro', pd.TP1, 'Power', ['tp1', '400a', 'power distro']);
+    add('SOCA6XTRU1', '19-pin Soccapex to 6× True1', pd.SOCA6XTRU1, 'Power', ['soca6xtru1', 'socapex', 'soccapex']);
+
+    return items;
+}
+
+// ============================================================
+// ROE GP2.6 FULL
+// ============================================================
+function calcROEGP26Full(H, V, opts = {}) {
+    const { supportType = 'Ground', voltage = 208, gp2HalfRows = 0, blankRows = 0, groundSupportType = 'Single Base' } = opts;
+    const items = [];
+    const add = (sku, desc, qty, cat, kw) => {
+        if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
+    };
+
+    // Tiles — each GP2 Full tile = 500×1000mm
+    const totalTiles = H * V;
+    const totalSpares = calcSpares(totalTiles, 6, 1.5);
+    const totalWithSpares = totalTiles + totalSpares;
+    const casesNeeded = Math.ceil(totalWithSpares / 6);
+
+    add('6PGP2FULL', 'ROE GP2.6 Full 6× tile package', casesNeeded, 'Tiles', ['6pgp2full', 'gp2', 'full', 'package', '6x']);
+    add('GP2FULL', 'ROE GP2.6 Full LED tile 500×1000mm (active)', totalTiles, 'Tiles', ['gp2full', 'gp2.6', 'full', 'tile', '500x1000', 'graphite']);
+    add('GP2FULL', 'ROE GP2.6 Full LED tile 500×1000mm (spares)', totalSpares, 'Tiles', ['gp2full', 'spare', 'gp2.6', 'full']);
+
+    // GP2 Half row tiles (optional bottom row)
+    if (gp2HalfRows > 0) {
+        const halfTiles = H * gp2HalfRows;
+        const halfSpares = calcSpares(halfTiles, 12, 1.5);
+        const halfWithSpares = halfTiles + halfSpares;
+        const halfCases = Math.ceil(halfWithSpares / 12);
+        add('12PGP2HALF', 'ROE GP2.6 Half 12× tile package', halfCases, 'Tiles', ['12pgp2half', 'gp2', 'half', 'package']);
+        add('GP2HALF', 'ROE GP2.6 Half LED tile 500×500mm (active)', halfTiles, 'Tiles', ['gp2half', 'gp2.6', 'half', 'tile', '500x500']);
+        add('GP2HALF', 'ROE GP2.6 Half LED tile 500×500mm (spares)', halfSpares, 'Tiles', ['gp2half', 'spare', 'gp2.6', 'half']);
+    }
+
+    // Processor (192×384 px per tile)
+    const proc = selectProcessors(totalTiles, H, V, 192, 384);
+    if (proc.S8 > 0) add('S8', 'Brompton Tessera S8', proc.S8, 'Processor', ['s8', 'brompton', 'tessera']);
+    if (proc.SX40 > 0) add('SX40', 'Brompton Tessera SX40', proc.SX40, 'Processor', ['sx40', 'brompton', 'tessera']);
+    if (proc.XD10 > 0) add('XD10', 'Brompton Tessera XD10G', proc.XD10, 'Processor', ['xd10', 'brompton', 'distribution']);
+
+    // Truss hardware
+    const hw = roeHardware(H, V, 1.0, gp2HalfRows, blankRows, true);
+    add('BPGPUBT', 'ROE BP2/GP2 universal base truss', hw.universalBaseTruss, 'Hardware', ['bpgpubt', 'universal base truss', 'roe', 'base truss']);
+    add('BPGPREAR1', 'ROE BP2/GP2 rear truss 1m', hw.rearTruss, 'Hardware', ['bpgprear1', 'rear truss', '1m', '1 meter', 'roe']);
+    add('BPGPREAR05', 'ROE BP2/GP2 rear truss 0.5m', hw.rearHalf, 'Hardware', ['bpgprear05', 'rear truss', '0.5m', 'half meter', 'roe']);
+    add('BPGPBRIDGE', 'ROE BP2/GP2 rear bridge clamp', hw.rearBridge, 'Hardware', ['bpgpbridge', 'rear bridge', 'bridge clamp', 'roe']);
+
+    if (supportType === 'Ground') {
+        const singleBases = groundSupportType === 'Double Base' ? H % 2 : H;
+        const doubleBases = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
+        add('GP2BASE1', 'ROE Graphite GP base bar, 1W', singleBases, 'Hardware', ['gp2base1', 'base bar', '1w', 'graphite', 'gp']);
+        add('GP2BASE2', 'ROE Graphite GP base bar, 2W', doubleBases, 'Hardware', ['gp2base2', 'base bar', '2w', 'graphite', 'gp']);
+    } else {
+        const singleHeaders = H % 2;
+        const doubleHeaders = Math.floor(H / 2);
+        add('GP2HEAD1', 'ROE Graphite GP hanging bar, 1W', singleHeaders, 'Hardware', ['gp2head1', 'hanging bar', '1w', 'header']);
+        add('GP2HEAD2', 'ROE Graphite GP hanging bar, 2W', doubleHeaders, 'Hardware', ['gp2head2', 'hanging bar', '2w', 'header']);
+    }
+
+    // Pipes and couplers (when wall is ≥ 8 half-blocks / 4 full-tile equivalent)
+    const gp2LateralHalfBlocks = (V * 2) + (gp2HalfRows || 0) + ((blankRows || 0) * 2);
+    if (supportType === 'Ground' && gp2LateralHalfBlocks >= 8) {
+        const screenWidthFt = H * 0.5 * 3.28084;
+        const tenPipes = Math.floor(screenWidthFt / 10);
+        const remFt = screenWidthFt - tenPipes * 10;
+        const fourPipes = Math.floor(remFt / 4);
+        add('LED10FTS40', "Schedule 40 1.5\" pipe 10'", tenPipes, 'Hardware', ['led10fts40', '10ft', 'pipe', 'schedule 40']);
+        add('LED4FTS40', "Schedule 40 1.5\" pipe 4'", fourPipes, 'Hardware', ['led4fts40', '4ft', 'pipe', 'schedule 40']);
+        add('SWVLCHEESB', 'Swivel Aluminum Cheeseboro', hw.universalBaseTruss, 'Hardware', ['swvlcheesb', 'cheeseboro', 'swivel', 'coupler']);
+    }
+
+    // Cables
+    const circuits = Math.ceil(totalTiles / 16);
+    const cableType = dataCableType(H, V, proc.count, 0.5 * 3.28084, 1.0 * 3.28084);
+    add(cableType, CABLE_DESCS[cableType], proc.count * 5, 'Cables', [cableType.toLowerCase(), 'data', 'cable']);
+    add('T16', "True1 power cable 16' (5m)", H, 'Cables', ['t16', 't1016', 'true1', "16'", '5m']);
+    add('ECON1M', 'Ethercon to Ethercon 1m', totalWithSpares + (gp2HalfRows > 0 ? H * gp2HalfRows : 0), 'Cables', ['econ1m', 'ethercon', '1m']);
+    add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
+    add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m']);
+    if (voltage === 120) {
+        add('EDT110M', 'Edison to True1 power cable 10m', Math.ceil(casesNeeded * 1.05), 'Cables', ['edt110m', 'edison', 'true1']);
+    }
+
+    // Power (320W per GP2 Full tile)
+    const pd = powerDistro(totalTiles, 320);
+    add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
+    add('L2130T1FB', 'L2130 floor box to 3× True1', pd.L2130T1FB, 'Power', ['l2130', 'floor box', 'true1']);
+    add('TP1', 'Indu Electric 400A Power Distro', pd.TP1, 'Power', ['tp1', '400a', 'power distro']);
+    add('SOCA6XTRU1', '19-pin Soccapex to 6× True1', pd.SOCA6XTRU1, 'Power', ['soca6xtru1', 'socapex', 'soccapex']);
+
+    return items;
+}
+
+// ============================================================
+// ROE BLACK PEARL (BP2)
+// ============================================================
+function calcROEBlackPearl(H, V, opts = {}) {
+    const { supportType = 'Ground', voltage = 208, blankRows = 0, groundSupportType = 'Single Base', bpVariant = 'BP2V2' } = opts;
+    const items = [];
+    const add = (sku, desc, qty, cat, kw) => {
+        if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
+    };
+
+    const tileSKU = bpVariant === 'BP2B1' ? 'BP2B1' : bpVariant === 'BP2B2' ? 'BP2B2' : 'BP2V2';
+    const pkgSKU  = bpVariant === 'BP2B1' ? '8PBP2B1' : bpVariant === 'BP2B2' ? '8PBP2B2' : '8PBP2V2';
+    const tileDesc = bpVariant === 'BP2B1' ? 'ROE Black Pearl BP2B1 tile (batch 1)'
+                   : bpVariant === 'BP2B2' ? 'ROE Black Pearl BP2B2 tile (batch 2)'
+                   : 'ROE Black Pearl BP2V2 tile (v2.1)';
+
+    // Tiles & cases
+    const totalTiles = H * V;
+    const totalSpares = calcSpares(totalTiles, 8, 1.5);
+    const totalWithSpares = totalTiles + totalSpares;
+    const casesNeeded = Math.ceil(totalWithSpares / 8);
+
+    add(pkgSKU, `ROE Black Pearl 8× tile package (${bpVariant})`, casesNeeded, 'Tiles', [pkgSKU.toLowerCase(), 'black pearl', 'package', '8x', 'roe', 'bp2']);
+    add(tileSKU, `${tileDesc} (active)`, totalTiles, 'Tiles', [tileSKU.toLowerCase(), 'black pearl', 'bp2', 'tile', 'roe']);
+    add(tileSKU, `${tileDesc} (spares)`, totalSpares, 'Tiles', [tileSKU.toLowerCase(), 'spare', 'black pearl', 'bp2']);
+    add('BP2V2CASE', 'Case, ROE Black Pearl, 8×', casesNeeded, 'Tiles', ['bp2v2case', 'case', 'black pearl', 'roe']);
+
+    // Processor (192×192 px per tile)
+    const proc = selectProcessors(totalTiles, H, V, 192, 192);
+    if (proc.S8 > 0) add('S8', 'Brompton Tessera S8', proc.S8, 'Processor', ['s8', 'brompton', 'tessera']);
+    if (proc.SX40 > 0) add('SX40', 'Brompton Tessera SX40', proc.SX40, 'Processor', ['sx40', 'brompton', 'tessera']);
+    if (proc.XD10 > 0) add('XD10', 'Brompton Tessera XD10G', proc.XD10, 'Processor', ['xd10', 'brompton', 'distribution']);
+
+    // Truss hardware (BP tile = 0.5m tall)
+    const hw = roeHardware(H, V, 0.5, 0, blankRows, false);
+    add('BPGPUBT', 'ROE BP2/GP2 universal base truss', hw.universalBaseTruss, 'Hardware', ['bpgpubt', 'universal base truss', 'roe', 'base truss']);
+    add('BPGPREAR1', 'ROE BP2/GP2 rear truss 1m', hw.rearTruss, 'Hardware', ['bpgprear1', 'rear truss', '1m', 'roe']);
+    add('BPGPREAR05', 'ROE BP2/GP2 rear truss 0.5m', hw.rearHalf, 'Hardware', ['bpgprear05', 'rear truss', '0.5m', 'half meter']);
+    add('BPGPBRIDGE', 'ROE BP2/GP2 rear bridge clamp', hw.rearBridge, 'Hardware', ['bpgpbridge', 'rear bridge', 'bridge clamp']);
+
+    if (supportType === 'Ground') {
+        const singleBases = groundSupportType === 'Double Base' ? H % 2 : H;
+        const doubleBases = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
+        add('BPBOBB1', 'ROE Black Pearl base bar, 1W, 0.5m', singleBases, 'Hardware', ['bpbobb1', 'base bar', '0.5m', '1w', 'black pearl']);
+        add('BPBOBB2', 'ROE Black Pearl base bar, 2W, 1m', doubleBases, 'Hardware', ['bpbobb2', 'base bar', '1m', '2w', 'black pearl']);
+    } else {
+        add('BPBOHEAD1', 'ROE Black Pearl header, 1W, 0.5m', H % 2, 'Hardware', ['bpbohead1', 'header', '1w', '0.5m', 'black pearl']);
+        add('BPBOHEAD2', 'ROE Black Pearl header, 2W, 1m', Math.floor(H / 2), 'Hardware', ['bpbohead2', 'header', '2w', '1m', 'black pearl']);
+    }
+
+    // Pipes and couplers (9–12 BP tiles tall)
+    const bpEffectiveHeight = V + (blankRows || 0);
+    if (supportType === 'Ground' && bpEffectiveHeight >= 9 && bpEffectiveHeight <= 12) {
+        const lateralRows = bpEffectiveHeight - 8;
+        const screenWidthFt = H * 0.5 * 3.28084;
+        const tenPipes = Math.floor(screenWidthFt / 10) * lateralRows;
+        const remFt = screenWidthFt - Math.floor(screenWidthFt / 10) * 10;
+        const fourPipes = Math.floor(remFt / 4) * lateralRows;
+        const couplers = hw.universalBaseTruss * lateralRows;
+        add('LED10FTS40', "Schedule 40 1.5\" pipe 10'", tenPipes, 'Hardware', ['led10fts40', '10ft', 'pipe', 'schedule 40']);
+        add('LED4FTS40', "Schedule 40 1.5\" pipe 4'", fourPipes, 'Hardware', ['led4fts40', '4ft', 'pipe', 'schedule 40']);
+        add('SWVLCHEESB', 'Swivel Aluminum Cheeseboro', couplers, 'Hardware', ['swvlcheesb', 'cheeseboro', 'swivel', 'coupler']);
+    }
+
+    // Cables
+    const circuits = Math.ceil(totalTiles / 16);
+    const cableType = dataCableType(H, V, proc.count, 0.5 * 3.28084, 0.5 * 3.28084);
+    const numDataCables = proc.count * 10;
+    add(cableType, CABLE_DESCS[cableType], numDataCables, 'Cables', [cableType.toLowerCase(), 'data', 'cable']);
+    add('ECON1M', 'Ethercon to Ethercon 1m', totalWithSpares, 'Cables', ['econ1m', 'ethercon', '1m']);
+    add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
+    add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m']);
+    if (voltage === 120) {
+        add('EDT110M', 'Edison to True1 power cable 10m', Math.ceil(casesNeeded * 1.05), 'Cables', ['edt110m', 'edison', 'true1']);
+    }
+
+    // Power (190W per tile)
+    const pd = powerDistro(totalTiles, 190);
+    add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
+    add('L2130T1FB', 'L2130 floor box to 3× True1', pd.L2130T1FB, 'Power', ['l2130', 'floor box', 'true1']);
+    add('TP1', 'Indu Electric 400A Power Distro', pd.TP1, 'Power', ['tp1', '400a', 'power distro']);
+    add('SOCA6XTRU1', '19-pin Soccapex to 6× True1', pd.SOCA6XTRU1, 'Power', ['soca6xtru1', 'socapex', 'soccapex']);
+
+    return items;
+}
+
+// ============================================================
+// ROE GP2.6 HALF (standalone)
+// ============================================================
+function calcROEGP26Half(H, V, opts = {}) {
+    const { supportType = 'Ground', voltage = 208, blankRows = 0, groundSupportType = 'Single Base' } = opts;
+    const items = [];
+    const add = (sku, desc, qty, cat, kw) => {
+        if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
+    };
+
+    const totalTiles = H * V;
+    const totalSpares = calcSpares(totalTiles, 12, 1.5);
+    const totalWithSpares = totalTiles + totalSpares;
+    const casesNeeded = Math.ceil(totalWithSpares / 12);
+
+    add('12PGP2HALF', 'ROE GP2.6 Half 12× tile package', casesNeeded, 'Tiles', ['12pgp2half', 'gp2', 'half', 'package', '12x']);
+    add('GP2HALF', 'ROE GP2.6 Half LED tile 500×500mm (active)', totalTiles, 'Tiles', ['gp2half', 'gp2.6', 'half', 'tile']);
+    add('GP2HALF', 'ROE GP2.6 Half LED tile 500×500mm (spares)', totalSpares, 'Tiles', ['gp2half', 'spare', 'gp2.6', 'half']);
+
+    // Processor (192×192 px)
+    const proc = selectProcessors(totalTiles, H, V, 192, 192);
+    if (proc.S8 > 0) add('S8', 'Brompton Tessera S8', proc.S8, 'Processor', ['s8', 'brompton', 'tessera']);
+    if (proc.SX40 > 0) add('SX40', 'Brompton Tessera SX40', proc.SX40, 'Processor', ['sx40', 'brompton', 'tessera']);
+    if (proc.XD10 > 0) add('XD10', 'Brompton Tessera XD10G', proc.XD10, 'Processor', ['xd10', 'brompton', 'distribution']);
+
+    // Truss hardware (same as BP, 0.5m tile height)
+    const hw = roeHardware(H, V, 0.5, 0, blankRows, false);
+    add('BPGPUBT', 'ROE BP2/GP2 universal base truss', hw.universalBaseTruss, 'Hardware', ['bpgpubt', 'universal base truss', 'roe']);
+    add('BPGPREAR1', 'ROE BP2/GP2 rear truss 1m', hw.rearTruss, 'Hardware', ['bpgprear1', 'rear truss', '1m', 'roe']);
+    add('BPGPREAR05', 'ROE BP2/GP2 rear truss 0.5m', hw.rearHalf, 'Hardware', ['bpgprear05', 'rear truss', '0.5m']);
+    add('BPGPBRIDGE', 'ROE BP2/GP2 rear bridge clamp', hw.rearBridge, 'Hardware', ['bpgpbridge', 'rear bridge', 'bridge clamp']);
+
+    const circuits = Math.ceil(totalTiles / 16);
+    const cableType = dataCableType(H, V, proc.count, 0.5 * 3.28084, 0.5 * 3.28084);
+    add(cableType, CABLE_DESCS[cableType], proc.count * 10, 'Cables', [cableType.toLowerCase(), 'data', 'cable']);
+    add('ECON1M', 'Ethercon to Ethercon 1m', totalWithSpares, 'Cables', ['econ1m', 'ethercon', '1m']);
+    add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
+    add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m']);
+
+    // Power (160W per GP2 Half tile)
+    const pd = powerDistro(totalTiles, 160);
+    add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
+    add('L2130T1FB', 'L2130 floor box to 3× True1', pd.L2130T1FB, 'Power', ['l2130', 'floor box', 'true1']);
+    add('TP1', 'Indu Electric 400A Power Distro', pd.TP1, 'Power', ['tp1', '400a', 'power distro']);
+    add('SOCA6XTRU1', '19-pin Soccapex to 6× True1', pd.SOCA6XTRU1, 'Power', ['soca6xtru1', 'socapex', 'soccapex']);
+
+    return items;
+}
+
+// ============================================================
+// Entry point
+// ============================================================
+function getExpectedEquipment(product, H, V, opts = {}) {
+    switch (product) {
+        case 'Absen':       return calcAbsen(H, V, opts);
+        case 'ROEGP26Full': return calcROEGP26Full(H, V, opts);
+        case 'ROEBP':       return calcROEBlackPearl(H, V, opts);
+        case 'ROEGP26Half': return calcROEGP26Half(H, V, opts);
+        default:            return [];
+    }
+}

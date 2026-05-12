@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED Wall Equipment Validator</title>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:       #0d1117;
+            --surface:  #161b22;
+            --border:   #30363d;
+            --text:     #c9d1d9;
+            --muted:    #8b949e;
+            --accent:   #58a6ff;
+            --green:    #3fb950;
+            --yellow:   #d29922;
+            --red:      #f85149;
+            --green-bg: rgba(63,185,80,.12);
+            --yellow-bg:rgba(210,153,34,.12);
+            --red-bg:   rgba(248,81,73,.12);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        header h1 { font-size: 18px; font-weight: 600; color: #fff; }
+        header p  { font-size: 13px; color: var(--muted); }
+
+        main { max-width: 960px; margin: 0 auto; padding: 24px 16px; display: flex; flex-direction: column; gap: 20px; }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--accent);
+            letter-spacing: .02em;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .card-body { padding: 16px; }
+
+        /* Drop zone */
+        #drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 40px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color .2s, background .2s;
+        }
+        #drop-zone:hover, #drop-zone.drag-over {
+            border-color: var(--accent);
+            background: rgba(88,166,255,.05);
+        }
+        #drop-zone .icon { font-size: 36px; margin-bottom: 8px; }
+        #drop-zone p { color: var(--muted); font-size: 13px; }
+        #drop-zone strong { color: var(--text); }
+        #file-input { display: none; }
+        #file-name { margin-top: 8px; font-size: 12px; color: var(--accent); min-height: 18px; }
+
+        /* Status bar */
+        .status-bar {
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .status-info    { background: rgba(88,166,255,.1); color: var(--accent); border: 1px solid rgba(88,166,255,.3); }
+        .status-success { background: var(--green-bg); color: var(--green); border: 1px solid rgba(63,185,80,.3); }
+        .status-error   { background: var(--red-bg);   color: var(--red);   border: 1px solid rgba(248,81,73,.3); }
+
+        /* Form grid */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+
+        .form-row { display: flex; flex-direction: column; gap: 4px; }
+        .form-row label { font-size: 12px; color: var(--muted); font-weight: 500; }
+        .form-row input, .form-row select {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            padding: 8px 10px;
+            font-size: 14px;
+            width: 100%;
+            outline: none;
+            transition: border-color .15s;
+        }
+        .form-row input:focus, .form-row select:focus { border-color: var(--accent); }
+
+        .advanced-toggle {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .advanced-toggle:hover { color: var(--text); }
+
+        #advanced-fields { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+
+        /* Buttons */
+        .btn {
+            padding: 9px 18px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s, border-color .15s;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+        }
+        .btn-primary:hover { background: #79b8ff; }
+        .btn-secondary {
+            background: transparent;
+            color: var(--text);
+        }
+        .btn-secondary:hover { background: var(--border); }
+
+        .btn-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+        /* Summary badges */
+        .summary-bar {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        .badge-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+        .badge-stat .count {
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .stat-found   .count { color: var(--green); }
+        .stat-wrong   .count { color: var(--yellow); }
+        .stat-missing .count { color: var(--red); }
+        .stat-total   .count { color: var(--text); }
+
+        /* Results table */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th {
+            text-align: left;
+            padding: 8px 12px;
+            color: var(--muted);
+            font-weight: 600;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        td { padding: 7px 12px; border-bottom: 1px solid rgba(48,54,61,.5); }
+
+        tr.cat-header td {
+            background: rgba(88,166,255,.06);
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            padding: 6px 12px;
+        }
+        tr.row-found     td { background: var(--green-bg); }
+        tr.row-wrong-qty td { background: var(--yellow-bg); }
+        tr.row-missing   td { background: var(--red-bg); }
+
+        .col-status { width: 32px; text-align: center; }
+        .col-sku    { font-family: monospace; font-size: 12px; color: var(--accent); white-space: nowrap; }
+        .col-qty, .col-found { text-align: right; width: 80px; font-family: monospace; }
+
+        .qty-found   { color: var(--green); font-weight: 600; }
+        .qty-unknown { color: var(--muted); font-style: italic; font-size: 12px; }
+        .qty-missing { color: var(--red); }
+
+        .badge {
+            display: inline-block;
+            font-size: 10px;
+            padding: 1px 5px;
+            border-radius: 10px;
+            margin-left: 6px;
+            vertical-align: middle;
+            font-family: monospace;
+        }
+        .badge-exact-sku { background: rgba(63,185,80,.2); color: var(--green); }
+        .badge-sku-text  { background: rgba(88,166,255,.2); color: var(--accent); }
+        .badge-keyword   { background: rgba(210,153,34,.2); color: var(--yellow); }
+
+        /* Raw text */
+        #raw-text {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 11px;
+            color: var(--muted);
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 12px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <h1>LED Wall Equipment Validator</h1>
+        <p>Upload a rental quote PDF and validate it against expected equipment</p>
+    </div>
+</header>
+
+<main>
+
+    <!-- Status bar -->
+    <div id="status-bar" class="status-bar status-info" hidden>Ready</div>
+
+    <!-- Upload card -->
+    <div class="card">
+        <div class="card-header">1 — Upload Quote PDF</div>
+        <div class="card-body">
+            <div id="drop-zone">
+                <div class="icon">📄</div>
+                <strong>Drag & drop a PDF here</strong>
+                <p>or click to browse</p>
+                <div id="file-name"></div>
+            </div>
+            <input type="file" id="file-input" accept=".pdf">
+        </div>
+    </div>
+
+    <!-- Config card -->
+    <div class="card" id="config-section" hidden>
+        <div class="card-header">2 — Confirm Wall Configuration</div>
+        <div class="card-body">
+            <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+                Auto-detected from PDF — correct any values if needed.
+            </p>
+            <div class="form-grid">
+                <div class="form-row">
+                    <label>Product Type</label>
+                    <select id="sel-product">
+                        <option value="">— Select —</option>
+                        <option value="Absen">Absen PL2.5</option>
+                        <option value="ROEGP26Full">ROE GP2.6 Full</option>
+                        <option value="ROEBP">ROE Black Pearl (BP2)</option>
+                        <option value="ROEGP26Half">ROE GP2.6 Half</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Support Type</label>
+                    <select id="sel-support">
+                        <option value="Ground">Ground</option>
+                        <option value="Fly">Fly / Flown</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>H — Tiles Wide</label>
+                    <input type="number" id="inp-h" min="1" max="200" placeholder="e.g. 10">
+                </div>
+                <div class="form-row">
+                    <label>V — Tiles Tall</label>
+                    <input type="number" id="inp-v" min="1" max="200" placeholder="e.g. 8">
+                </div>
+                <div class="form-row">
+                    <label>Voltage</label>
+                    <select id="sel-voltage">
+                        <option value="208">208V (3-phase)</option>
+                        <option value="120">120V (single phase)</option>
+                    </select>
+                </div>
+                <div class="form-row" id="row-ground-mode">
+                    <label>Ground Support Mode</label>
+                    <select id="sel-ground-mode">
+                        <option value="Single Base">Single Base (default)</option>
+                        <option value="Double Base">Double Base</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Advanced / optional fields -->
+            <button class="advanced-toggle" onclick="
+                const f = document.getElementById('advanced-fields');
+                const open = f.style.display !== 'none';
+                f.style.display = open ? 'none' : '';
+                this.textContent = open ? '▶ Advanced options' : '▼ Advanced options';
+            ">▶ Advanced options</button>
+
+            <div id="advanced-fields" style="display:none">
+                <div class="form-grid">
+                    <div class="form-row" id="row-bp-variant">
+                        <label>Black Pearl Variant</label>
+                        <select id="sel-bp-variant">
+                            <option value="BP2V2">BP2V2 (v2.1 — most common)</option>
+                            <option value="BP2B1">BP2B1 (batch 1)</option>
+                            <option value="BP2B2">BP2B2 (batch 2)</option>
+                        </select>
+                    </div>
+                    <div class="form-row" id="row-gp2-half">
+                        <label>GP2 Half Rows (bottom of GP2.6 Full wall)</label>
+                        <input type="number" id="inp-gp2-half" min="0" max="10" value="0">
+                    </div>
+                    <div class="form-row" id="row-blank">
+                        <label>Dummy / Blank Rows</label>
+                        <input type="number" id="inp-blank" min="0" max="20" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-primary" id="btn-validate">→ Validate Equipment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results card -->
+    <div class="card" id="results-section" hidden>
+        <div class="card-header">
+            <span id="validation-title">Validation Results</span>
+            <button class="btn btn-secondary" id="btn-export" style="font-size:12px;padding:5px 10px;">Export CSV</button>
+        </div>
+
+        <div class="summary-bar">
+            <div class="badge-stat stat-found">
+                <span class="count" id="summary-found">0</span>
+                <span>✅ Matched</span>
+            </div>
+            <div class="badge-stat stat-wrong">
+                <span class="count" id="summary-wrong">0</span>
+                <span>⚠️ Wrong Qty</span>
+            </div>
+            <div class="badge-stat stat-missing">
+                <span class="count" id="summary-missing">0</span>
+                <span>❌ Missing</span>
+            </div>
+            <div class="badge-stat stat-total" style="margin-left:auto">
+                <span class="count" id="summary-total">0</span>
+                <span style="color:var(--muted)">total items</span>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-status"></th>
+                        <th class="col-sku">SKU</th>
+                        <th>Description</th>
+                        <th class="col-qty">Expected</th>
+                        <th class="col-found">Found</th>
+                    </tr>
+                </thead>
+                <tbody id="results-tbody"></tbody>
+            </table>
+        </div>
+
+        <div style="padding:10px 16px;font-size:11px;color:var(--muted);border-top:1px solid var(--border)">
+            Match badges: <span class="badge badge-exact-sku">exact-sku</span> = SKU found in parsed line items &nbsp;
+            <span class="badge badge-sku-text">sku-text</span> = SKU found in raw text &nbsp;
+            <span class="badge badge-keyword">keyword</span> = matched by description keywords
+        </div>
+    </div>
+
+    <!-- Raw text card -->
+    <div class="card" id="raw-section" hidden>
+        <div class="card-header">
+            <span>Extracted PDF Text</span>
+            <button class="btn btn-secondary" id="btn-toggle-raw" style="font-size:12px;padding:5px 10px;">Show extracted text</button>
+        </div>
+        <div class="card-body" style="padding-bottom:8px">
+            <p style="font-size:12px;color:var(--muted)">
+                Use this to verify what was extracted and identify items the validator may have missed.
+            </p>
+            <pre id="raw-text"></pre>
+        </div>
+    </div>
+
+</main>
+
+<script src="js/utils.js"></script>
+<script src="js/calculators.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
