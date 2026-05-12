@@ -2,6 +2,33 @@
 pdfjsLib.GlobalWorkerOptions.workerSrc =
     'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
+// Extract text from an Excel file (.xlsx / .xls) using SheetJS
+async function extractExcelText(file) {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    let text = '';
+
+    for (const sheetName of wb.SheetNames) {
+        const ws = wb.Sheets[sheetName];
+        if (!ws || !ws['!ref']) continue;
+
+        text += `--- Sheet: ${sheetName} ---\n`;
+
+        // Convert to array-of-arrays (header:1 keeps raw row arrays)
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+        for (const row of rows) {
+            const cells = row.map(c => String(c).trim());
+            // Skip rows that are entirely empty
+            if (cells.every(c => c === '')) continue;
+            text += cells.join('\t') + '\n';
+        }
+        text += '\n';
+    }
+
+    return text;
+}
+
 // Extract all text from a PDF File object
 async function extractPDFText(file) {
     const buf = await file.arrayBuffer();
