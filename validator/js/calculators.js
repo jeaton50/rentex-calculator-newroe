@@ -398,6 +398,116 @@ function calcROEGP26Half(H, V, opts = {}) {
 }
 
 // ============================================================
+// THEATRIXX NOMAD 2.6
+// ============================================================
+function calcTheatrixx(H, V, opts = {}) {
+    const { supportType = 'Ground', voltage = 208, groundSupportType = 'Single Base' } = opts;
+    const items = [];
+    const add = (sku, desc, qty, cat, kw) => {
+        if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
+    };
+
+    // Tiles & cases (10 per package, 10% spares with 2x factor)
+    const totalTiles = H * V;
+    const totalSpares = calcSpares(totalTiles, 10, 2);
+    const totalWithSpares = totalTiles + totalSpares;
+    const tilePackages = Math.ceil(totalWithSpares / 10);
+
+    add('10PTXNOMAD', 'Theatrixx Nomad 2.6 10× tile package', tilePackages, 'Tiles', ['10ptxnomad', 'theatrixx', 'nomad', 'package', '10x']);
+    add('TXNOMAD26',  'Theatrixx Nomad LED panel 500×500mm 2.6mm (active)', totalTiles, 'Tiles', ['txnomad26', 'theatrixx', 'nomad', '2.6', 'panel', 'tile', '500']);
+    add('TXNOMAD26',  'Theatrixx Nomad LED panel 500×500mm 2.6mm (spares)', totalSpares, 'Tiles', ['txnomad26', 'theatrixx', 'nomad', 'spare']);
+    add('CATXLED',    'Case, Theatrixx Nomad tile, 10×', tilePackages, 'Tiles', ['catxled', 'case', 'theatrixx', 'nomad', '10x']);
+
+    // Processor: Novastar MX40PRO (9 megapixels per unit)
+    const totalPixels = (H * 192) * (V * 192);
+    const mx40proCount = Math.max(1, Math.ceil(totalPixels / 9000000));
+    add('MX40PRO', 'Novastar MX40 PRO', mx40proCount, 'Processor', ['mx40pro', 'novastar', 'mx40', 'processor', 'mx40pro']);
+
+    const singleBases = groundSupportType === 'Double Base' ? H % 2 : H;
+    const doubleBases = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
+    const H49 = singleBases + doubleBases; // total base count → vertical supports
+
+    if (supportType === 'Ground') {
+        add('TXBASE1W', 'Theatrixx Nomad Exact stacking base, 1W', singleBases, 'Hardware', ['txbase1w', 'stacking base', '1 wide', '1w', 'theatrixx']);
+        add('TXBASE2W', 'Theatrixx Nomad Exact stacking base, 2W', doubleBases, 'Hardware', ['txbase2w', 'stacking base', '2 wide', '2w', 'theatrixx']);
+
+        // Ski frames — ceil(H/2) for flat wall
+        const O3 = Math.ceil(H / 2);
+        add('TXSKIFRAME', 'Theatrixx Nomad Exact ski frame (T base)', O3, 'Hardware', ['txskiframe', 'ski frame', 'theatrixx', 't base']);
+        add('TXSTAKEXT',  'Theatrixx Nomad Exact ski stacking extension', O3, 'Hardware', ['txstakext', 'stacking extension', 'theatrixx']);
+
+        // Ladders and brackets (N48 = ceil(V/2) × O3)
+        const N48 = Math.ceil(V / 2) * O3;
+        add('TXLADDER',   'Theatrixx Nomad Exact ladder frame', N48, 'Hardware', ['txladder', 'ladder frame', 'theatrixx']);
+        add('TXBRACKETS', 'Theatrixx Nomad Exact bracket-straight', N48, 'Hardware', ['txbrackets', 'bracket', 'straight', 'theatrixx']);
+        add('TXVERTSPRT', 'Theatrixx Nomad Exact vertical support', H49, 'Hardware', ['txvertsprt', 'vertical support', 'theatrixx']);
+        add('TXSKIFTSNG', 'Theatrixx Nomad Exact single foot', 2, 'Hardware', ['txskiftsng', 'single foot', 'theatrixx']);
+        add('TXM10B',     'Theatrixx Nomad Exact M10 screw', N48 * 2, 'Hardware', ['txm10b', 'm10', 'screw', 'theatrixx']);
+
+        // Lateral pipe support when wall is ≥ 9 tiles tall
+        if (V >= 9) {
+            const lateralRows = V - 8;
+            const screenWidthFt = H * 0.5 * 3.28084;
+            const tenPipes = Math.floor(screenWidthFt / 10) * lateralRows;
+            const remFt = screenWidthFt - Math.floor(screenWidthFt / 10) * 10;
+            const fourPipes = Math.floor(remFt / 4) * lateralRows;
+            const halfSlimCB = H49 * 2 * lateralRows;
+            add('LED10FTS40', "Schedule 40 1.5\" pipe 10'", tenPipes, 'Hardware', ['led10fts40', '10ft', 'pipe', 'schedule 40', '10\'']);
+            add('LED4FTS40',  "Schedule 40 1.5\" pipe 4'",  fourPipes, 'Hardware', ['led4fts40', '4ft', 'pipe', 'schedule 40', '4\'']);
+            add('HALFSLIMCB', 'Slim Half Cheeseboro clamp', halfSlimCB, 'Hardware', ['halfslimcb', 'cheeseboro', 'slim', 'half', 'clamp']);
+        }
+
+        // Sandbags — Theatrixx table [1,1,2,4,6,8,11,15,17,19,21,23]
+        const sbTable = [1, 1, 2, 4, 6, 8, 11, 15, 17, 19, 21, 23];
+        const idx = Math.min(V - 1, sbTable.length - 1);
+        const sandbags = Math.ceil(sbTable[Math.max(0, idx)] * H49);
+        add('SANDBAG25', 'Sand Bag 25 lbs.', sandbags, 'Hardware', ['sandbag', 'sand bag', '25']);
+
+    } else {
+        // Fly headers
+        add('TXSNGLHEAD', 'Theatrixx Nomad single header', H % 2, 'Hardware', ['txsnglhead', 'single header', 'theatrixx']);
+        add('TXDBLHEAD',  'Theatrixx Nomad double header', Math.floor(H / 2), 'Hardware', ['txdblhead', 'double header', 'theatrixx']);
+    }
+
+    // Data cables
+    const K18 = Math.ceil(totalTiles / 13) + 1; // number of data runs
+    add('ECON100C6',  "Ethercon (CAT6) 100'", K18, 'Cables', ['econ100c6', 'ethercon', 'cat6', "100'", '100ft']);
+    add('TXT92TXT9',  "Theatrixx Nomad XVT9 to XVT9 data 3'", totalWithSpares, 'Cables', ['txt92txt9', 'xvt9', 'data', 'theatrixx', "3'"]);
+    add('TXT92ETRCN', 'Theatrixx Nomad XVT9 to EtherCon adapter', K18, 'Cables', ['txt92etrcn', 'xvt9', 'ethercon', 'adapter', 'theatrixx']);
+
+    // Power cables — tile-to-tile (always)
+    add('TXT3POWER', "Theatrixx Nomad XVT3 to XVT3 power 4'", totalWithSpares, 'Cables', ['txt3power', 'xvt3', 'power', 'theatrixx', "4'"]);
+
+    if (voltage === 120) {
+        const O25 = Math.ceil(totalWithSpares / 2.409);
+        const P25 = Math.ceil((O25 / 8.302) * 2);
+        add('TXT32ED6', "Theatrixx Nomad XVT3 to Edison 6'", P25, 'Cables', ['txt32ed6', 'xvt3', 'edison', 'theatrixx', "6'"]);
+    } else {
+        const O26 = Math.ceil(totalTiles / 1.27403);
+        const P26 = Math.ceil(O26 / 11.5);
+        const P27 = P26 > 0 ? P26 + 2 : 0;
+        add('TXT32T125', "Theatrixx Nomad XVT3 to True1 25'", P27, 'Cables', ['txt32t125', 'xvt3', 'true1', 'theatrixx', "25'"]);
+    }
+
+    // Power distribution (Theatrixx 208V system load = tiles × 1.27403)
+    const U45 = totalTiles * 1.27403;
+    const circuitsNeeded = Math.ceil(totalTiles / 1.27403 / 11.5);
+
+    if (U45 > 200) {
+        const tp1Count = Math.max(1, Math.ceil(U45 / 400));
+        const socaCount = Math.ceil(circuitsNeeded / 6);
+        add('TP1',       'Indu Electric 400A Power Distro', tp1Count, 'Power', ['tp1', '400a', 'power distro']);
+        add('TXT32SOCA', 'Theatrixx Nomad XVT3 to Socapex', socaCount, 'Power', ['txt32soca', 'xvt3', 'socapex', 'theatrixx']);
+    } else {
+        const l2130Count = Math.max(1, Math.ceil(circuitsNeeded / 3));
+        add('CUBEDIST',  'Indu Electric 200A Cube Distro', 1, 'Power', ['cubedist', '200a', 'cube', 'distro']);
+        add('L2130T1FB', 'L2130 floor box to 3× True1', l2130Count, 'Power', ['l2130', 'floor box', 'true1']);
+    }
+
+    return items;
+}
+
+// ============================================================
 // Entry point
 // ============================================================
 function getExpectedEquipment(product, H, V, opts = {}) {
@@ -406,6 +516,7 @@ function getExpectedEquipment(product, H, V, opts = {}) {
         case 'ROEGP26Full': return calcROEGP26Full(H, V, opts);
         case 'ROEBP':       return calcROEBlackPearl(H, V, opts);
         case 'ROEGP26Half': return calcROEGP26Half(H, V, opts);
+        case 'Theatrixx':   return calcTheatrixx(H, V, opts);
         default:            return [];
     }
 }

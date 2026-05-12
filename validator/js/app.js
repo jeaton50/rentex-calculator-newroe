@@ -112,10 +112,11 @@ function populateConfigForm() {
 function updateAdvancedVisibility() {
     const prod = $('sel-product').value;
     const supType = $('sel-support').value;
+    const isROE = ['ROEGP26Full', 'ROEBP', 'ROEGP26Half'].includes(prod);
 
     $('row-bp-variant').style.display = prod === 'ROEBP' ? '' : 'none';
     $('row-gp2-half').style.display = prod === 'ROEGP26Full' ? '' : 'none';
-    $('row-blank').style.display = (prod === 'ROEGP26Full' || prod === 'ROEBP' || prod === 'ROEGP26Half') ? '' : 'none';
+    $('row-blank').style.display = isROE ? '' : 'none';
     $('row-ground-mode').style.display = supType === 'Ground' ? '' : 'none';
 }
 
@@ -224,7 +225,7 @@ function renderResults(results, H, V, product, opts) {
 }
 
 function productLabel(p) {
-    return { Absen: 'Absen PL2.5', ROEGP26Full: 'ROE GP2.6 Full', ROEBP: 'ROE Black Pearl', ROEGP26Half: 'ROE GP2.6 Half' }[p] || p;
+    return { Absen: 'Absen PL2.5', ROEGP26Full: 'ROE GP2.6 Full', ROEBP: 'ROE Black Pearl', ROEGP26Half: 'ROE GP2.6 Half', Theatrixx: 'Theatrixx Nomad 2.6' }[p] || p;
 }
 
 // ============================================================
