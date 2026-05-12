@@ -26,6 +26,7 @@ async function extractPDFText(file) {
 // Auto-detect product type from extracted text
 function detectProduct(text) {
     const t = text.toLowerCase();
+    if (t.includes('theatrixx') || t.includes('txnomad') || t.includes('nomad 2.6') || t.includes('nomad2.6') || t.includes('tx nomad')) return 'Theatrixx';
     if (t.includes('pl2.5') || t.includes('pl25') || (t.includes('absen') && !t.includes('gp2'))) return 'Absen';
     if ((t.includes('gp2.6') || t.includes('gp26') || t.includes('graphite')) && t.includes('full')) return 'ROEGP26Full';
     if ((t.includes('gp2.6') || t.includes('gp26') || t.includes('graphite')) && t.includes('half')) return 'ROEGP26Half';
