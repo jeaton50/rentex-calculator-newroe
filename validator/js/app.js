@@ -7,6 +7,7 @@ const state = {
     product: '',
     H: 0,
     V: 0,
+    wallCount: 1,
     supportType: 'Ground',
     voltage: 208,
     groundSupportType: 'Single Base',
@@ -122,6 +123,7 @@ async function handleFile(file, type) {
         state.product = product;
         state.H = H;
         state.V = V;
+        state.wallCount = detectWallCount(text);
         state.supportType = supportType;
         state.voltage = voltage;
 
@@ -145,6 +147,7 @@ async function handleFile(file, type) {
 // ============================================================
 function populateConfigForm() {
     $('sel-product').value = state.product || '';
+    $('inp-walls').value  = state.wallCount || 1;
     $('inp-h').value = state.H || '';
     $('inp-v').value = state.V || '';
     $('sel-support').value = state.supportType;
@@ -171,29 +174,34 @@ function updateAdvancedVisibility() {
 // Validation
 // ============================================================
 function runValidation() {
-    const product = $('sel-product').value;
-    const H = parseInt($('inp-h').value) || 0;
-    const V = parseInt($('inp-v').value) || 0;
+    const product   = $('sel-product').value;
+    const H         = parseInt($('inp-h').value)     || 0;
+    const V         = parseInt($('inp-v').value)     || 0;
+    const wallCount = parseInt($('inp-walls').value) || 1;
 
     if (!product) { setStatus('Please select a product type.', 'error'); return; }
     if (!H || !V) { setStatus('Please enter the tile dimensions (H and V).', 'error'); return; }
 
     const opts = {
-        supportType: $('sel-support').value,
-        voltage: parseInt($('sel-voltage').value),
+        supportType:     $('sel-support').value,
+        voltage:         parseInt($('sel-voltage').value),
         groundSupportType: $('sel-ground-mode').value,
-        bpVariant: $('sel-bp-variant').value,
-        gp2HalfRows: parseInt($('inp-gp2-half').value) || 0,
-        blankRows: parseInt($('inp-blank').value) || 0,
+        bpVariant:       $('sel-bp-variant').value,
+        gp2HalfRows:     parseInt($('inp-gp2-half').value) || 0,
+        blankRows:       parseInt($('inp-blank').value)    || 0,
     };
 
-    const expected = getExpectedEquipment(product, H, V, opts);
-    if (expected.length === 0) {
+    // Calculate for one wall then scale up
+    const singleWall = getExpectedEquipment(product, H, V, opts);
+    if (singleWall.length === 0) {
         setStatus('No equipment calculated — check product and dimensions.', 'error');
         return;
     }
 
-    // Run comparison
+    // Multiply quantities by wall count
+    const expected = singleWall.map(item => ({ ...item, qty: item.qty * wallCount }));
+
+    // Compare against PDF
     const results = expected.map(item => {
         const match = findItemInPDF(item, state.parsedItems, state.rawText);
         let status;
@@ -207,7 +215,7 @@ function runValidation() {
         return { ...item, match, status };
     });
 
-    renderResults(results, H, V, product, opts);
+    renderResults(results, H, V, product, opts, wallCount);
     showSection('results-section');
     setStatus('Validation complete.', 'success');
     $('results-section').scrollIntoView({ behavior: 'smooth' });
@@ -216,7 +224,7 @@ function runValidation() {
 // ============================================================
 // Results rendering
 // ============================================================
-function renderResults(results, H, V, product, opts) {
+function renderResults(results, H, V, product, opts, wallCount = 1) {
     const found   = results.filter(r => r.status === 'found').length;
     const wrongQty = results.filter(r => r.status === 'wrong-qty').length;
     const missing = results.filter(r => r.status === 'missing').length;
@@ -227,7 +235,8 @@ function renderResults(results, H, V, product, opts) {
     $('summary-wrong').textContent = wrongQty;
     $('summary-missing').textContent = missing;
     $('summary-total').textContent = total;
-    $('validation-title').textContent = `Validation — ${productLabel(product)} ${H}×${V} (${opts.supportType})`;
+    const wallLabel = wallCount > 1 ? ` × ${wallCount} walls` : '';
+    $('validation-title').textContent = `Validation — ${productLabel(product)} ${H}×${V}${wallLabel} (${opts.supportType})`;
 
     // Group by category
     const categories = [...new Set(results.map(r => r.category))];
