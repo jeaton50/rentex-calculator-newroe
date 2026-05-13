@@ -119,6 +119,7 @@ async function handleFile(file, type) {
         const product = detectProduct(text);
         const { H, V } = detectDimensions(text);
         const { supportType, voltage } = detectConfig(text);
+        const bpVariant = detectBPVariant(text);
 
         state.product = product;
         state.H = H;
@@ -126,6 +127,7 @@ async function handleFile(file, type) {
         state.wallCount = detectWallCount(text);
         state.supportType = supportType;
         state.voltage = voltage;
+        state.bpVariant = bpVariant || 'BP2V2';
 
         // Auto-detect Double Base ground mode
         if (/bpbobb2|txbase2w/i.test(text)) {
@@ -198,25 +200,35 @@ function updateAdvancedVisibility() {
     $('row-ground-mode').style.display = supType === 'Ground' ? '' : 'none';
 }
 
+function toggleAdvancedOptions() {
+    const fields = $('advanced-fields');
+    const btn = $('btn-advanced');
+    const open = fields.style.display !== 'none';
+
+    fields.style.display = open ? 'none' : '';
+    btn.textContent = open ? '▶ Advanced options' : '▼ Advanced options';
+    btn.setAttribute('aria-expanded', String(!open));
+}
+
 // ============================================================
 // Validation
 // ============================================================
 function runValidation() {
     const product   = $('sel-product').value;
-    const H         = parseInt($('inp-h').value)     || 0;
-    const V         = parseInt($('inp-v').value)     || 0;
-    const wallCount = parseInt($('inp-walls').value) || 1;
+    const H         = parseInt($('inp-h').value, 10)     || 0;
+    const V         = parseInt($('inp-v').value, 10)     || 0;
+    const wallCount = parseInt($('inp-walls').value, 10) || 1;
 
     if (!product) { setStatus('Please select a product type.', 'error'); return; }
     if (!H || !V) { setStatus('Please enter the tile dimensions (H and V).', 'error'); return; }
 
     const opts = {
         supportType:     $('sel-support').value,
-        voltage:         parseInt($('sel-voltage').value),
+        voltage:         parseInt($('sel-voltage').value, 10),
         groundSupportType: $('sel-ground-mode').value,
         bpVariant:       $('sel-bp-variant').value,
-        gp2HalfRows:     parseInt($('inp-gp2-half').value) || 0,
-        blankRows:       parseInt($('inp-blank').value)    || 0,
+        gp2HalfRows:     parseInt($('inp-gp2-half').value, 10) || 0,
+        blankRows:       parseInt($('inp-blank').value, 10)    || 0,
     };
 
     // Calculate for one wall then scale up
@@ -226,8 +238,10 @@ function runValidation() {
         return;
     }
 
-    // Multiply quantities by wall count
-    const expected = singleWall.map(item => ({ ...item, qty: item.qty * wallCount }));
+    // Multiply quantities by wall count, then combine duplicate SKUs such as active + spares.
+    const expected = combineExpectedItems(
+        singleWall.map(item => ({ ...item, qty: item.qty * wallCount }))
+    );
 
     // Compare against PDF
     const results = expected.map(item => {
@@ -269,13 +283,16 @@ function renderResults(results, H, V, product, opts, wallCount = 1) {
     // Group by category
     const categories = [...new Set(results.map(r => r.category))];
     const tbody = $('results-tbody');
-    tbody.innerHTML = '';
+    tbody.replaceChildren();
 
     for (const cat of categories) {
         // Category header row
         const hdr = document.createElement('tr');
         hdr.className = 'cat-header';
-        hdr.innerHTML = `<td colspan="5">${cat}</td>`;
+        const hdrCell = document.createElement('td');
+        hdrCell.colSpan = 5;
+        hdrCell.textContent = cat;
+        hdr.appendChild(hdrCell);
         tbody.appendChild(hdr);
 
         for (const r of results.filter(x => x.category === cat)) {
@@ -286,26 +303,84 @@ function renderResults(results, H, V, product, opts, wallCount = 1) {
                              : r.status === 'wrong-qty' ? '⚠️'
                              : '❌';
 
-            const foundQtyCell = r.match.qty !== null
-                ? `<span class="qty-found">${r.match.qty}</span>`
-                : r.match.found
-                    ? '<span class="qty-unknown">found (qty n/a)</span>'
-                    : '<span class="qty-missing">—</span>';
+            appendCell(tr, 'col-status', statusIcon);
+            appendCell(tr, 'col-sku', r.sku);
 
-            const confidenceBadge = r.match.confidence
-                ? `<span class="badge badge-${r.match.confidence}">${r.match.confidence}</span>`
-                : '';
+            const descCell = appendCell(tr, 'col-desc', r.desc);
+            if (r.match.confidence) {
+                const badge = document.createElement('span');
+                badge.className = `badge badge-${r.match.confidence}`;
+                badge.textContent = r.match.confidence;
+                descCell.appendChild(badge);
+            }
 
-            tr.innerHTML = `
-                <td class="col-status">${statusIcon}</td>
-                <td class="col-sku">${r.sku}</td>
-                <td class="col-desc">${r.desc}${confidenceBadge}</td>
-                <td class="col-qty">${r.qty}</td>
-                <td class="col-found">${foundQtyCell}</td>
-            `;
+            appendCell(tr, 'col-qty', r.qty);
+            appendFoundQtyCell(tr, r.match);
             tbody.appendChild(tr);
         }
     }
+}
+
+function combineExpectedItems(items) {
+    const grouped = new Map();
+
+    for (const item of items) {
+        const key = `${item.category}|${item.sku}`;
+        const existing = grouped.get(key);
+
+        if (!existing) {
+            grouped.set(key, { ...item, keywords: [...(item.keywords || [])] });
+            continue;
+        }
+
+        existing.qty += item.qty;
+        existing.desc = mergeDescriptions(existing.desc, item.desc);
+        existing.keywords = [...new Set([...(existing.keywords || []), ...(item.keywords || [])])];
+    }
+
+    return [...grouped.values()];
+}
+
+function mergeDescriptions(left, right) {
+    const leftBase = stripQuantityRole(left);
+    const rightBase = stripQuantityRole(right);
+
+    if (leftBase === rightBase) return `${leftBase} (active + spares)`;
+    if (left.includes(right)) return left;
+    if (right.includes(left)) return right;
+    return `${left} + ${right}`;
+}
+
+function stripQuantityRole(desc) {
+    return String(desc).replace(/\s*\((?:active|spares)\)\s*$/i, '').trim();
+}
+
+function appendCell(row, className, text) {
+    const cell = document.createElement('td');
+    cell.className = className;
+    cell.textContent = text;
+    row.appendChild(cell);
+    return cell;
+}
+
+function appendFoundQtyCell(row, match) {
+    const cell = document.createElement('td');
+    cell.className = 'col-found';
+
+    const span = document.createElement('span');
+    if (match.qty !== null) {
+        span.className = 'qty-found';
+        span.textContent = match.qty;
+    } else if (match.found) {
+        span.className = 'qty-unknown';
+        span.textContent = 'found (qty n/a)';
+    } else {
+        span.className = 'qty-missing';
+        span.textContent = '—';
+    }
+
+    cell.appendChild(span);
+    row.appendChild(cell);
 }
 
 function productLabel(p) {
@@ -331,9 +406,11 @@ function exportCSV() {
     const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
+    a.href = url;
     a.download = `equipment-validation-${Date.now()}.csv`;
     a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 // ============================================================
@@ -344,6 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     $('sel-product').addEventListener('change', updateAdvancedVisibility);
     $('sel-support').addEventListener('change', updateAdvancedVisibility);
+    $('btn-advanced').addEventListener('click', toggleAdvancedOptions);
     $('btn-validate').addEventListener('click', runValidation);
     $('btn-export').addEventListener('click', exportCSV);
     $('btn-toggle-raw').addEventListener('click', () => {
