@@ -321,6 +321,20 @@
                     <label>V — Tiles Tall</label>
                     <input type="number" id="inp-v" min="1" max="200" placeholder="e.g. 8">
                 </div>
+                <div class="form-row" style="align-items:flex-start">
+                    <label style="padding-top:6px">Screen Size (optional)</label>
+                    <div style="display:flex;flex-direction:column;gap:6px;width:100%">
+                        <div style="display:flex;gap:6px;align-items:center">
+                            <input type="number" id="inp-screen-w" min="0" step="0.01" placeholder="Width" style="flex:1">
+                            <input type="number" id="inp-screen-h" min="0" step="0.01" placeholder="Height" style="flex:1">
+                            <select id="sel-screen-unit" style="flex:0 0 60px">
+                                <option value="ft">ft</option>
+                                <option value="m">m</option>
+                            </select>
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="convertScreenSize()" style="font-size:12px;padding:5px 10px;align-self:flex-start">Convert to tiles</button>
+                    </div>
+                </div>
                 <div class="form-row">
                     <label>Voltage</label>
                     <select id="sel-voltage">
