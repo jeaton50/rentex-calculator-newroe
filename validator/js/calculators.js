@@ -512,18 +512,20 @@ function calcTheatrixx(H, V, opts = {}) {
     }
 
     // Power distribution (Theatrixx 208V system load = tiles × 1.27403)
-    const U45 = totalTiles * 1.27403;
-    const circuitsNeeded = Math.ceil(totalTiles / 1.27403 / 11.5);
+    if (voltage !== 120) {
+        const U45 = totalTiles * 1.27403;
+        const circuitsNeeded = Math.ceil(totalTiles / 1.27403 / 11.5);
 
-    if (U45 > 200) {
-        const tp1Count = Math.max(1, Math.ceil(U45 / 400));
-        const socaCount = Math.ceil(circuitsNeeded / 6);
-        add('TP1',       'Indu Electric 400A Power Distro', tp1Count, 'Power', ['tp1', '400a', 'power distro']);
-        add('TXT32SOCA', 'Theatrixx Nomad XVT3 to Socapex', socaCount, 'Power', ['txt32soca', 'xvt3', 'socapex', 'theatrixx']);
-    } else {
-        const l2130Count = Math.max(1, Math.ceil(circuitsNeeded / 3));
-        add('CUBEDIST',  'Indu Electric 200A Cube Distro', 1, 'Power', ['cubedist', '200a', 'cube', 'distro']);
-        add('L2130T1FB', 'L2130 floor box to 3× True1', l2130Count, 'Power', ['l2130', 'floor box', 'true1']);
+        if (U45 > 200) {
+            const tp1Count = Math.max(1, Math.ceil(U45 / 400));
+            const socaCount = Math.ceil(circuitsNeeded / 6);
+            add('TP1',       'Indu Electric 400A Power Distro', tp1Count, 'Power', ['tp1', '400a', 'power distro']);
+            add('TXT32SOCA', 'Theatrixx Nomad XVT3 to Socapex', socaCount, 'Power', ['txt32soca', 'xvt3', 'socapex', 'theatrixx']);
+        } else {
+            const l2130Count = Math.max(1, Math.ceil(circuitsNeeded / 3));
+            add('CUBEDIST',  'Indu Electric 200A Cube Distro', 1, 'Power', ['cubedist', '200a', 'cube', 'distro']);
+            add('L2130T1FB', 'L2130 floor box to 3× True1', l2130Count, 'Power', ['l2130', 'floor box', 'true1']);
+        }
     }
 
     return items;
