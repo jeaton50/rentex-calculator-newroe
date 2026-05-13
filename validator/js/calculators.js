@@ -6,7 +6,10 @@ function selectProcessors(totalTiles, H, V, pixW, pixH) {
     const minForPixels = Math.ceil(H * pixW / 4096) * Math.ceil(V * pixH / 2160);
     const tilesPerCascade = Math.ceil(totalTiles / 10);
     const base = Math.max(Math.ceil(totalTiles / maxSX40), Math.ceil(tilesPerCascade / 40), minForPixels);
-    if (totalTiles <= 80) return { S8: 1, SX40: 0, XD10: 0, count: 1 };
+    // S8 only for small walls that also fit within a single processor's pixel budget
+    if (totalTiles <= 80 && H * pixW <= 4096 && V * pixH <= 2160) {
+        return { S8: 1, SX40: 0, XD10: 0, count: 1 };
+    }
     const distrib = Math.max(base, Math.ceil(totalTiles / 100));
     return { S8: 0, SX40: base, XD10: Math.max(0, distrib - base), count: distrib };
 }
@@ -193,8 +196,8 @@ function calcROEGP26Full(H, V, opts = {}) {
     const casesNeeded = Math.ceil(totalWithSpares / 6);
 
     add('6PGP2FULL', 'ROE GP2.6 Full 6× tile package', casesNeeded, 'Tiles', ['6pgp2full', 'gp2', 'full', 'package', '6x']);
-    add('GP2FULL', 'ROE GP2.6 Full LED tile 500×1000mm (active)', totalTiles, 'Tiles', ['gp2full', 'gp2.6', 'full', 'tile', '500x1000', 'graphite']);
-    add('GP2FULL', 'ROE GP2.6 Full LED tile 500×1000mm (spares)', totalSpares, 'Tiles', ['gp2full', 'spare', 'gp2.6', 'full']);
+    // Single combined entry matches the PDF total (active+spares summed by parser)
+    add('GP2FULL', 'ROE GP2.6 Full LED tile 500×1000mm (active + spares)', totalWithSpares, 'Tiles', ['gp2full', 'gp2.6', 'full', 'tile', '500x1000', 'graphite']);
     add('GP2FULLPSU', 'ROE GP2 Full tile PSU', totalWithSpares, 'Tiles', ['gp2fullpsu', 'gp2', 'full', 'tile psu', 'psu']);
     add('GP2CASEFUL', 'GP2 Full flight case (6×)', casesNeeded, 'Tiles', ['gp2caseful', 'flightcase', 'gp2', 'case', 'full']);
 
@@ -206,8 +209,7 @@ function calcROEGP26Full(H, V, opts = {}) {
         halfWithSpares = halfTiles + halfSpares;
         halfCases = Math.ceil(halfWithSpares / 12);
         add('12PGP2HALF', 'ROE GP2.6 Half 12× tile package', halfCases, 'Tiles', ['12pgp2half', 'gp2', 'half', 'package']);
-        add('GP2HALF', 'ROE GP2.6 Half LED tile 500×500mm (active)', halfTiles, 'Tiles', ['gp2half', 'gp2.6', 'half', 'tile', '500x500']);
-        add('GP2HALF', 'ROE GP2.6 Half LED tile 500×500mm (spares)', halfSpares, 'Tiles', ['gp2half', 'spare', 'gp2.6', 'half']);
+        add('GP2HALF', 'ROE GP2.6 Half LED tile 500×500mm (active + spares)', halfWithSpares, 'Tiles', ['gp2half', 'gp2.6', 'half', 'tile', '500x500']);
         add('GP2HALFPSU', 'ROE GP2 Half Tile PSU', halfWithSpares, 'Tiles', ['gp2halfpsu', 'gp2', 'half', 'psu', 'tile psu']);
         add('GP2CASEHAF', 'GP2 Half flight case (12×)', halfCases, 'Tiles', ['gp2casehaf', 'flightcase', 'gp2', 'case', 'half']);
     }
@@ -217,9 +219,10 @@ function calcROEGP26Full(H, V, opts = {}) {
 
     // Processor (192×384 px per tile)
     const proc = selectProcessors(totalTiles, H, V, 192, 384);
-    if (proc.S8 > 0) add('S8', 'Brompton Tessera S8', proc.S8, 'Processor', ['s8', 'brompton', 'tessera']);
-    if (proc.SX40 > 0) add('SX40', 'Brompton Tessera SX40', proc.SX40, 'Processor', ['sx40', 'brompton', 'tessera']);
-    if (proc.XD10 > 0) add('XD10', 'Brompton Tessera XD10G', proc.XD10, 'Processor', ['xd10', 'brompton', 'distribution']);
+    if (proc.S8 > 0)   add('S8',       'Brompton Tessera S8',          proc.S8,   'Processor', ['s8', 'brompton', 'tessera']);
+    if (proc.SX40 > 0) add('SX40',     'Brompton Tessera SX40',        proc.SX40, 'Processor', ['sx40', 'brompton', 'tessera']);
+    if (proc.XD10 > 0) add('XD10',     'Brompton Tessera XD10G',       proc.XD10, 'Processor', ['xd10', 'brompton', 'distribution']);
+    if (proc.SX40 > 0) add('ECONRJ45', "Ethercon to RJ45 (CAT6) 100'", proc.SX40, 'Processor', ['econrj45', 'rj45', 'ethercon', 'cat6']);
 
     // Truss hardware
     const hw = roeHardware(H, V, 1.0, gp2HalfRows, blankRows, true);
@@ -253,21 +256,21 @@ function calcROEGP26Full(H, V, opts = {}) {
     }
 
     // Cables — one data cable per column (enters top of each tile column)
+    // T1003 adds proc.count for the processor-to-tile connections in the ROEGPBK bundle
     const circuits = Math.ceil((totalTiles + halfWithSpares) / 16);
     const cableType = dataCableType(H, V, proc.count, 0.5 * 3.28084, 1.0 * 3.28084);
-    add(cableType, CABLE_DESCS[cableType], H, 'Cables', [cableType.toLowerCase(), 'data', 'cable']);
+    add(cableType, CABLE_DESCS[cableType], H, 'Cables', [cableType.toLowerCase(), 'data', 'cable', 'econrj45', 'rj45', 'ethercon']);
     add('T1016', "True1 power cable 16' (5m)", H, 'Cables', ['t1016', 'true1', "16'", '5m']);
     add('ECON1M', 'Ethercon to Ethercon 1m', totalWithSpares + halfWithSpares, 'Cables', ['econ1m', 'ethercon', '1m']);
     add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
-    add('T1003', "True1 power cable 1m (3')", totalWithSpares + halfWithSpares, 'Cables', ['t1003', 'true1', '1m']);
+    add('T1003', "True1 power cable 1m (3')", totalWithSpares + halfWithSpares + proc.count, 'Cables', ['t1003', 'true1', '1m']);
     if (voltage === 120) {
         add('EDT110M', 'Edison to True1 power cable 10m', Math.ceil(casesNeeded * 1.05), 'Cables', ['edt110m', 'edison', 'true1']);
     }
 
-    // Power (320W per GP2 Full tile)
-    const pd = powerDistro(totalTiles, 320);
-    add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
-    add('L2130T1FB', 'L2130 floor box to 3× True1', pd.L2130T1FB, 'Power', ['l2130', 'floor box', 'true1']);
+    // Power distro for GP2 Full is typically bundled in LEDDATABK/ROEGPBK —
+    // only add individual distro items when they would clearly be listed separately
+    const pd = powerDistro(totalTiles + (halfWithSpares > 0 ? H * gp2HalfRows : 0), 320);
     add('TP1', 'Indu Electric 400A Power Distro', pd.TP1, 'Power', ['tp1', '400a', 'power distro']);
     add('SOCA6XTRU1', '19-pin Soccapex to 6× True1', pd.SOCA6XTRU1, 'Power', ['soca6xtru1', 'socapex', 'soccapex']);
 
