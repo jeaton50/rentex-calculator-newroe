@@ -26,7 +26,11 @@ function roeHardware(H, V, tileHeightM, gp2HalfRows, blankRows, isGP2Full) {
     } else {
         universalBaseTruss = Math.ceil(H / 1.9);
         const effectiveV = V + (blankRows || 0);
-        rearTruss = Math.floor(effectiveV / 2) * universalBaseTruss;
+        // GP2 Full tiles are 1m tall — each row needs one 1m rear truss section.
+        // BP/Half tiles are 0.5m — pairs of rows share one 1m rear truss section.
+        rearTruss = isGP2Full
+            ? effectiveV * universalBaseTruss
+            : Math.floor(effectiveV / 2) * universalBaseTruss;
     }
 
     // Half-meter row flag
@@ -191,17 +195,25 @@ function calcROEGP26Full(H, V, opts = {}) {
     add('6PGP2FULL', 'ROE GP2.6 Full 6× tile package', casesNeeded, 'Tiles', ['6pgp2full', 'gp2', 'full', 'package', '6x']);
     add('GP2FULL', 'ROE GP2.6 Full LED tile 500×1000mm (active)', totalTiles, 'Tiles', ['gp2full', 'gp2.6', 'full', 'tile', '500x1000', 'graphite']);
     add('GP2FULL', 'ROE GP2.6 Full LED tile 500×1000mm (spares)', totalSpares, 'Tiles', ['gp2full', 'spare', 'gp2.6', 'full']);
+    add('GP2FULLPSU', 'ROE GP2 Full tile PSU', totalWithSpares, 'Tiles', ['gp2fullpsu', 'gp2', 'full', 'tile psu', 'psu']);
+    add('GP2CASEFUL', 'GP2 Full flight case (6×)', casesNeeded, 'Tiles', ['gp2caseful', 'flightcase', 'gp2', 'case', 'full']);
 
     // GP2 Half row tiles (optional bottom row)
+    let halfWithSpares = 0, halfCases = 0;
     if (gp2HalfRows > 0) {
         const halfTiles = H * gp2HalfRows;
         const halfSpares = calcSpares(halfTiles, 12, 1.5);
-        const halfWithSpares = halfTiles + halfSpares;
-        const halfCases = Math.ceil(halfWithSpares / 12);
+        halfWithSpares = halfTiles + halfSpares;
+        halfCases = Math.ceil(halfWithSpares / 12);
         add('12PGP2HALF', 'ROE GP2.6 Half 12× tile package', halfCases, 'Tiles', ['12pgp2half', 'gp2', 'half', 'package']);
         add('GP2HALF', 'ROE GP2.6 Half LED tile 500×500mm (active)', halfTiles, 'Tiles', ['gp2half', 'gp2.6', 'half', 'tile', '500x500']);
         add('GP2HALF', 'ROE GP2.6 Half LED tile 500×500mm (spares)', halfSpares, 'Tiles', ['gp2half', 'spare', 'gp2.6', 'half']);
+        add('GP2HALFPSU', 'ROE GP2 Half Tile PSU', halfWithSpares, 'Tiles', ['gp2halfpsu', 'gp2', 'half', 'psu', 'tile psu']);
+        add('GP2CASEHAF', 'GP2 Half flight case (12×)', halfCases, 'Tiles', ['gp2casehaf', 'flightcase', 'gp2', 'case', 'half']);
     }
+
+    // GP2 modules: 4 per tile (full and half), combined since PDF lists them together
+    add('GP2MOD', 'ROE GP2 module (4× per tile)', (totalWithSpares + halfWithSpares) * 4, 'Tiles', ['gp2mod', 'gp2', 'module', 'graphite']);
 
     // Processor (192×384 px per tile)
     const proc = selectProcessors(totalTiles, H, V, 192, 384);
@@ -240,14 +252,14 @@ function calcROEGP26Full(H, V, opts = {}) {
         add('SWVLCHEESB', 'Swivel Aluminum Cheeseboro', hw.universalBaseTruss, 'Hardware', ['swvlcheesb', 'cheeseboro', 'swivel', 'coupler']);
     }
 
-    // Cables
-    const circuits = Math.ceil(totalTiles / 16);
+    // Cables — one data cable per column (enters top of each tile column)
+    const circuits = Math.ceil((totalTiles + halfWithSpares) / 16);
     const cableType = dataCableType(H, V, proc.count, 0.5 * 3.28084, 1.0 * 3.28084);
-    add(cableType, CABLE_DESCS[cableType], proc.count * 5, 'Cables', [cableType.toLowerCase(), 'data', 'cable']);
-    add('T16', "True1 power cable 16' (5m)", H, 'Cables', ['t16', 't1016', 'true1', "16'", '5m']);
-    add('ECON1M', 'Ethercon to Ethercon 1m', totalWithSpares + (gp2HalfRows > 0 ? H * gp2HalfRows : 0), 'Cables', ['econ1m', 'ethercon', '1m']);
+    add(cableType, CABLE_DESCS[cableType], H, 'Cables', [cableType.toLowerCase(), 'data', 'cable']);
+    add('T1016', "True1 power cable 16' (5m)", H, 'Cables', ['t1016', 'true1', "16'", '5m']);
+    add('ECON1M', 'Ethercon to Ethercon 1m', totalWithSpares + halfWithSpares, 'Cables', ['econ1m', 'ethercon', '1m']);
     add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
-    add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m']);
+    add('T1003', "True1 power cable 1m (3')", totalWithSpares + halfWithSpares, 'Cables', ['t1003', 'true1', '1m']);
     if (voltage === 120) {
         add('EDT110M', 'Edison to True1 power cable 10m', Math.ceil(casesNeeded * 1.05), 'Cables', ['edt110m', 'edison', 'true1']);
     }

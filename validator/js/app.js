@@ -142,7 +142,8 @@ async function handleFile(file, type) {
         }
 
         // Auto-detect Double Base ground mode
-        if (/bpbobb2|txbase2w/i.test(text)) {
+        // GP2BASE2 (2-wide) only signals Double Base when GP2BASE1 (1-wide) is absent
+        if (/bpbobb2|txbase2w/i.test(text) || (/gp2base2/i.test(text) && !/gp2base1/i.test(text))) {
             state.groundSupportType = 'Double Base';
         }
 
