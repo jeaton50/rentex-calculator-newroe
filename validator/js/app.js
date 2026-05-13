@@ -149,6 +149,26 @@ async function handleFile(file, type) {
             state.groundSupportType = 'Double Base';
         }
 
+        // Auto-detect Black Pearl variant from package or tile SKUs in parsed items,
+        // then fall back to raw text search (package SKUs are most definitive)
+        if (product === 'ROEBP') {
+            const bpVariantFromSKU = (sku) => {
+                if (/^8PBP2B1$|^BP2B1$/i.test(sku)) return 'BP2B1';
+                if (/^8PBP2B2$|^BP2B2$/i.test(sku)) return 'BP2B2';
+                if (/^8PBP2V2$|^BP2V2$/i.test(sku)) return 'BP2V2';
+                return null;
+            };
+            // Prefer package SKU (8PBP2xx) over tile SKU for detection
+            const pkgItem = state.parsedItems.find(i => /^8PBP2/i.test(i.sku));
+            const tileItem = state.parsedItems.find(i => /^BP2[BV]\d/i.test(i.sku));
+            const detected = (pkgItem && bpVariantFromSKU(pkgItem.sku))
+                          || (tileItem && bpVariantFromSKU(tileItem.sku))
+                          || (/\b8PBP2B1\b/i.test(text) ? 'BP2B1' : null)
+                          || (/\b8PBP2B2\b/i.test(text) ? 'BP2B2' : null)
+                          || (/\b8PBP2V2\b|\bBP2V2\b/i.test(text) ? 'BP2V2' : null);
+            if (detected) state.bpVariant = detected;
+        }
+
         populateConfigForm();
         $('raw-text').textContent = text;
         showSection('config-section');

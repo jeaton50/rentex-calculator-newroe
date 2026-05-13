@@ -346,6 +346,14 @@
                     <label>GP2 Half Rows</label>
                     <input type="number" id="inp-gp2-half" min="0" max="10" value="0">
                 </div>
+                <div class="form-row" id="row-bp-variant" style="display:none">
+                    <label>Black Pearl Variant</label>
+                    <select id="sel-bp-variant">
+                        <option value="BP2V2">BP2V2 (v2.1 — most common)</option>
+                        <option value="BP2B1">BP2B1 (batch 1)</option>
+                        <option value="BP2B2">BP2B2 (batch 2)</option>
+                    </select>
+                </div>
                 <div class="form-row" id="row-ground-mode">
                     <label>Ground Support Mode</label>
                     <select id="sel-ground-mode">
@@ -360,14 +368,6 @@
 
             <div id="advanced-fields" style="display:none">
                 <div class="form-grid">
-                    <div class="form-row" id="row-bp-variant">
-                        <label>Black Pearl Variant</label>
-                        <select id="sel-bp-variant">
-                            <option value="BP2V2">BP2V2 (v2.1 — most common)</option>
-                            <option value="BP2B1">BP2B1 (batch 1)</option>
-                            <option value="BP2B2">BP2B2 (batch 2)</option>
-                        </select>
-                    </div>
                     <div class="form-row" id="row-blank">
                         <label>Dummy / Blank Rows</label>
                         <input type="number" id="inp-blank" min="0" max="20" value="0">
