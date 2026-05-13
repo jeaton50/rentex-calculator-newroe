@@ -127,6 +127,15 @@ async function handleFile(file, type) {
         state.supportType = supportType;
         state.voltage = voltage;
 
+        // Override voltage if power SKUs appear in the parsed line items —
+        // more reliable than keyword text matching for most Rentex quotes
+        const edisonSKUs = new Set(['EDT110M', 'TXT32ED6']);
+        const distroSKUs = new Set(['CUBEDIST', 'L2130T1FB', 'TP1', 'SOCA6XTRU1']);
+        for (const item of state.parsedItems) {
+            if (edisonSKUs.has(item.sku)) { state.voltage = 120; break; }
+            if (distroSKUs.has(item.sku)) { state.voltage = 208; break; }
+        }
+
         // Auto-detect GP2Full + GP2Half active tile counts from parsed line items
         // (used in runValidation to fill V and gp2HalfRows when H is entered manually)
         state._detectedFullTiles = 0;
