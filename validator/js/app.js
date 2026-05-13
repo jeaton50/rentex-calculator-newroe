@@ -129,6 +129,20 @@ async function handleFile(file, type) {
         state.voltage = voltage;
         state.bpVariant = bpVariant || 'BP2V2';
 
+        // Auto-detect GP2Full + GP2Half active tile counts from parsed line items
+        // (used in runValidation to fill V and gp2HalfRows when H is entered manually)
+        state._detectedFullTiles = 0;
+        state._detectedHalfTiles = 0;
+        for (const item of state.parsedItems) {
+            if (item.sku === 'GP2FULL' && !/spare/i.test(item.raw)) state._detectedFullTiles += item.qty;
+            if (item.sku === 'GP2HALF' && !/spare/i.test(item.raw)) state._detectedHalfTiles += item.qty;
+        }
+        // If H is already known, fill V and gp2HalfRows immediately
+        if (product === 'ROEGP26Full' && H > 0) {
+            if (!V && state._detectedFullTiles > 0) state.V = Math.round(state._detectedFullTiles / H);
+            if (state._detectedHalfTiles > 0) state.gp2HalfRows = Math.round(state._detectedHalfTiles / H);
+        }
+
         // Auto-detect Double Base ground mode
         if (/bpbobb2|txbase2w/i.test(text)) {
             state.groundSupportType = 'Double Base';
@@ -215,12 +229,22 @@ function toggleAdvancedOptions() {
 // ============================================================
 function runValidation() {
     const product   = $('sel-product').value;
-    const H         = parseInt($('inp-h').value, 10)     || 0;
-    const V         = parseInt($('inp-v').value, 10)     || 0;
-    const wallCount = parseInt($('inp-walls').value, 10) || 1;
+    const H         = parseInt($('inp-h').value)     || 0;
+    let   V         = parseInt($('inp-v').value)     || 0;
+    const wallCount = parseInt($('inp-walls').value) || 1;
 
     if (!product) { setStatus('Please select a product type.', 'error'); return; }
-    if (!H || !V) { setStatus('Please enter the tile dimensions (H and V).', 'error'); return; }
+    if (!H) { setStatus('Please enter the tile width (H).', 'error'); return; }
+
+    // For GP2Full walls: auto-compute V and gp2HalfRows from detected tile counts if not set
+    if (product === 'ROEGP26Full' && H > 0) {
+        if (!V && state._detectedFullTiles > 0) {
+            V = Math.round(state._detectedFullTiles / H);
+            $('inp-v').value = V;
+        }
+    }
+
+    if (!V) { setStatus('Please enter the tile height (V).', 'error'); return; }
 
     const opts = {
         supportType:     $('sel-support').value,
@@ -230,6 +254,12 @@ function runValidation() {
         gp2HalfRows:     parseInt($('inp-gp2-half').value, 10) || 0,
         blankRows:       parseInt($('inp-blank').value, 10)    || 0,
     };
+
+    // Auto-compute gp2HalfRows from detected half tile count if not manually set
+    if (product === 'ROEGP26Full' && H > 0 && opts.gp2HalfRows === 0 && state._detectedHalfTiles > 0) {
+        opts.gp2HalfRows = Math.round(state._detectedHalfTiles / H);
+        $('inp-gp2-half').value = opts.gp2HalfRows;
+    }
 
     // Calculate for one wall then scale up
     const singleWall = getExpectedEquipment(product, H, V, opts);

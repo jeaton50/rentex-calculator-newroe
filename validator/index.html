@@ -342,6 +342,10 @@
                         <option value="120">120V (single phase)</option>
                     </select>
                 </div>
+                <div class="form-row" id="row-gp2-half" style="display:none">
+                    <label>GP2 Half Rows</label>
+                    <input type="number" id="inp-gp2-half" min="0" max="10" value="0">
+                </div>
                 <div class="form-row" id="row-ground-mode">
                     <label>Ground Support Mode</label>
                     <select id="sel-ground-mode">
@@ -363,10 +367,6 @@
                             <option value="BP2B1">BP2B1 (batch 1)</option>
                             <option value="BP2B2">BP2B2 (batch 2)</option>
                         </select>
-                    </div>
-                    <div class="form-row" id="row-gp2-half">
-                        <label>GP2 Half Rows (bottom of GP2.6 Full wall)</label>
-                        <input type="number" id="inp-gp2-half" min="0" max="10" value="0">
                     </div>
                     <div class="form-row" id="row-blank">
                         <label>Dummy / Blank Rows</label>
