@@ -167,14 +167,13 @@ function calcAbsen(H, V, opts = {}) {
     add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m', "3'"]);
     if (voltage === 120) {
         add('EDT110M', 'Edison to True1 power cable 10m', Math.ceil(casesNeeded * 1.05), 'Cables', ['edt110m', 'edison', 'true1']);
+    } else {
+        const pd = powerDistro(totalTiles, 192);
+        add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
+        add('L2130T1FB', 'L2130 floor box to 3× True1', pd.L2130T1FB, 'Power', ['l2130', 'floor box', 'true1']);
+        add('TP1', 'Indu Electric 400A Power Distro', pd.TP1, 'Power', ['tp1', '400a', 'power distro']);
+        add('SOCA6XTRU1', '19-pin Soccapex to 6× True1', pd.SOCA6XTRU1, 'Power', ['soca6xtru1', 'socapex', 'soccapex']);
     }
-
-    // Power distro
-    const pd = powerDistro(totalTiles, 192);
-    add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
-    add('L2130T1FB', 'L2130 floor box to 3× True1', pd.L2130T1FB, 'Power', ['l2130', 'floor box', 'true1']);
-    add('TP1', 'Indu Electric 400A Power Distro', pd.TP1, 'Power', ['tp1', '400a', 'power distro']);
-    add('SOCA6XTRU1', '19-pin Soccapex to 6× True1', pd.SOCA6XTRU1, 'Power', ['soca6xtru1', 'socapex', 'soccapex']);
 
     return items;
 }
@@ -269,15 +268,13 @@ function calcROEGP26Full(H, V, opts = {}) {
     add('T1003', "True1 power cable 1m (3')", totalWithSpares + halfWithSpares + proc.count, 'Cables', ['t1003', 'true1', '1m']);
     if (voltage === 120) {
         add('EDT110M', 'Edison to True1 power cable 10m', Math.ceil(casesNeeded * 1.05), 'Cables', ['edt110m', 'edison', 'true1']);
+    } else {
+        const pd = powerDistro(totalTiles, 320);
+        add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
+        add('L2130T1FB', 'L2130 floor box to 3× True1', pd.L2130T1FB, 'Power', ['l2130', 'floor box', 'true1']);
+        add('TP1', 'Indu Electric 400A Power Distro', pd.TP1, 'Power', ['tp1', '400a', 'power distro']);
+        add('SOCA6XTRU1', '19-pin Soccapex to 6× True1', pd.SOCA6XTRU1, 'Power', ['soca6xtru1', 'socapex', 'soccapex']);
     }
-
-    // Power distro — based on full tiles (320W); half tiles add minor load
-    // These SHOULD appear in the order; flag as missing if absent
-    const pd = powerDistro(totalTiles, 320);
-    add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
-    add('L2130T1FB', 'L2130 floor box to 3× True1', pd.L2130T1FB, 'Power', ['l2130', 'floor box', 'true1']);
-    add('TP1', 'Indu Electric 400A Power Distro', pd.TP1, 'Power', ['tp1', '400a', 'power distro']);
-    add('SOCA6XTRU1', '19-pin Soccapex to 6× True1', pd.SOCA6XTRU1, 'Power', ['soca6xtru1', 'socapex', 'soccapex']);
 
     return items;
 }
@@ -358,14 +355,13 @@ function calcROEBlackPearl(H, V, opts = {}) {
     add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m']);
     if (voltage === 120) {
         add('EDT110M', 'Edison to True1 power cable 10m', Math.ceil(casesNeeded * 1.05), 'Cables', ['edt110m', 'edison', 'true1']);
+    } else {
+        const pd = powerDistro(totalTiles, 190);
+        add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
+        add('L2130T1FB', 'L2130 floor box to 3× True1', pd.L2130T1FB, 'Power', ['l2130', 'floor box', 'true1']);
+        add('TP1', 'Indu Electric 400A Power Distro', pd.TP1, 'Power', ['tp1', '400a', 'power distro']);
+        add('SOCA6XTRU1', '19-pin Soccapex to 6× True1', pd.SOCA6XTRU1, 'Power', ['soca6xtru1', 'socapex', 'soccapex']);
     }
-
-    // Power (190W per tile)
-    const pd = powerDistro(totalTiles, 190);
-    add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
-    add('L2130T1FB', 'L2130 floor box to 3× True1', pd.L2130T1FB, 'Power', ['l2130', 'floor box', 'true1']);
-    add('TP1', 'Indu Electric 400A Power Distro', pd.TP1, 'Power', ['tp1', '400a', 'power distro']);
-    add('SOCA6XTRU1', '19-pin Soccapex to 6× True1', pd.SOCA6XTRU1, 'Power', ['soca6xtru1', 'socapex', 'soccapex']);
 
     return items;
 }
@@ -410,11 +406,15 @@ function calcROEGP26Half(H, V, opts = {}) {
     add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m']);
 
     // Power (160W per GP2 Half tile)
-    const pd = powerDistro(totalTiles, 160);
-    add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
-    add('L2130T1FB', 'L2130 floor box to 3× True1', pd.L2130T1FB, 'Power', ['l2130', 'floor box', 'true1']);
-    add('TP1', 'Indu Electric 400A Power Distro', pd.TP1, 'Power', ['tp1', '400a', 'power distro']);
-    add('SOCA6XTRU1', '19-pin Soccapex to 6× True1', pd.SOCA6XTRU1, 'Power', ['soca6xtru1', 'socapex', 'soccapex']);
+    if (voltage === 120) {
+        add('EDT110M', 'Edison to True1 power cable 10m', Math.ceil(casesNeeded * 1.05), 'Cables', ['edt110m', 'edison', 'true1']);
+    } else {
+        const pd = powerDistro(totalTiles, 160);
+        add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
+        add('L2130T1FB', 'L2130 floor box to 3× True1', pd.L2130T1FB, 'Power', ['l2130', 'floor box', 'true1']);
+        add('TP1', 'Indu Electric 400A Power Distro', pd.TP1, 'Power', ['tp1', '400a', 'power distro']);
+        add('SOCA6XTRU1', '19-pin Soccapex to 6× True1', pd.SOCA6XTRU1, 'Power', ['soca6xtru1', 'socapex', 'soccapex']);
+    }
 
     return items;
 }
