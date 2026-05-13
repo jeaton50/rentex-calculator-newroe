@@ -129,6 +129,11 @@ async function handleFile(file, type) {
         state.voltage = voltage;
         state.bpVariant = bpVariant || 'BP2V2';
 
+        // Auto-detect Double Base ground mode
+        if (/bpbobb2|txbase2w/i.test(text)) {
+            state.groundSupportType = 'Double Base';
+        }
+
         populateConfigForm();
         $('raw-text').textContent = text;
         showSection('config-section');
@@ -159,6 +164,29 @@ function populateConfigForm() {
     $('inp-gp2-half').value = state.gp2HalfRows;
     $('inp-blank').value = state.blankRows;
     updateAdvancedVisibility();
+}
+
+// Tile widths in feet per product (all tiles are 0.5m = 1.6404ft wide)
+// Tile heights: GP2.6 Full = 1.0m = 3.2808ft; all others = 0.5m = 1.6404ft
+function getTileSizeFt(product) {
+    return { w: 1.6404, h: product === 'ROEGP26Full' ? 3.2808 : 1.6404 };
+}
+
+function convertScreenSize() {
+    const product = $('sel-product').value;
+    const wRaw = parseFloat($('inp-screen-w').value);
+    const hRaw = parseFloat($('inp-screen-h').value);
+    const unit = $('sel-screen-unit').value;
+    if (!wRaw && !hRaw) { setStatus('Enter a screen width or height to convert.', 'error'); return; }
+
+    const toFt = unit === 'm' ? 3.28084 : 1;
+    const wFt = wRaw * toFt;
+    const hFt = hRaw * toFt;
+    const tile = getTileSizeFt(product || 'ROEBP');
+
+    if (wFt > 0) $('inp-h').value = Math.round(wFt / tile.w);
+    if (hFt > 0) $('inp-v').value = Math.round(hFt / tile.h);
+    setStatus('Tile counts updated from screen dimensions.', 'success');
 }
 
 function updateAdvancedVisibility() {

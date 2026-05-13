@@ -274,7 +274,8 @@ function calcROEBlackPearl(H, V, opts = {}) {
 
     const tileSKU = bpVariant === 'BP2B1' ? 'BP2B1' : bpVariant === 'BP2B2' ? 'BP2B2' : 'BP2V2';
     const pkgSKU  = bpVariant === 'BP2B1' ? '8PBP2B1' : bpVariant === 'BP2B2' ? '8PBP2B2' : '8PBP2V2';
-    const caseSKU = bpVariant === 'BP2B1' ? 'BP2V1CASE' : 'BP2V2CASE';
+    // BP2B1 and BP2B2 use version-1 cases; BP2V2 uses version-2 case
+    const caseSKU = bpVariant === 'BP2V2' ? 'BP2V2CASE' : 'BP2V1CASE';
     const tileDesc = bpVariant === 'BP2B1' ? 'ROE Black Pearl BP2B1 tile (batch 1)'
                    : bpVariant === 'BP2B2' ? 'ROE Black Pearl BP2B2 tile (batch 2)'
                    : 'ROE Black Pearl BP2V2 tile (v2.1)';
@@ -291,7 +292,7 @@ function calcROEBlackPearl(H, V, opts = {}) {
     add(pkgSKU, `ROE Black Pearl 8× tile package (${bpVariant})`, casesNeeded, 'Tiles', [pkgSKU.toLowerCase(), 'black pearl', 'package', '8x', 'roe', 'bp2']);
     add(tileSKU, `${tileDesc} (active)`, totalTiles, 'Tiles', [tileSKU.toLowerCase(), 'black pearl', 'bp2', 'tile', 'roe']);
     add(tileSKU, `${tileDesc} (spares)`, totalSpares, 'Tiles', [tileSKU.toLowerCase(), 'spare', 'black pearl', 'bp2']);
-    add(caseSKU, caseDesc, casesNeeded, 'Tiles', [caseSKU.toLowerCase(), 'case', 'black pearl', 'roe']);
+    add(caseSKU, 'Case, ROE Black Pearl, 8×', casesNeeded, 'Tiles', ['bp2v2case', 'bp2v1case', 'case', 'black pearl', 'roe']);
 
     // Processor (192×192 px per tile)
     const proc = selectProcessors(totalTiles, H, V, 192, 192);
@@ -327,14 +328,14 @@ function calcROEBlackPearl(H, V, opts = {}) {
         const couplers = hw.universalBaseTruss * lateralRows;
         add('LED10FTS40', "Schedule 40 1.5\" pipe 10'", tenPipes, 'Hardware', ['led10fts40', '10ft', 'pipe', 'schedule 40']);
         add('LED4FTS40', "Schedule 40 1.5\" pipe 4'", fourPipes, 'Hardware', ['led4fts40', '4ft', 'pipe', 'schedule 40']);
-        add('SWVLCHEESB', 'Swivel Aluminum Cheeseboro', couplers, 'Hardware', ['swvlcheesb', 'cheeseboro', 'swivel', 'coupler']);
+        add('SWVLCHEESB', 'Swivel Aluminum Cheeseboro', couplers, 'Hardware', ['swvlcheesb', 'halfslimch', 'cheeseboro', 'swivel', 'coupler']);
     }
 
     // Cables
     const circuits = Math.ceil(totalTiles / 16);
     const cableType = dataCableType(H, V, proc.count, 0.5 * 3.28084, 0.5 * 3.28084);
     const numDataCables = proc.count * 10;
-    add(cableType, CABLE_DESCS[cableType], numDataCables, 'Cables', [cableType.toLowerCase(), 'data', 'cable']);
+    add(cableType, CABLE_DESCS[cableType], numDataCables, 'Cables', [cableType.toLowerCase(), 'data', 'cable', 'econrj45', 'rj45', 'ethercon']);
     add('ECON1M', 'Ethercon to Ethercon 1m', totalWithSpares, 'Cables', ['econ1m', 'ethercon', '1m']);
     add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
     add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m']);
