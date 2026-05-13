@@ -274,9 +274,13 @@ function calcROEBlackPearl(H, V, opts = {}) {
 
     const tileSKU = bpVariant === 'BP2B1' ? 'BP2B1' : bpVariant === 'BP2B2' ? 'BP2B2' : 'BP2V2';
     const pkgSKU  = bpVariant === 'BP2B1' ? '8PBP2B1' : bpVariant === 'BP2B2' ? '8PBP2B2' : '8PBP2V2';
+    const caseSKU = bpVariant === 'BP2B1' ? 'BP2V1CASE' : 'BP2V2CASE';
     const tileDesc = bpVariant === 'BP2B1' ? 'ROE Black Pearl BP2B1 tile (batch 1)'
                    : bpVariant === 'BP2B2' ? 'ROE Black Pearl BP2B2 tile (batch 2)'
                    : 'ROE Black Pearl BP2V2 tile (v2.1)';
+    const caseDesc = bpVariant === 'BP2B1'
+        ? 'Case, ROE Black Pearl version 1, 8×'
+        : 'Case, ROE Black Pearl, 8×';
 
     // Tiles & cases
     const totalTiles = H * V;
@@ -287,7 +291,7 @@ function calcROEBlackPearl(H, V, opts = {}) {
     add(pkgSKU, `ROE Black Pearl 8× tile package (${bpVariant})`, casesNeeded, 'Tiles', [pkgSKU.toLowerCase(), 'black pearl', 'package', '8x', 'roe', 'bp2']);
     add(tileSKU, `${tileDesc} (active)`, totalTiles, 'Tiles', [tileSKU.toLowerCase(), 'black pearl', 'bp2', 'tile', 'roe']);
     add(tileSKU, `${tileDesc} (spares)`, totalSpares, 'Tiles', [tileSKU.toLowerCase(), 'spare', 'black pearl', 'bp2']);
-    add('BP2V2CASE', 'Case, ROE Black Pearl, 8×', casesNeeded, 'Tiles', ['bp2v2case', 'case', 'black pearl', 'roe']);
+    add(caseSKU, caseDesc, casesNeeded, 'Tiles', [caseSKU.toLowerCase(), 'case', 'black pearl', 'roe']);
 
     // Processor (192×192 px per tile)
     const proc = selectProcessors(totalTiles, H, V, 192, 192);
