@@ -91,6 +91,14 @@ const CABLE_DESCS = {
     ECON100C6: "Ethercon (CAT6) 100'",
 };
 
+// Both 50' and 100' data cable SKUs included as keywords so either length
+// satisfies the other — orders often use 100' where 50' would geometrically
+// suffice due to real-world cable routing overhead.
+function dataCableKeywords(sku) {
+    const base = [sku.toLowerCase(), 'econ050c6', 'econ100c6', 'ethercon', 'data', 'cable'];
+    return base;
+}
+
 // ============================================================
 // ABSEN PL2.5
 // ============================================================
@@ -161,7 +169,7 @@ function calcAbsen(H, V, opts = {}) {
     const cableType = dataCableType(H, V, proc.count, 0.5 * 3.28084, 0.5 * 3.28084);
     const numDataCables = proc.count * 10;
 
-    add(cableType, CABLE_DESCS[cableType], numDataCables, 'Cables', [cableType.toLowerCase(), 'data', 'cable']);
+    add(cableType, CABLE_DESCS[cableType], numDataCables, 'Cables', dataCableKeywords(cableType));
     add('ECON1M', 'Ethercon to Ethercon 1m', totalWithSpares, 'Cables', ['econ1m', 'ethercon', '1m']);
     add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
     add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m', "3'"]);
@@ -261,7 +269,7 @@ function calcROEGP26Full(H, V, opts = {}) {
     const halfActiveTiles = gp2HalfRows > 0 ? H * gp2HalfRows : 0;
     const circuits = Math.ceil((totalTiles + halfActiveTiles) / 16);
     const cableType = dataCableType(H, V, proc.count, 0.5 * 3.28084, 1.0 * 3.28084);
-    add(cableType, CABLE_DESCS[cableType], H, 'Cables', [cableType.toLowerCase(), 'data', 'cable', 'econrj45', 'rj45', 'ethercon']);
+    add(cableType, CABLE_DESCS[cableType], H, 'Cables', [...dataCableKeywords(cableType), 'econrj45', 'rj45']);
     add('T1016', "True1 power cable 16' (5m)", H, 'Cables', ['t1016', 'true1', "16'", '5m']);
     add('ECON1M', 'Ethercon to Ethercon 1m', totalWithSpares + halfWithSpares, 'Cables', ['econ1m', 'ethercon', '1m']);
     add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
@@ -349,7 +357,7 @@ function calcROEBlackPearl(H, V, opts = {}) {
     const circuits = Math.ceil(totalTiles / 16);
     const cableType = dataCableType(H, V, proc.count, 0.5 * 3.28084, 0.5 * 3.28084);
     const numDataCables = proc.count * 10;
-    add(cableType, CABLE_DESCS[cableType], numDataCables, 'Cables', [cableType.toLowerCase(), 'data', 'cable', 'econrj45', 'rj45', 'ethercon']);
+    add(cableType, CABLE_DESCS[cableType], numDataCables, 'Cables', [...dataCableKeywords(cableType), 'econrj45', 'rj45']);
     add('ECON1M', 'Ethercon to Ethercon 1m', totalWithSpares, 'Cables', ['econ1m', 'ethercon', '1m']);
     add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
     add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m']);
@@ -400,7 +408,7 @@ function calcROEGP26Half(H, V, opts = {}) {
 
     const circuits = Math.ceil(totalTiles / 16);
     const cableType = dataCableType(H, V, proc.count, 0.5 * 3.28084, 0.5 * 3.28084);
-    add(cableType, CABLE_DESCS[cableType], proc.count * 10, 'Cables', [cableType.toLowerCase(), 'data', 'cable']);
+    add(cableType, CABLE_DESCS[cableType], proc.count * 10, 'Cables', dataCableKeywords(cableType));
     add('ECON1M', 'Ethercon to Ethercon 1m', totalWithSpares, 'Cables', ['econ1m', 'ethercon', '1m']);
     add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
     add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m']);
