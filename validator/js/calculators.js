@@ -166,10 +166,21 @@ function calcAbsen(H, V, opts = {}) {
 
     // Cables
     const circuits = Math.ceil(totalTiles / 16);
-    const cableType = opts.dataCableOverride || dataCableType(H, V, proc.count, 0.5 * 3.28084, 0.5 * 3.28084);
-    const numDataCables = proc.count * 10;
 
-    add(cableType, CABLE_DESCS[cableType], numDataCables, 'Cables', dataCableKeywords(cableType));
+    // B35 = distributionUnitCount + adjustment (from main calculator)
+    // distributionUnitCount ≈ proc.count for standard "None" redundancy
+    // B35 drives the ECON100C6 count; xd10Count * 10 covers additional XD10 outputs
+    const B35 = proc.count + (proc.count > 0 && proc.count < 5 ? 1 : proc.count > 9 ? 3 : 0);
+    const xd10DataCables = proc.XD10 > 0 ? proc.XD10 * 10 : 0;
+    const xd10CableType = xd10DataCables > 0
+        ? (opts.dataCableOverride || dataCableType(H, V, proc.count, 0.5 * 3.28084, 0.5 * 3.28084))
+        : null;
+
+    if (xd10DataCables > 0 && xd10CableType) {
+        add(xd10CableType, CABLE_DESCS[xd10CableType], xd10DataCables, 'Cables', dataCableKeywords(xd10CableType));
+    }
+    add('ECON100C6', CABLE_DESCS['ECON100C6'], B35, 'Cables', dataCableKeywords('ECON100C6'));
+
     add('ECON1M', 'Ethercon to Ethercon 1m', totalWithSpares, 'Cables', ['econ1m', 'ethercon', '1m']);
     add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
     add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m', "3'"]);
