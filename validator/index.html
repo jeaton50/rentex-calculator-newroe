@@ -364,12 +364,7 @@
             </div>
 
             <!-- Advanced / optional fields -->
-            <button class="advanced-toggle" onclick="
-                const f = document.getElementById('advanced-fields');
-                const open = f.style.display !== 'none';
-                f.style.display = open ? 'none' : '';
-                this.textContent = open ? '▶ Advanced options' : '▼ Advanced options';
-            ">▶ Advanced options</button>
+            <button class="advanced-toggle" id="btn-advanced" type="button" aria-expanded="false">▶ Advanced options</button>
 
             <div id="advanced-fields" style="display:none">
                 <div class="form-grid">

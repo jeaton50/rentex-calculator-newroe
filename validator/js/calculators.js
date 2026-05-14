@@ -304,6 +304,9 @@ function calcROEBlackPearl(H, V, opts = {}) {
     const tileDesc = bpVariant === 'BP2B1' ? 'ROE Black Pearl BP2B1 tile (batch 1)'
                    : bpVariant === 'BP2B2' ? 'ROE Black Pearl BP2B2 tile (batch 2)'
                    : 'ROE Black Pearl BP2V2 tile (v2.1)';
+    const caseDesc = bpVariant === 'BP2B1'
+        ? 'Case, ROE Black Pearl version 1, 8×'
+        : 'Case, ROE Black Pearl, 8×';
 
     // Tiles & cases
     const totalTiles = H * V;
