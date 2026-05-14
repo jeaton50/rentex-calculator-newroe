@@ -118,7 +118,7 @@ function calcAbsen(H, V, opts = {}) {
     add('8PPL25', 'Absen PL2.5 8× tile package', casesNeeded, 'Tiles', ['8ppl25', 'absen', 'package', '8x']);
     add('PL25', 'Absen PL2.5 tile (active)', totalTiles, 'Tiles', ['pl25', 'absen', 'pl2.5', 'tile']);
     add('PL25', 'Absen PL2.5 tile (spares)', totalSpares, 'Tiles', ['pl25', 'absen', 'spare', 'pl2.5']);
-    add('PL25CASE', 'Case, Absen PL2.5, 8×', casesNeeded, 'Tiles', ['pl25case', 'case', 'absen']);
+    add('PL25CASE8X', 'Case, Absen PL2.5, 8×', casesNeeded, 'Tiles', ['pl25case8x', 'pl25case', 'case', 'absen']);
 
     // Processor
     const proc = selectProcessors(totalTiles, H, V, 200, 200);
