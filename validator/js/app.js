@@ -138,6 +138,15 @@ async function handleFile(file, type) {
             if (distroSKUs.has(item.sku)) { state.voltage = 208; break; }
         }
 
+        // Override support type from hardware SKUs — fly headers / ground bases are
+        // unambiguous; keyword text matching ("fly", "hang") can produce false positives
+        const flySKUs  = new Set(['GP2HEAD1','GP2HEAD2','BPBOHEAD1','BPBOHEAD2','TXSNGLHEAD','TXDBLHEAD','PL25HEAD1','PL25HEAD2']);
+        const grndSKUs = new Set(['GP2BASE1','GP2BASE2','BPBOBB1','BPBOBB2','TXBASE1W','TXBASE2W','PL25BB1','PL25BB2']);
+        for (const item of state.parsedItems) {
+            if (flySKUs.has(item.sku))  { state.supportType = 'Fly';    break; }
+            if (grndSKUs.has(item.sku)) { state.supportType = 'Ground'; break; }
+        }
+
         // Auto-detect GP2Full + GP2Half active tile counts from parsed line items
         // (used in runValidation to fill V and gp2HalfRows when H is entered manually)
         state._detectedFullTiles = 0;
@@ -170,10 +179,36 @@ async function handleFile(file, type) {
             if (excelHalfTiles > 0) state._detectedHalfTiles = excelHalfTiles;
         }
 
-        // If H is already known, fill V and gp2HalfRows immediately
-        if (product === 'ROEGP26Full' && H > 0) {
-            if (!V && state._detectedFullTiles > 0) state.V = Math.round(state._detectedFullTiles / H);
-            if (state._detectedHalfTiles > 0) state.gp2HalfRows = Math.round(state._detectedHalfTiles / H);
+        // Active tile count for non-GP2Full products — used to infer a missing H or V
+        state._detectedActiveTiles = 0;
+        if (product !== 'ROEGP26Full') {
+            const activeTileSKUs = new Set(['PL25', 'BP2V2', 'BP2B1', 'BP2B2', 'TXNOMAD26', 'GP2HALF']);
+            for (const item of state.parsedItems) {
+                if (activeTileSKUs.has(item.sku) && !/spare/i.test(item.raw)) state._detectedActiveTiles += item.qty;
+            }
+        }
+
+        // Infer the missing dimension from tile count when the other is already known
+        const _tiles = product === 'ROEGP26Full' ? state._detectedFullTiles : state._detectedActiveTiles;
+        if (_tiles > 0) {
+            if (!state.H && state.V > 0) state.H = Math.round(_tiles / state.V);
+            if (!state.V && state.H > 0) state.V = Math.round(_tiles / state.H);
+        }
+
+        // GP2Full half rows (uses state.H which may have just been auto-filled above)
+        if (product === 'ROEGP26Full' && state.H > 0 && state._detectedHalfTiles > 0) {
+            state.gp2HalfRows = Math.round(state._detectedHalfTiles / state.H);
+        }
+
+        // Auto-detect blank/dummy rows — match by SKU pattern or description keywords
+        state.blankRows = 0;
+        if (state.H > 0) {
+            for (const item of state.parsedItems) {
+                if (/BLANK|DUMMY/i.test(item.sku) || /blank\s*tile|dummy\s*tile/i.test(item.raw)) {
+                    state.blankRows = Math.max(1, Math.round(item.qty / state.H));
+                    break;
+                }
+            }
         }
 
         // Auto-detect Double Base ground mode
