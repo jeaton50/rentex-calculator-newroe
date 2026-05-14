@@ -131,6 +131,16 @@
 
         #advanced-fields { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
 
+        /* Multi-wall rows */
+        .extra-wall-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+        .extra-wall-row input { width:64px; }
+        .extra-wall-row .wall-sep { color:var(--muted); font-size:13px; }
+        .extra-wall-row .btn-remove {
+            background:none; border:none; color:var(--muted); cursor:pointer;
+            font-size:16px; padding:0 4px; line-height:1;
+        }
+        .extra-wall-row .btn-remove:hover { color:#e55; }
+
         /* Buttons */
         .btn {
             padding: 9px 18px;
@@ -371,6 +381,17 @@
                     <div class="form-row" id="row-blank">
                         <label>Dummy / Blank Rows</label>
                         <input type="number" id="inp-blank" min="0" max="20" value="0">
+                    </div>
+                    <div class="form-row" style="align-items:flex-start">
+                        <label style="padding-top:6px">Additional Wall Sizes</label>
+                        <div style="width:100%">
+                            <div style="color:var(--muted);font-size:11px;margin-bottom:6px">
+                                Add extra wall configurations — all quantities are combined with the primary wall above.
+                            </div>
+                            <div id="extra-walls-container"></div>
+                            <button type="button" class="btn btn-secondary" onclick="addExtraWall()"
+                                style="font-size:12px;padding:5px 10px;margin-top:2px">+ Add wall size</button>
+                        </div>
                     </div>
                 </div>
             </div>
