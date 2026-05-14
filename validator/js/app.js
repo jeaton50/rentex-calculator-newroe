@@ -146,6 +146,28 @@ async function handleFile(file, type) {
             if (item.sku === 'GP2FULL' && !/spare/i.test(item.raw)) state._detectedFullTiles += item.qty;
             if (item.sku === 'GP2HALF' && !/spare/i.test(item.raw)) state._detectedHalfTiles += item.qty;
         }
+
+        // Excel fallback: Rentex Excel export uses SKU\tDescription\tQty\tPrice\tExtended.
+        // parseLineItems Pattern B checks col1 or lastCol for qty — both fail here because
+        // col1 is Description (text) and lastCol is Extended Price (decimal). Col2 is Qty.
+        // Only run if parsedItems didn't already find tiles (avoids double-counting for PDFs).
+        if (text.includes('\t') && product === 'ROEGP26Full') {
+            let excelFullTiles = 0, excelHalfTiles = 0;
+            for (const line of text.split('\n')) {
+                const cols = line.split('\t').map(c => c.trim());
+                if (cols.length >= 3) {
+                    const sku = cols[0].toUpperCase();
+                    const qty = parseInt(cols[2]);
+                    if (!isNaN(qty) && qty > 0 && !/spare/i.test(line)) {
+                        if (sku === 'GP2FULL') excelFullTiles += qty;
+                        if (sku === 'GP2HALF') excelHalfTiles += qty;
+                    }
+                }
+            }
+            if (excelFullTiles > 0 && state._detectedFullTiles === 0) state._detectedFullTiles = excelFullTiles;
+            if (excelHalfTiles > 0 && state._detectedHalfTiles === 0) state._detectedHalfTiles = excelHalfTiles;
+        }
+
         // If H is already known, fill V and gp2HalfRows immediately
         if (product === 'ROEGP26Full' && H > 0) {
             if (!V && state._detectedFullTiles > 0) state.V = Math.round(state._detectedFullTiles / H);
