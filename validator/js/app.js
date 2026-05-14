@@ -198,6 +198,37 @@ async function handleFile(file, type) {
 }
 
 // ============================================================
+// Multi-wall helpers
+// ============================================================
+function addExtraWall(h, v, count) {
+    const container = $('extra-walls-container');
+    const idx = container.children.length;
+    const row = document.createElement('div');
+    row.className = 'extra-wall-row';
+    row.innerHTML = `
+        <input type="number" placeholder="H" min="1" max="200" value="${h || ''}" style="width:64px">
+        <span class="wall-sep">×</span>
+        <input type="number" placeholder="V" min="1" max="200" value="${v || ''}" style="width:64px">
+        <span class="wall-sep" style="margin-left:6px">Count:</span>
+        <input type="number" placeholder="1" min="1" max="20" value="${count || 1}" style="width:52px">
+        <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove">✕</button>`;
+    container.appendChild(row);
+}
+
+function getExtraWalls() {
+    const rows = $('extra-walls-container').querySelectorAll('.extra-wall-row');
+    const walls = [];
+    for (const row of rows) {
+        const inputs = row.querySelectorAll('input');
+        const H = parseInt(inputs[0].value) || 0;
+        const V = parseInt(inputs[1].value) || 0;
+        const count = parseInt(inputs[2].value) || 1;
+        if (H > 0 && V > 0) walls.push({ H, V, count });
+    }
+    return walls;
+}
+
+// ============================================================
 // Config form
 // ============================================================
 function populateConfigForm() {
@@ -286,15 +317,29 @@ function runValidation() {
         $('inp-gp2-half').value = opts.gp2HalfRows;
     }
 
-    // Calculate for one wall then scale up
-    const singleWall = getExpectedEquipment(product, H, V, opts);
-    if (singleWall.length === 0) {
+    // Build wall list: primary wall + any extra walls from advanced section
+    const allWalls = [{ H, V, count: wallCount }, ...getExtraWalls()];
+
+    // Generate expected equipment for every wall and merge by SKU+description
+    const skuMap = new Map();
+    for (const wall of allWalls) {
+        const items = getExpectedEquipment(product, wall.H, wall.V, opts);
+        if (items.length === 0) continue;
+        for (const item of items) {
+            const key = `${item.sku}||${item.desc}`;
+            const scaledQty = item.qty * wall.count;
+            if (skuMap.has(key)) {
+                skuMap.get(key).qty += scaledQty;
+            } else {
+                skuMap.set(key, { ...item, qty: scaledQty });
+            }
+        }
+    }
+    const expected = [...skuMap.values()];
+    if (expected.length === 0) {
         setStatus('No equipment calculated — check product and dimensions.', 'error');
         return;
     }
-
-    // Multiply quantities by wall count
-    const expected = singleWall.map(item => ({ ...item, qty: item.qty * wallCount }));
 
     // Compare against PDF
     const results = expected.map(item => {
@@ -310,7 +355,7 @@ function runValidation() {
         return { ...item, match, status };
     });
 
-    renderResults(results, H, V, product, opts, wallCount);
+    renderResults(results, allWalls, product, opts);
     showSection('results-section');
     setStatus('Validation complete.', 'success');
     $('results-section').scrollIntoView({ behavior: 'smooth' });
@@ -319,7 +364,7 @@ function runValidation() {
 // ============================================================
 // Results rendering
 // ============================================================
-function renderResults(results, H, V, product, opts, wallCount = 1) {
+function renderResults(results, allWalls, product, opts) {
     const found   = results.filter(r => r.status === 'found').length;
     const wrongQty = results.filter(r => r.status === 'wrong-qty').length;
     const missing = results.filter(r => r.status === 'missing').length;
@@ -330,8 +375,8 @@ function renderResults(results, H, V, product, opts, wallCount = 1) {
     $('summary-wrong').textContent = wrongQty;
     $('summary-missing').textContent = missing;
     $('summary-total').textContent = total;
-    const wallLabel = wallCount > 1 ? ` × ${wallCount} walls` : '';
-    $('validation-title').textContent = `Validation — ${productLabel(product)} ${H}×${V}${wallLabel} (${opts.supportType})`;
+    const wallParts = allWalls.map(w => w.count > 1 ? `${w.count}× ${w.H}×${w.V}` : `${w.H}×${w.V}`);
+    $('validation-title').textContent = `Validation — ${productLabel(product)} ${wallParts.join(' + ')} (${opts.supportType})`;
 
     // Group by category
     const categories = [...new Set(results.map(r => r.category))];
