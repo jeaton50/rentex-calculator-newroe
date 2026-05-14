@@ -279,8 +279,11 @@ function calcROEGP26Full(H, V, opts = {}) {
     // T1003 adds proc.count for the processor-to-tile connections in the ROEGPBK bundle
     const halfActiveTiles = gp2HalfRows > 0 ? H * gp2HalfRows : 0;
     const circuits = Math.ceil((totalTiles + halfActiveTiles) / 16);
-    const cableType = opts.dataCableOverride || dataCableType(H, V, proc.count, 0.5 * 3.28084, 1.0 * 3.28084);
-    add(cableType, CABLE_DESCS[cableType], H, 'Cables', [...dataCableKeywords(cableType), 'econrj45', 'rj45']);
+    // GP2 Full always uses ECON050C6 per column (main calc hardcodes this, not distance-based)
+    add('ECON050C6', CABLE_DESCS['ECON050C6'], H, 'Cables', dataCableKeywords('ECON050C6'));
+    // ECON100C6: B35 distribution unit connections (no SX40 subtraction for GP2)
+    const B35gp2 = proc.count + (proc.count > 0 && proc.count < 5 ? 1 : proc.count > 9 ? 3 : 0);
+    add('ECON100C6', CABLE_DESCS['ECON100C6'], B35gp2, 'Cables', dataCableKeywords('ECON100C6'));
     add('T1016', "True1 power cable 16' (5m)", H, 'Cables', ['t1016', 'true1', "16'", '5m']);
     add('ECON1M', 'Ethercon to Ethercon 1m', totalWithSpares + halfWithSpares, 'Cables', ['econ1m', 'ethercon', '1m']);
     add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
@@ -366,9 +369,15 @@ function calcROEBlackPearl(H, V, opts = {}) {
 
     // Cables
     const circuits = Math.ceil(totalTiles / 16);
-    const cableType = opts.dataCableOverride || dataCableType(H, V, proc.count, 0.5 * 3.28084, 0.5 * 3.28084);
-    const numDataCables = proc.count * 10;
-    add(cableType, CABLE_DESCS[cableType], numDataCables, 'Cables', [...dataCableKeywords(cableType), 'econrj45', 'rj45']);
+    // BP: ECON100C6 = max(B35 - SX40, 0); SX40 is subtracted for ROE BP products
+    const B35bp = proc.count + (proc.count > 0 && proc.count < 5 ? 1 : proc.count > 9 ? 3 : 0);
+    const bpEcon100 = Math.max(B35bp - proc.SX40, 0);
+    if (bpEcon100 > 0) add('ECON100C6', CABLE_DESCS['ECON100C6'], bpEcon100, 'Cables', dataCableKeywords('ECON100C6'));
+    // XD10 data cables when XD10 units are present (xd10Count × 10, distance-based type)
+    if (proc.XD10 > 0) {
+        const xd10Type = opts.dataCableOverride || dataCableType(H, V, proc.count, 0.5 * 3.28084, 0.5 * 3.28084);
+        add(xd10Type, CABLE_DESCS[xd10Type], proc.XD10 * 10, 'Cables', dataCableKeywords(xd10Type));
+    }
     add('ECON1M', 'Ethercon to Ethercon 1m', totalWithSpares, 'Cables', ['econ1m', 'ethercon', '1m']);
     add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
     add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m']);
@@ -418,8 +427,13 @@ function calcROEGP26Half(H, V, opts = {}) {
     add('BPGPBRIDGE', 'ROE BP2/GP2 rear bridge clamp', hw.rearBridge, 'Hardware', ['bpgpbridge', 'rear bridge', 'bridge clamp']);
 
     const circuits = Math.ceil(totalTiles / 16);
-    const cableType = opts.dataCableOverride || dataCableType(H, V, proc.count, 0.5 * 3.28084, 0.5 * 3.28084);
-    add(cableType, CABLE_DESCS[cableType], proc.count * 10, 'Cables', dataCableKeywords(cableType));
+    // GP2 Half follows same B35 formula as Absen/GP2 (no SX40 subtraction)
+    const B35half = proc.count + (proc.count > 0 && proc.count < 5 ? 1 : proc.count > 9 ? 3 : 0);
+    if (proc.XD10 > 0) {
+        const xd10Type = opts.dataCableOverride || dataCableType(H, V, proc.count, 0.5 * 3.28084, 0.5 * 3.28084);
+        add(xd10Type, CABLE_DESCS[xd10Type], proc.XD10 * 10, 'Cables', dataCableKeywords(xd10Type));
+    }
+    add('ECON100C6', CABLE_DESCS['ECON100C6'], B35half, 'Cables', dataCableKeywords('ECON100C6'));
     add('ECON1M', 'Ethercon to Ethercon 1m', totalWithSpares, 'Cables', ['econ1m', 'ethercon', '1m']);
     add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
     add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m']);
