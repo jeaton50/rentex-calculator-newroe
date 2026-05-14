@@ -156,6 +156,12 @@ async function handleFile(file, type) {
             state.groundSupportType = 'Double Base';
         }
 
+        // Detect which data cable length is actually on the order so the calculator
+        // can use the exact SKU for matching rather than relying on keyword fallback
+        const DATA_CABLE_SKUS = ['ECON100C6', 'ECON050C6', 'ECON010C6'];
+        const detectedCable = state.parsedItems.find(i => DATA_CABLE_SKUS.includes(i.sku));
+        state.detectedDataCable = detectedCable ? detectedCable.sku : null;
+
         // Auto-detect Black Pearl variant from package or tile SKUs in parsed items,
         // then fall back to raw text search (package SKUs are most definitive)
         if (product === 'ROEBP') {
@@ -271,6 +277,7 @@ function runValidation() {
         bpVariant:       $('sel-bp-variant').value,
         gp2HalfRows:     parseInt($('inp-gp2-half').value) || 0,
         blankRows:       parseInt($('inp-blank').value)    || 0,
+        dataCableOverride: state.detectedDataCable || null,
     };
 
     // Auto-compute gp2HalfRows from detected half tile count if not manually set
