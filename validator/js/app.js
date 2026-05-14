@@ -145,10 +145,10 @@ async function handleFile(file, type) {
             if (item.sku === 'GP2HALF' && !/spare/i.test(item.raw)) state._detectedHalfTiles += item.qty;
         }
 
-        // Excel fallback: Rentex Excel export uses SKU\tDescription\tQty\tPrice\tExtended.
-        // parseLineItems Pattern B checks col1 or lastCol for qty — both fail here because
-        // col1 is Description (text) and lastCol is Extended Price (decimal). Col2 is Qty.
-        // Only run if parsedItems didn't already find tiles (avoids double-counting for PDFs).
+        // Excel fallback: Rentex Excel format is SKU\tDescription\tQty\tPrice\tExtended.
+        // parseLineItems Pattern B may grab the Extended Price column as qty when prices are
+        // whole numbers (e.g. "36000"), producing a wildly wrong tile count. Always read col2
+        // directly for tab-separated text so the actual Qty column is used.
         if (text.includes('\t') && product === 'ROEGP26Full') {
             let excelFullTiles = 0, excelHalfTiles = 0;
             for (const line of text.split('\n')) {
@@ -156,14 +156,16 @@ async function handleFile(file, type) {
                 if (cols.length >= 3) {
                     const sku = cols[0].toUpperCase();
                     const qty = parseInt(cols[2]);
-                    if (!isNaN(qty) && qty > 0 && !/spare/i.test(line)) {
+                    // qty < 10000 guards against accidentally picking up a large price value
+                    if (!isNaN(qty) && qty > 0 && qty < 10000 && !/spare/i.test(line)) {
                         if (sku === 'GP2FULL') excelFullTiles += qty;
                         if (sku === 'GP2HALF') excelHalfTiles += qty;
                     }
                 }
             }
-            if (excelFullTiles > 0 && state._detectedFullTiles === 0) state._detectedFullTiles = excelFullTiles;
-            if (excelHalfTiles > 0 && state._detectedHalfTiles === 0) state._detectedHalfTiles = excelHalfTiles;
+            // Always override parsedItems result for these SKUs — col2 is authoritative
+            if (excelFullTiles > 0) state._detectedFullTiles = excelFullTiles;
+            if (excelHalfTiles > 0) state._detectedHalfTiles = excelHalfTiles;
         }
 
         // If H is already known, fill V and gp2HalfRows immediately
