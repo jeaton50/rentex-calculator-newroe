@@ -99,6 +99,48 @@ function dataCableKeywords(sku) {
     return [skuLower, ...aliases, 'ethercon', 'data', 'cable'];
 }
 
+// GP2.6 sandbag calculation — replicates the main calculator ballast formula
+// (ROE Stacking Universal GT System, from equipment.js calculateGP26Sandbags)
+function calcGP26Sandbags(productType, H, V, gp2HalfRows) {
+    const t050 = {
+        2.0:{BB:18,BF:20}, 2.5:{BB:28,BF:32}, 3.0:{BB:42,BF:47},
+        3.5:{BB:57,BF:66}, 4.0:{BB:76,BF:87}, 4.5:{BB:86,BF:99},
+        5.0:{BB:97,BF:112}, 5.5:{BB:110,BF:127}, 6.0:{BB:124,BF:144}
+    };
+    const t100 = {
+        2.0:{BB:38,BF:44}, 2.5:{BB:60,BF:70}, 3.0:{BB:87,BF:102},
+        3.5:{BB:120,BF:140}, 4.0:{BB:157,BF:184}
+    };
+    function lerp(tbl, h) {
+        const ks = Object.keys(tbl).map(Number).sort((a,b) => a-b);
+        if (h <= ks[0]) return tbl[ks[0]];
+        if (h >= ks[ks.length-1]) return tbl[ks[ks.length-1]];
+        let lo = ks[0], hi = ks[ks.length-1];
+        for (let i = 0; i < ks.length-1; i++) {
+            if (ks[i] <= h && h < ks[i+1]) { lo = ks[i]; hi = ks[i+1]; break; }
+        }
+        const t = (h - lo) / (hi - lo);
+        return { BB: tbl[lo].BB + t*(tbl[hi].BB - tbl[lo].BB),
+                 BF: tbl[lo].BF + t*(tbl[hi].BF - tbl[lo].BF) };
+    }
+    const ledKg  = productType === 'ROEGP26Full' ? 18.0 : 20.76;
+    const heightM = productType === 'ROEGP26Full'
+        ? V * 1.0 + (gp2HalfRows || 0) * 0.5
+        : V * 0.5;
+    let bay, tbl, n;
+    if (productType === 'ROEGP26Full') {
+        bay = 0.50; tbl = t050; n = H;
+    } else {
+        const dense = heightM > 4.0;
+        bay = dense ? 0.50 : 1.00;
+        tbl = dense ? t050 : t100;
+        n   = dense ? H : Math.ceil((H + 1) / 2);
+    }
+    const base = lerp(tbl, heightM);
+    const adjBF = Math.max(0, base.BF - ledKg * bay * heightM * 1.108);
+    return Math.ceil(n * (base.BB + adjBF) / 11.34);
+}
+
 // ============================================================
 // ABSEN PL2.5
 // ============================================================
@@ -256,6 +298,7 @@ function calcROEGP26Full(H, V, opts = {}) {
         const doubleBases = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
         add('GP2BASE1', 'ROE Graphite GP base bar, 1W', singleBases, 'Hardware', ['gp2base1', 'base bar', '1w', 'graphite', 'gp']);
         add('GP2BASE2', 'ROE Graphite GP base bar, 2W', doubleBases, 'Hardware', ['gp2base2', 'base bar', '2w', 'graphite', 'gp']);
+        add('SANDBAG25', 'Sand Bag 25 lbs.', calcGP26Sandbags('ROEGP26Full', H, V, gp2HalfRows), 'Hardware', ['sandbag', 'sand bag', '25']);
     } else {
         const singleHeaders = H % 2;
         const doubleHeaders = Math.floor(H / 2);
@@ -351,6 +394,10 @@ function calcROEBlackPearl(H, V, opts = {}) {
         const doubleBases = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
         add('BPBOBB1', 'ROE Black Pearl base bar, 1W, 0.5m', singleBases, 'Hardware', ['bpbobb1', 'base bar', '0.5m', '1w', 'black pearl']);
         add('BPBOBB2', 'ROE Black Pearl base bar, 2W, 1m', doubleBases, 'Hardware', ['bpbobb2', 'base bar', '1m', '2w', 'black pearl']);
+        const bpSbTable = [0, 0, 0, 3.35102, 5.29109, 7.672, 10.5821, 14.5505, 16.5787, 20.9821, 23.9703, 26.9585];
+        const bpSbIdx = Math.min(V - 1, bpSbTable.length - 1);
+        const bpSandbags = Math.ceil(bpSbTable[Math.max(0, bpSbIdx)] * (singleBases + doubleBases));
+        add('SANDBAG25', 'Sand Bag 25 lbs.', bpSandbags, 'Hardware', ['sandbag', 'sand bag', '25']);
     } else {
         add('BPBOHEAD1', 'ROE Black Pearl header, 1W, 0.5m', H % 2, 'Hardware', ['bpbohead1', 'header', '1w', '0.5m', 'black pearl']);
         add('BPBOHEAD2', 'ROE Black Pearl header, 2W, 1m', Math.floor(H / 2), 'Hardware', ['bpbohead2', 'header', '2w', '1m', 'black pearl']);
@@ -428,6 +475,17 @@ function calcROEGP26Half(H, V, opts = {}) {
     add('BPGPREAR1', 'ROE BP2/GP2 rear truss 1m', hw.rearTruss, 'Hardware', ['bpgprear1', 'rear truss', '1m', 'roe']);
     add('BPGPREAR05', 'ROE BP2/GP2 rear truss 0.5m', hw.rearHalf, 'Hardware', ['bpgprear05', 'rear truss', '0.5m']);
     add('BPGPBRIDGE', 'ROE BP2/GP2 rear bridge clamp', hw.rearBridge, 'Hardware', ['bpgpbridge', 'rear bridge', 'bridge clamp']);
+
+    if (supportType === 'Ground') {
+        const singleBases = groundSupportType === 'Double Base' ? H % 2 : H;
+        const doubleBases = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
+        add('GP2BASE1', 'ROE Graphite GP base bar, 1W', singleBases, 'Hardware', ['gp2base1', 'base bar', '1w', 'graphite', 'gp']);
+        add('GP2BASE2', 'ROE Graphite GP base bar, 2W', doubleBases, 'Hardware', ['gp2base2', 'base bar', '2w', 'graphite', 'gp']);
+        add('SANDBAG25', 'Sand Bag 25 lbs.', calcGP26Sandbags('ROEGP26Half', H, V, 0), 'Hardware', ['sandbag', 'sand bag', '25']);
+    } else {
+        add('GP2HEAD1', 'ROE Graphite GP hanging bar, 1W', H % 2, 'Hardware', ['gp2head1', 'hanging bar', '1w', 'header']);
+        add('GP2HEAD2', 'ROE Graphite GP hanging bar, 2W', Math.floor(H / 2), 'Hardware', ['gp2head2', 'hanging bar', '2w', 'header']);
+    }
 
     const circuits = Math.ceil(totalTiles / 16);
     // GP2 Half follows same B35 formula as Absen/GP2 (no SX40 subtraction)
