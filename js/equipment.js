@@ -1401,7 +1401,6 @@ function addROEGP26Equipment(config, tbody) {
 
   // GP2 Full specific cables (one per column)
   if (productType === "ROEGP26Full") {
-    addEquipmentRow("T1016", "True1 Power Cable 16' (5m)", 2, horizontalBlocks, tbody);
     addEquipmentRow("ECON050C6", "Ethercon (CAT6) 50'", 3, horizontalBlocks, tbody);
   }
 
@@ -1413,6 +1412,7 @@ function addROEGP26Equipment(config, tbody) {
   if (cables.ECON1M > 0) addEquipmentRow("ECON1M", "Ethercon to Ethercon 1m", 0.25, cables.ECON1M, tbody);
   if (cables.T1025 > 0) addEquipmentRow("T1025", "True1 power cable 25'", 4, cables.T1025, tbody);
   if (cables.EDT110M > 0 && normalizeVoltage(voltage) === 120) addEquipmentRow("EDT110M", "Edison to True1 power cable, 10 meter", 3.2, cables.EDT110M, tbody);
+  if (productType === "ROEGP26Full") addEquipmentRow("T1016", "True1 Power Cable 16' (5m)", 2, horizontalBlocks, tbody);
   if (cables.T1003 > 0) addEquipmentRow("T1003", "True1 power cable 1m (3')", 0.44, cables.T1003, tbody);
 
   if (powerDistro.CUBEDIST > 0) addEquipmentRow("CUBEDIST", "Indu Electric 200A Cube Distro", 177, powerDistro.CUBEDIST, tbody);
