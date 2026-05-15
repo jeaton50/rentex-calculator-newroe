@@ -91,6 +91,19 @@ const CABLE_DESCS = {
     ECON100C6: "Ethercon (CAT6) 100'",
 };
 
+const EDISON_CABLE_DESCS = {
+    EDT110M: "Edison to True1 power cable 10m",
+    EDT1003: "Edison to True1 power cable 3'",
+    EDT1006: "Edison to True1 power cable 6'",
+    EDT1010: "Edison to True1 power cable 10'",
+};
+
+function edisonCableKeywords(sku) {
+    const skuLower = sku.toLowerCase();
+    const aliases = Object.keys(EDISON_CABLE_DESCS).map(s => s.toLowerCase()).filter(s => s !== skuLower);
+    return [skuLower, ...aliases, 'edison', 'true1'];
+}
+
 // Keywords cover both 50' and 100' SKUs as aliases — used when no override
 // is detected, so either length satisfies the expected entry.
 function dataCableKeywords(sku) {
@@ -145,7 +158,7 @@ function calcGP26Sandbags(productType, H, V, gp2HalfRows) {
 // ABSEN PL2.5
 // ============================================================
 function calcAbsen(H, V, opts = {}) {
-    const { supportType = 'Ground', voltage = 208, groundSupportType = 'Single Base' } = opts;
+    const { supportType = 'Ground', voltage = 208, groundSupportType = 'Single Base', edisonCableOverride = null } = opts;
     const items = [];
     const add = (sku, desc, qty, cat, kw) => {
         if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
@@ -227,7 +240,8 @@ function calcAbsen(H, V, opts = {}) {
     add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
     add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m', "3'"]);
     if (voltage === 120) {
-        add('EDT110M', 'Edison to True1 power cable 10m', Math.ceil(casesNeeded * 1.05), 'Cables', ['edt110m', 'edison', 'true1']);
+        const eSKU = edisonCableOverride || 'EDT110M';
+        add(eSKU, EDISON_CABLE_DESCS[eSKU] || EDISON_CABLE_DESCS['EDT110M'], Math.ceil(casesNeeded * 1.05), 'Cables', edisonCableKeywords(eSKU));
     } else {
         const pd = powerDistro(totalTiles, 192);
         add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
@@ -243,7 +257,7 @@ function calcAbsen(H, V, opts = {}) {
 // ROE GP2.6 FULL
 // ============================================================
 function calcROEGP26Full(H, V, opts = {}) {
-    const { supportType = 'Ground', voltage = 208, gp2HalfRows = 0, blankRows = 0, groundSupportType = 'Single Base' } = opts;
+    const { supportType = 'Ground', voltage = 208, gp2HalfRows = 0, blankRows = 0, groundSupportType = 'Single Base', edisonCableOverride = null } = opts;
     const items = [];
     const add = (sku, desc, qty, cat, kw) => {
         if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
@@ -300,8 +314,8 @@ function calcROEGP26Full(H, V, opts = {}) {
         add('GP2BASE2', 'ROE Graphite GP base bar, 2W', doubleBases, 'Hardware', ['gp2base2', 'base bar', '2w', 'graphite', 'gp']);
         add('SANDBAG25', 'Sand Bag 25 lbs.', calcGP26Sandbags('ROEGP26Full', H, V, gp2HalfRows), 'Hardware', ['sandbag', 'sand bag', '25']);
     } else {
-        const singleHeaders = H % 2;
-        const doubleHeaders = Math.floor(H / 2);
+        const singleHeaders = groundSupportType === 'Double Base' ? H % 2 : H;
+        const doubleHeaders = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
         add('GP2HEAD1', 'ROE Graphite GP hanging bar, 1W', singleHeaders, 'Hardware', ['gp2head1', 'hanging bar', '1w', 'header']);
         add('GP2HEAD2', 'ROE Graphite GP hanging bar, 2W', doubleHeaders, 'Hardware', ['gp2head2', 'hanging bar', '2w', 'header']);
     }
@@ -332,7 +346,8 @@ function calcROEGP26Full(H, V, opts = {}) {
     add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
     add('T1003', "True1 power cable 1m (3')", totalWithSpares + halfWithSpares + proc.count, 'Cables', ['t1003', 'true1', '1m']);
     if (voltage === 120) {
-        add('EDT110M', 'Edison to True1 power cable 10m', Math.ceil(casesNeeded * 1.05), 'Cables', ['edt110m', 'edison', 'true1']);
+        const eSKU = edisonCableOverride || 'EDT110M';
+        add(eSKU, EDISON_CABLE_DESCS[eSKU] || EDISON_CABLE_DESCS['EDT110M'], Math.ceil(casesNeeded * 1.05), 'Cables', edisonCableKeywords(eSKU));
     } else {
         const pd = powerDistro(totalTiles, 320);
         add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
@@ -348,7 +363,7 @@ function calcROEGP26Full(H, V, opts = {}) {
 // ROE BLACK PEARL (BP2)
 // ============================================================
 function calcROEBlackPearl(H, V, opts = {}) {
-    const { supportType = 'Ground', voltage = 208, blankRows = 0, groundSupportType = 'Single Base', bpVariant = 'BP2V2' } = opts;
+    const { supportType = 'Ground', voltage = 208, blankRows = 0, groundSupportType = 'Single Base', bpVariant = 'BP2V2', edisonCableOverride = null } = opts;
     const items = [];
     const add = (sku, desc, qty, cat, kw) => {
         if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
@@ -432,7 +447,8 @@ function calcROEBlackPearl(H, V, opts = {}) {
     add('T1025', "True1 power cable 25'", Math.ceil(circuits * 1.05), 'Cables', ['t1025', 'true1', "25'"]);
     add('T1003', "True1 power cable 1m (3')", totalWithSpares, 'Cables', ['t1003', 'true1', '1m']);
     if (voltage === 120) {
-        add('EDT110M', 'Edison to True1 power cable 10m', Math.ceil(casesNeeded * 1.05), 'Cables', ['edt110m', 'edison', 'true1']);
+        const eSKU = edisonCableOverride || 'EDT110M';
+        add(eSKU, EDISON_CABLE_DESCS[eSKU] || EDISON_CABLE_DESCS['EDT110M'], Math.ceil(casesNeeded * 1.05), 'Cables', edisonCableKeywords(eSKU));
     } else {
         const pd = powerDistro(totalTiles, 190);
         add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
@@ -448,7 +464,7 @@ function calcROEBlackPearl(H, V, opts = {}) {
 // ROE GP2.6 HALF (standalone)
 // ============================================================
 function calcROEGP26Half(H, V, opts = {}) {
-    const { supportType = 'Ground', voltage = 208, blankRows = 0, groundSupportType = 'Single Base' } = opts;
+    const { supportType = 'Ground', voltage = 208, blankRows = 0, groundSupportType = 'Single Base', edisonCableOverride = null } = opts;
     const items = [];
     const add = (sku, desc, qty, cat, kw) => {
         if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
@@ -483,8 +499,10 @@ function calcROEGP26Half(H, V, opts = {}) {
         add('GP2BASE2', 'ROE Graphite GP base bar, 2W', doubleBases, 'Hardware', ['gp2base2', 'base bar', '2w', 'graphite', 'gp']);
         add('SANDBAG25', 'Sand Bag 25 lbs.', calcGP26Sandbags('ROEGP26Half', H, V, 0), 'Hardware', ['sandbag', 'sand bag', '25']);
     } else {
-        add('GP2HEAD1', 'ROE Graphite GP hanging bar, 1W', H % 2, 'Hardware', ['gp2head1', 'hanging bar', '1w', 'header']);
-        add('GP2HEAD2', 'ROE Graphite GP hanging bar, 2W', Math.floor(H / 2), 'Hardware', ['gp2head2', 'hanging bar', '2w', 'header']);
+        const singleHeaders = groundSupportType === 'Double Base' ? H % 2 : H;
+        const doubleHeaders = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
+        add('GP2HEAD1', 'ROE Graphite GP hanging bar, 1W', singleHeaders, 'Hardware', ['gp2head1', 'hanging bar', '1w', 'header']);
+        add('GP2HEAD2', 'ROE Graphite GP hanging bar, 2W', doubleHeaders, 'Hardware', ['gp2head2', 'hanging bar', '2w', 'header']);
     }
 
     const circuits = Math.ceil(totalTiles / 16);
@@ -501,7 +519,8 @@ function calcROEGP26Half(H, V, opts = {}) {
 
     // Power (160W per GP2 Half tile)
     if (voltage === 120) {
-        add('EDT110M', 'Edison to True1 power cable 10m', Math.ceil(casesNeeded * 1.05), 'Cables', ['edt110m', 'edison', 'true1']);
+        const eSKU = edisonCableOverride || 'EDT110M';
+        add(eSKU, EDISON_CABLE_DESCS[eSKU] || EDISON_CABLE_DESCS['EDT110M'], Math.ceil(casesNeeded * 1.05), 'Cables', edisonCableKeywords(eSKU));
     } else {
         const pd = powerDistro(totalTiles, 160);
         add('CUBEDIST', 'Indu Electric 200A Cube Distro', pd.CUBEDIST, 'Power', ['cubedist', '200a', 'cube', 'distro']);
