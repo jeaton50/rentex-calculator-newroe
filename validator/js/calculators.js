@@ -365,7 +365,7 @@ function calcROEGP26Full(H, V, opts = {}) {
 // ROE BLACK PEARL (BP2)
 // ============================================================
 function calcROEBlackPearl(H, V, opts = {}) {
-    const { supportType = 'Ground', voltage = 208, blankRows = 0, groundSupportType = 'Single Base', bpVariant = 'BP2V2', edisonCableOverride = null } = opts;
+    const { supportType = 'Ground', voltage = 208, blankRows = 0, groundSupportType = 'Single Base', bpVariant = 'BP2V2', curveType = 'Flat', edisonCableOverride = null } = opts;
     const items = [];
     const add = (sku, desc, qty, cat, kw) => {
         if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
@@ -420,6 +420,12 @@ function calcROEBlackPearl(H, V, opts = {}) {
         add('BPBOHEAD2', 'ROE Black Pearl header, 2W, 1m', Math.floor(H / 2), 'Hardware', ['bpbohead2', 'header', '2w', '1m', 'black pearl']);
     }
 
+    // Curved wall brackets (concave/convex)
+    if (curveType !== 'Flat') {
+        add('BP25DGREE', 'ROE Black Pearl 5-degree curve bracket', Math.ceil(totalTiles / 2), 'Hardware', ['bp25dgree', 'curve bracket', '5 degree', 'curved', 'black pearl']);
+        add('BP2BBOLT', 'M10×30 bolt for ROE curve bracket', totalTiles * 2, 'Hardware', ['bp2bbolt', 'm10', 'bolt', 'curved', 'roe']);
+    }
+
     // Pipes and couplers (9–12 BP tiles tall)
     const bpEffectiveHeight = V + (blankRows || 0);
     if (supportType === 'Ground' && bpEffectiveHeight >= 9 && bpEffectiveHeight <= 12) {
@@ -466,7 +472,7 @@ function calcROEBlackPearl(H, V, opts = {}) {
 // ROE GP2.6 HALF (standalone)
 // ============================================================
 function calcROEGP26Half(H, V, opts = {}) {
-    const { supportType = 'Ground', voltage = 208, blankRows = 0, groundSupportType = 'Single Base', edisonCableOverride = null } = opts;
+    const { supportType = 'Ground', voltage = 208, blankRows = 0, groundSupportType = 'Single Base', curveType = 'Flat', edisonCableOverride = null } = opts;
     const items = [];
     const add = (sku, desc, qty, cat, kw) => {
         if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
@@ -507,6 +513,12 @@ function calcROEGP26Half(H, V, opts = {}) {
         add('GP2HEAD2', 'ROE Graphite GP hanging bar, 2W', doubleHeaders, 'Hardware', ['gp2head2', 'hanging bar', '2w', 'header']);
     }
 
+    // Curved wall brackets (concave/convex)
+    if (curveType !== 'Flat') {
+        add('BP25DGREE', 'ROE Black Pearl 5-degree curve bracket', Math.ceil(totalTiles / 2), 'Hardware', ['bp25dgree', 'curve bracket', '5 degree', 'curved', 'gp2']);
+        add('BP2BBOLT', 'M10×30 bolt for ROE curve bracket', totalTiles * 2, 'Hardware', ['bp2bbolt', 'm10', 'bolt', 'curved', 'roe']);
+    }
+
     const circuits = Math.ceil(totalTiles / 16);
     // GP2 Half follows same B35 formula as Absen/GP2 (no SX40 subtraction)
     const B35half = proc.count + (proc.count > 0 && proc.count < 5 ? 1 : proc.count > 9 ? 3 : 0);
@@ -538,7 +550,7 @@ function calcROEGP26Half(H, V, opts = {}) {
 // THEATRIXX NOMAD 2.6
 // ============================================================
 function calcTheatrixx(H, V, opts = {}) {
-    const { supportType = 'Ground', voltage = 208, groundSupportType = 'Single Base' } = opts;
+    const { supportType = 'Ground', voltage = 208, groundSupportType = 'Single Base', curveType = 'Flat' } = opts;
     const items = [];
     const add = (sku, desc, qty, cat, kw) => {
         if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
@@ -568,15 +580,19 @@ function calcTheatrixx(H, V, opts = {}) {
         add('TXBASE1W', 'Theatrixx Nomad Exact stacking base, 1W', singleBases, 'Hardware', ['txbase1w', 'stacking base', '1 wide', '1w', 'theatrixx']);
         add('TXBASE2W', 'Theatrixx Nomad Exact stacking base, 2W', doubleBases, 'Hardware', ['txbase2w', 'stacking base', '2 wide', '2w', 'theatrixx']);
 
-        // Ski frames — ceil(H/2) for flat wall
-        const O3 = Math.ceil(H / 2);
+        // Ski frames — ceil(H/2) for flat, H for curved (one per column)
+        const O3 = curveType !== 'Flat' ? H : Math.ceil(H / 2);
         add('TXSKIFRAME', 'Theatrixx Nomad Exact ski frame (T base)', O3, 'Hardware', ['txskiframe', 'ski frame', 'theatrixx', 't base']);
         add('TXSTAKEXT',  'Theatrixx Nomad Exact ski stacking extension', O3, 'Hardware', ['txstakext', 'stacking extension', 'theatrixx']);
 
         // Ladders and brackets (N48 = ceil(V/2) × O3)
         const N48 = Math.ceil(V / 2) * O3;
         add('TXLADDER',   'Theatrixx Nomad Exact ladder frame', N48, 'Hardware', ['txladder', 'ladder frame', 'theatrixx']);
-        add('TXBRACKETS', 'Theatrixx Nomad Exact bracket-straight', N48, 'Hardware', ['txbrackets', 'bracket', 'straight', 'theatrixx']);
+        if (curveType !== 'Flat') {
+            add('TXBRACKETC', 'Theatrixx Nomad Exact bracket-curved', N48, 'Hardware', ['txbracketc', 'bracket', 'curved', 'theatrixx']);
+        } else {
+            add('TXBRACKETS', 'Theatrixx Nomad Exact bracket-straight', N48, 'Hardware', ['txbrackets', 'bracket', 'straight', 'theatrixx']);
+        }
         add('TXVERTSPRT', 'Theatrixx Nomad Exact vertical support', H49, 'Hardware', ['txvertsprt', 'vertical support', 'theatrixx']);
         add('TXSKIFTSNG', 'Theatrixx Nomad Exact single foot', 2, 'Hardware', ['txskiftsng', 'single foot', 'theatrixx']);
         add('TXM10B',     'Theatrixx Nomad Exact M10 screw', N48 * 2, 'Hardware', ['txm10b', 'm10', 'screw', 'theatrixx']);
