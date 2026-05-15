@@ -12,6 +12,7 @@ const state = {
     voltage: 208,
     groundSupportType: 'Single Base',
     bpVariant: 'BP2V2',
+    curveType: 'Flat',
     gp2HalfRows: 0,
     blankRows: 0,
     fileName: '',
@@ -333,6 +334,26 @@ function populateConfigForm() {
     $('inp-gp2-half').value = state.gp2HalfRows;
     $('inp-blank').value = state.blankRows;
     updateAdvancedVisibility();
+    updateCurveOptions(state.curveType || 'Flat');
+}
+
+// Curve options differ by product — Black Pearl is concave-only per catalog
+const CURVE_OPTIONS = {
+    Absen:       ['Flat', 'Concave', 'Convex'],
+    ROEGP26Full: ['Flat', 'Concave', 'Convex'],
+    ROEGP26Half: ['Flat', 'Concave', 'Convex'],
+    ROEBP:       ['Flat', 'Concave'],
+    Theatrixx:   ['Flat', 'Concave', 'Convex'],
+};
+
+function updateCurveOptions(preserveValue) {
+    const prod = $('sel-product').value;
+    const sel  = $('sel-curve');
+    const opts = CURVE_OPTIONS[prod] || ['Flat', 'Concave', 'Convex'];
+    const current = preserveValue || sel.value;
+    sel.innerHTML = opts.map(o => `<option value="${o}"${o === current ? ' selected' : ''}>${o}</option>`).join('');
+    // Reset to Flat if current value isn't valid for this product
+    if (!opts.includes(sel.value)) sel.value = 'Flat';
 }
 
 // Tile widths in feet per product (all tiles are 0.5m = 1.6404ft wide)
@@ -367,6 +388,8 @@ function updateAdvancedVisibility() {
     $('row-gp2-half').style.display = prod === 'ROEGP26Full' ? '' : 'none';
     $('row-blank').style.display = isROE ? '' : 'none';
     $('row-ground-mode').style.display = supType === 'Ground' ? '' : 'none';
+    $('row-curve').style.display = prod ? '' : 'none';
+    updateCurveOptions();
 }
 
 // ============================================================
@@ -396,6 +419,7 @@ function runValidation() {
         voltage:         parseInt($('sel-voltage').value),
         groundSupportType: $('sel-ground-mode').value,
         bpVariant:       $('sel-bp-variant').value,
+        curveType:       $('sel-curve').value || 'Flat',
         gp2HalfRows:     parseInt($('inp-gp2-half').value) || 0,
         blankRows:       parseInt($('inp-blank').value)    || 0,
         dataCableOverride:   state.detectedDataCable  || null,
@@ -573,6 +597,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     $('sel-product').addEventListener('change', updateAdvancedVisibility);
     $('sel-support').addEventListener('change', updateAdvancedVisibility);
+    // Hide curve row until a product is chosen
+    $('row-curve').style.display = 'none';
     $('btn-validate').addEventListener('click', runValidation);
     $('btn-export').addEventListener('click', exportCSV);
     $('btn-toggle-raw').addEventListener('click', () => {
