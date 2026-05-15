@@ -92,6 +92,69 @@ function autoDetectTypeAndHandle(file) {
     }
 }
 
+// ============================================================
+// PDF text preprocessing
+// ============================================================
+// Cleans up common artifacts introduced by PDF.js text extraction
+// before the text reaches parseLineItems (parser.js — read-only).
+//
+// Key fix: Rentex PDFs include a "DPW" (Days Per Week) column between
+// qty and price:  "SKU  Desc  60  1  $0.00  $0.00"
+// Pattern A in parseLineItems grabs the integer immediately before "$",
+// which is DPW=1, not the real qty=60. Stripping DPW beforehand fixes this.
+function preprocessPDFText(text) {
+    const lines = text.split('\n');
+    const cleaned = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+
+        // 1. Collapse multiple spaces to single (PDF column gaps show as many spaces)
+        line = line.replace(/[^\S\n]+/g, ' ').trim();
+
+        // 2. Drop blank lines, standalone page numbers, and "Page N of M" footers
+        if (!line) continue;
+        if (/^\d{1,3}$/.test(line)) continue;
+        if (/^page\s+\d+\s+of\s+\d+$/i.test(line)) continue;
+
+        // 3. Strip Rentex DPW column — the small integer between qty and price pair.
+        //    Pattern: "...QTY  DPW  $PRICE  $EXTENDED" at end of line.
+        //    Only fires when there are exactly two numbers before two dollar amounts,
+        //    so lines that already have no DPW column are left untouched.
+        //    e.g.  "GP2FULL ROE tile 60 1 $0.00 $0.00"  →  "GP2FULL ROE tile 60 $0.00 $0.00"
+        //    e.g.  "GP2FULL ROE tile 60 $0.00 $0.00"    →  unchanged (one number only)
+        line = line.replace(
+            /\b(\d{1,6})\s+(\d{1,2})\s+(\$[\d,]+\.\d{2}\s+\$[\d,]+\.\d{2})\s*$/,
+            '$1 $3'
+        );
+
+        cleaned.push(line);
+    }
+
+    // 4. Merge lines where a SKU line's description wrapped to the next line.
+    //    Happens when PDF column widths push the qty/price onto a continuation row.
+    //    Heuristic: if a line starts with a SKU but has no "$" and no trailing number,
+    //    and the next line starts with a number or "$", join them.
+    const merged = [];
+    for (let i = 0; i < cleaned.length; i++) {
+        const curr = cleaned[i];
+        const next = cleaned[i + 1] || '';
+        const startsWithSKU = /^[A-Z][A-Z0-9]{2,15}\s/.test(curr);
+        const lacksQtyAndPrice = !/\$/.test(curr) && !/\s\d{1,6}\s*$/.test(curr);
+        const nextStartsWithQtyOrPrice = /^[\d$]/.test(next);
+        const nextIsNewItem = /^[A-Z][A-Z0-9]{2,15}\s/.test(next);
+
+        if (startsWithSKU && lacksQtyAndPrice && nextStartsWithQtyOrPrice && !nextIsNewItem) {
+            merged.push(curr + ' ' + next);
+            i++; // consume the continuation line
+        } else {
+            merged.push(curr);
+        }
+    }
+
+    return merged.join('\n');
+}
+
 async function handleFile(file, type) {
     state.fileName = file.name;
     $('file-name').textContent = file.name;
@@ -105,6 +168,7 @@ async function handleFile(file, type) {
             text = await extractExcelText(file);
         } else {
             text = await extractPDFText(file);
+            text = preprocessPDFText(text);
         }
 
         if (!text || text.trim().length < 20) {
@@ -462,6 +526,29 @@ function runValidation() {
     // Compare against PDF
     const results = expected.map(item => {
         const match = findItemInPDF(item, state.parsedItems, state.rawText);
+
+        // If qty is still null after findItemInPDF, attempt a more targeted extraction
+        // using the preprocessed raw text. Looks for the SKU followed (or preceded)
+        // by a standalone integer on the same line.
+        if (match.found && match.qty === null) {
+            const skuEsc = item.sku.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            for (const line of state.rawText.split('\n')) {
+                if (!new RegExp(skuEsc, 'i').test(line)) continue;
+                // Try: SKU then qty (Rentex format, after preprocessing DPW is gone)
+                let m = line.match(new RegExp(`${skuEsc}\\s+.+?\\s+(\\d{1,6})\\s+\\$`, 'i'));
+                if (m) { match.qty = parseInt(m[1]); break; }
+                // Try: qty then SKU (qty-first format)
+                m = line.match(new RegExp(`^\\s*(\\d{1,6})\\s+${skuEsc}\\b`, 'i'));
+                if (m) { match.qty = parseInt(m[1]); break; }
+                // Try: any standalone number near the SKU (last resort)
+                const nums = line.match(/\b(\d{1,6})\b/g);
+                if (nums && nums.length > 0) {
+                    const candidate = parseInt(nums[nums.length > 1 ? nums.length - 2 : 0]);
+                    if (candidate > 0 && candidate < 100000) { match.qty = candidate; break; }
+                }
+            }
+        }
+
         let status;
         if (!match.found) {
             status = 'missing';
