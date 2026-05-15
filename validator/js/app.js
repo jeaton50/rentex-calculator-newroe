@@ -15,6 +15,8 @@ const state = {
     gp2HalfRows: 0,
     blankRows: 0,
     fileName: '',
+    detectedDataCable: null,
+    detectedEdisonCable: null,
 };
 
 // ============================================================
@@ -137,12 +139,21 @@ async function handleFile(file, type) {
         }
 
         // Override support type from hardware SKUs — fly headers / ground bases are
-        // unambiguous; keyword text matching ("fly", "hang") can produce false positives
-        const flySKUs  = new Set(['GP2HEAD1','GP2HEAD2','BPBOHEAD1','BPBOHEAD2','TXSNGLHEAD','TXDBLHEAD','PL25HEAD1','PL25HEAD2']);
+        // unambiguous; keyword text matching ("fly", "hang") can produce false positives.
+        // Also scan raw text as fallback — $0.00 PDF items get captured with qty=1 (DPW)
+        // by Pattern A which still puts them in parsedItems, but bundle SKUs like ROEGPFLYBK
+        // never appear in parsedItems at all.
+        const flySKUs  = new Set(['GP2HEAD1','GP2HEAD2','BPBOHEAD1','BPBOHEAD2','TXSNGLHEAD','TXDBLHEAD','PL25HEAD1','PL25HEAD2','ROEGPFLYBK']);
         const grndSKUs = new Set(['GP2BASE1','GP2BASE2','BPBOBB1','BPBOBB2','TXBASE1W','TXBASE2W','PL25BB1','PL25BB2']);
+        let supportTypeFound = false;
         for (const item of state.parsedItems) {
-            if (flySKUs.has(item.sku))  { state.supportType = 'Fly';    break; }
-            if (grndSKUs.has(item.sku)) { state.supportType = 'Ground'; break; }
+            if (flySKUs.has(item.sku))  { state.supportType = 'Fly';    supportTypeFound = true; break; }
+            if (grndSKUs.has(item.sku)) { state.supportType = 'Ground'; supportTypeFound = true; break; }
+        }
+        if (!supportTypeFound) {
+            const rawUp = text.toUpperCase();
+            for (const s of flySKUs)  { if (rawUp.includes(s)) { state.supportType = 'Fly';    break; } }
+            for (const s of grndSKUs) { if (rawUp.includes(s)) { state.supportType = 'Ground'; break; } }
         }
 
         // Auto-detect GP2Full + GP2Half active tile counts from parsed line items
@@ -220,6 +231,18 @@ async function handleFile(file, type) {
         const DATA_CABLE_SKUS = ['ECON100C6', 'ECON050C6', 'ECON010C6'];
         const detectedCable = state.parsedItems.find(i => DATA_CABLE_SKUS.includes(i.sku));
         state.detectedDataCable = detectedCable ? detectedCable.sku : null;
+
+        // Detect which Edison cable SKU is on the order — orders often use 6' (EDT1006)
+        // or 10' (EDT1010) instead of the default EDT110M, so match the actual SKU
+        const EDISON_CABLE_SKUS = ['EDT110M', 'EDT1006', 'EDT1010', 'EDT1003'];
+        const detectedEdison = state.parsedItems.find(i => EDISON_CABLE_SKUS.includes(i.sku));
+        if (!detectedEdison) {
+            // Also check raw text for Edison cable SKUs not captured by parsedItems
+            const rawUp = text.toUpperCase();
+            state.detectedEdisonCable = EDISON_CABLE_SKUS.find(s => rawUp.includes(s)) || null;
+        } else {
+            state.detectedEdisonCable = detectedEdison.sku;
+        }
 
         // Auto-detect Black Pearl variant from package or tile SKUs in parsed items,
         // then fall back to raw text search (package SKUs are most definitive)
@@ -367,7 +390,8 @@ function runValidation() {
         bpVariant:       $('sel-bp-variant').value,
         gp2HalfRows:     parseInt($('inp-gp2-half').value) || 0,
         blankRows:       parseInt($('inp-blank').value)    || 0,
-        dataCableOverride: state.detectedDataCable || null,
+        dataCableOverride:   state.detectedDataCable  || null,
+        edisonCableOverride: state.detectedEdisonCable || null,
     };
 
     // Auto-compute gp2HalfRows from detected half tile count if not manually set
@@ -413,6 +437,26 @@ function runValidation() {
         }
         return { ...item, match, status };
     });
+
+    // Bundle post-processing: Rentex orders often use bundle SKUs (ROEGPBK, ROEGPFLYBK,
+    // LEDDATABK) that contain individual items without listing them separately.
+    // Treat those items as found (with confidence='bundle') when the parent bundle appears.
+    const BUNDLE_CONTENTS = {
+        'ROEGPBK':    new Set(['BPGPUBT','BPGPREAR1','BPGPREAR05','BPGPBRIDGE']),
+        'ROEGPFLYBK': new Set(['GP2HEAD1','GP2HEAD2']),
+        'LEDDATABK':  new Set(['ECON050C6','ECON100C6','T1016']),
+    };
+    const rawUpBundle = state.rawText.toUpperCase();
+    for (const [bundleSKU, contents] of Object.entries(BUNDLE_CONTENTS)) {
+        if (rawUpBundle.includes(bundleSKU)) {
+            for (const r of results) {
+                if (r.status === 'missing' && contents.has(r.sku)) {
+                    r.status = 'found';
+                    r.match = { found: true, qty: null, confidence: 'bundle' };
+                }
+            }
+        }
+    }
 
     renderResults(results, allWalls, product, opts);
     showSection('results-section');
