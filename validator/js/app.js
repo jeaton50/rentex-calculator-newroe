@@ -224,7 +224,9 @@ async function handleFile(file, type) {
 
         // Auto-detect Double Base ground mode
         // GP2BASE2 (2-wide) only signals Double Base when GP2BASE1 (1-wide) is absent
-        if (/bpbobb2|txbase2w/i.test(text) || (/gp2base2/i.test(text) && !/gp2base1/i.test(text))) {
+        if (/bpbobb2|txbase2w/i.test(text)
+            || (/gp2base2/i.test(text) && !/gp2base1/i.test(text))
+            || (/pl25bb2/i.test(text) && !/pl25bb1/i.test(text))) {
             state.groundSupportType = 'Double Base';
         }
 
@@ -284,17 +286,21 @@ async function handleFile(file, type) {
 // ============================================================
 // Multi-wall helpers
 // ============================================================
-function addExtraWall(h, v, count) {
+function addExtraWall(h, v, count, supportType) {
     const container = $('extra-walls-container');
-    const idx = container.children.length;
     const row = document.createElement('div');
     row.className = 'extra-wall-row';
+    const selVal = supportType || 'Ground';
     row.innerHTML = `
-        <input type="number" placeholder="H" min="1" max="200" value="${h || ''}" style="width:64px">
+        <input type="number" placeholder="H" min="1" max="200" value="${h || ''}" style="width:56px">
         <span class="wall-sep">×</span>
-        <input type="number" placeholder="V" min="1" max="200" value="${v || ''}" style="width:64px">
-        <span class="wall-sep" style="margin-left:6px">Count:</span>
-        <input type="number" placeholder="1" min="1" max="20" value="${count || 1}" style="width:52px">
+        <input type="number" placeholder="V" min="1" max="200" value="${v || ''}" style="width:56px">
+        <span class="wall-sep" style="margin-left:4px">Count:</span>
+        <input type="number" placeholder="1" min="1" max="20" value="${count || 1}" style="width:48px">
+        <select style="font-size:12px;padding:2px 4px;background:var(--surface);color:var(--fg);border:1px solid var(--border);border-radius:4px">
+            <option value="Ground"${selVal === 'Ground' ? ' selected' : ''}>Ground</option>
+            <option value="Fly"${selVal === 'Fly' ? ' selected' : ''}>Fly</option>
+        </select>
         <button class="btn-remove" onclick="this.parentElement.remove()" title="Remove">✕</button>`;
     container.appendChild(row);
 }
@@ -304,10 +310,12 @@ function getExtraWalls() {
     const walls = [];
     for (const row of rows) {
         const inputs = row.querySelectorAll('input');
+        const sel   = row.querySelector('select');
         const H = parseInt(inputs[0].value) || 0;
         const V = parseInt(inputs[1].value) || 0;
         const count = parseInt(inputs[2].value) || 1;
-        if (H > 0 && V > 0) walls.push({ H, V, count });
+        const supportType = sel ? sel.value : 'Ground';
+        if (H > 0 && V > 0) walls.push({ H, V, count, supportType });
     }
     return walls;
 }
@@ -412,13 +420,16 @@ function runValidation() {
         $('inp-gp2-half').value = opts.gp2HalfRows;
     }
 
-    // Build wall list: primary wall + any extra walls from advanced section
-    const allWalls = [{ H, V, count: wallCount }, ...getExtraWalls()];
+    // Build wall list: primary wall (uses global support type) + extra walls (each has own support type)
+    const allWalls = [{ H, V, count: wallCount, supportType: opts.supportType }, ...getExtraWalls()];
 
     // Generate expected equipment for every wall and merge by SKU+description
     const skuMap = new Map();
     for (const wall of allWalls) {
-        const items = getExpectedEquipment(product, wall.H, wall.V, opts);
+        const wallOpts = wall.supportType !== opts.supportType
+            ? { ...opts, supportType: wall.supportType }
+            : opts;
+        const items = getExpectedEquipment(product, wall.H, wall.V, wallOpts);
         if (items.length === 0) continue;
         for (const item of items) {
             const key = `${item.sku}||${item.desc}`;
@@ -490,8 +501,11 @@ function renderResults(results, allWalls, product, opts) {
     $('summary-wrong').textContent = wrongQty;
     $('summary-missing').textContent = missing;
     $('summary-total').textContent = total;
-    const wallParts = allWalls.map(w => w.count > 1 ? `${w.count}× ${w.H}×${w.V}` : `${w.H}×${w.V}`);
-    $('validation-title').textContent = `Validation — ${productLabel(product)} ${wallParts.join(' + ')} (${opts.supportType})`;
+    const wallParts = allWalls.map(w => {
+        const dims = w.count > 1 ? `${w.count}× ${w.H}×${w.V}` : `${w.H}×${w.V}`;
+        return w.supportType ? `${dims} (${w.supportType})` : dims;
+    });
+    $('validation-title').textContent = `Validation — ${productLabel(product)} ${wallParts.join(' + ')}`;
 
     // Group by category
     const categories = [...new Set(results.map(r => r.category))];

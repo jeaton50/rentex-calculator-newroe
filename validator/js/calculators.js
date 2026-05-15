@@ -215,8 +215,10 @@ function calcAbsen(H, V, opts = {}) {
         const sandbags = Math.ceil(sbTable[Math.max(0, idx)] * baseCount / 1.0525);
         add('SANDBAG25', 'Sand Bag 25 lbs.', sandbags, 'Hardware', ['sandbag', 'sand bag', '25']);
     } else {
-        add('PL25HEAD1', 'Absen PL2.5 header, 1W, 0.5m', H % 2 ? H : 0, 'Hardware', ['pl25head1', 'header', '1w']);
-        add('PL25HEAD2', 'Absen PL2.5 header, 2W, 1m', Math.floor(H / 2), 'Hardware', ['pl25head2', 'header', '2w']);
+        const singleHeaders = groundSupportType === 'Double Base' ? H % 2 : H;
+        const doubleHeaders = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
+        add('PL25HEAD1', 'Absen PL2.5 header, 1W, 0.5m', singleHeaders, 'Hardware', ['pl25head1', 'header', '1w']);
+        add('PL25HEAD2', 'Absen PL2.5 header, 2W, 1m', doubleHeaders, 'Hardware', ['pl25head2', 'header', '2w']);
     }
 
     // Cables
