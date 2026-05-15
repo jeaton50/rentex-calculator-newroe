@@ -158,7 +158,7 @@ function calcGP26Sandbags(productType, H, V, gp2HalfRows) {
 // ABSEN PL2.5
 // ============================================================
 function calcAbsen(H, V, opts = {}) {
-    const { supportType = 'Ground', voltage = 208, groundSupportType = 'Single Base', edisonCableOverride = null } = opts;
+    const { supportType = 'Ground', voltage = 208, groundSupportType = 'Single Base', curveType = 'Flat', edisonCableOverride = null } = opts;
     const items = [];
     const add = (sku, desc, qty, cat, kw) => {
         if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
@@ -203,10 +203,13 @@ function calcAbsen(H, V, opts = {}) {
         add('PL25OUT', 'Absen PL2.5 outrigger', outriggers, 'Hardware', ['pl25out', 'outrigger', 'absen']);
         add('PL25LAD1M', 'Absen PL2.5 ladder 1m', clamps, 'Hardware', ['pl25lad', 'ladder', '1m']);
         add('PL25CLAMP', 'Absen PL2.5 clamp', clamps, 'Hardware', ['pl25clamp', 'clamp', 'absen']);
-        add('PL25BEAM50', 'Absen PL2.5 support beam 500mm', supportBeams50mm, 'Hardware', ['pl25beam50', 'beam', '500']);
-        add('PL25BEAM1K', 'Absen PL2.5 support beam 1000mm', supportBeams1000mm, 'Hardware', ['pl25beam1k', 'beam', '1000']);
-        add('PL25BEAMAD', 'Absen PL2.5 support beam connector', beamConnectors, 'Hardware', ['pl25beamad', 'connector', 'beam', 'adjustable']);
-        add('PL25PLAT', 'Absen PL2.5 platform', platforms, 'Hardware', ['pl25plat', 'platform', 'absen']);
+        // Rear horizontal beams and platforms are for flat-wall scaffold systems only
+        if (curveType === 'Flat') {
+            add('PL25BEAM50', 'Absen PL2.5 support beam 500mm', supportBeams50mm, 'Hardware', ['pl25beam50', 'beam', '500']);
+            add('PL25BEAM1K', 'Absen PL2.5 support beam 1000mm', supportBeams1000mm, 'Hardware', ['pl25beam1k', 'beam', '1000']);
+            add('PL25BEAMAD', 'Absen PL2.5 support beam connector', beamConnectors, 'Hardware', ['pl25beamad', 'connector', 'beam', 'adjustable']);
+            add('PL25PLAT', 'Absen PL2.5 platform', platforms, 'Hardware', ['pl25plat', 'platform', 'absen']);
+        }
 
         // Sandbags
         const sbTable = [0, 0, 0, 4, 6, 8, 11, 15, 17, 19, 21, 23];
