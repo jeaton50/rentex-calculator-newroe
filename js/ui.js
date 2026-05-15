@@ -586,6 +586,8 @@ const UI = {
     const productType = document.getElementById('productType');
     if (productType) {
       productType.addEventListener('change', () => {
+        const gp2HalfCheckbox = document.getElementById('gp2HalfCheckbox');
+        if (gp2HalfCheckbox) gp2HalfCheckbox.checked = false;
         this.updateWarning();
         this.handleWallTypeChange();
       });
