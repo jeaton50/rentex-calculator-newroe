@@ -2509,6 +2509,8 @@ document.addEventListener('DOMContentLoaded', () => {
       convexOption.style.display = 'inline-block';
       dummyTileOption.style.display = 'none';
       if (gp2HalfOption) gp2HalfOption.style.display = 'block';
+      const gp2HalfCb = document.getElementById('gp2HalfCheckbox');
+      if (gp2HalfCb) gp2HalfCb.checked = false;
     } else {
       convexOption.style.display = 'inline-block';
       dummyTileOption.style.display = 'none';
