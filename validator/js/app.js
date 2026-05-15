@@ -16,6 +16,7 @@ const state = {
     gp2HalfRows: 0,
     blankRows: 0,
     fileName: '',
+    fileType: 'pdf',
     detectedDataCable: null,
     detectedEdisonCable: null,
 };
@@ -180,6 +181,7 @@ async function handleFile(file, type) {
         }
 
         state.rawText = text;
+        state.fileType = type;   // 'pdf' or 'excel' — used in runValidation
         state.parsedItems = parseLineItems(text);
 
         // Auto-detect wall configuration
@@ -539,10 +541,10 @@ function runValidation() {
     const results = expected.map(item => {
         const match = findItemInPDF(item, state.parsedItems, state.rawText);
 
-        // If qty is still null after findItemInPDF, attempt a more targeted extraction
-        // using the preprocessed raw text. Looks for the SKU followed (or preceded)
-        // by a standalone integer on the same line.
-        if (match.found && match.qty === null) {
+        // PDF only: if qty is still null after findItemInPDF, attempt a more targeted
+        // extraction. Skipped for Excel — tab-separated text contains price/description
+        // numbers that would be misread as quantities by these fallback patterns.
+        if (state.fileType === 'pdf' && match.found && match.qty === null) {
             const skuEsc = item.sku.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             for (const line of state.rawText.split('\n')) {
                 if (!new RegExp(skuEsc, 'i').test(line)) continue;
