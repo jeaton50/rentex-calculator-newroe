@@ -555,13 +555,9 @@ function generateWall() {
 
     // GP2 products use package-based spare calculation (always add at least 1 spare case)
     if (productType === 'ROEGP26Full') {
-      // GP2 Full: packages of 6, always add at least 1 spare case
-      const packageSize = 6;
-      const activeCases = Math.ceil(totalBlocks / packageSize);
-      const totalCases = activeCases + 1; // Guarantee at least 1 spare case
-      const roundedTotal = totalCases * packageSize;
-      totalSpares = roundedTotal - totalBlocks;
-      totalBlocksWithSpares = roundedTotal;
+      // GP2 Full: percentage-based spares rounded to nearest 6-pack, matching validator
+      totalSpares = calcSpares(totalBlocks, 6, 1.5);
+      totalBlocksWithSpares = totalBlocks + totalSpares;
     } else if (productType === 'ROEGP26Half') {
       // GP2 Half: same percentage formula as Black Pearl, rounded to nearest multiple of 12
       totalSpares = calcSpares(totalBlocks, 12, 1.5);
