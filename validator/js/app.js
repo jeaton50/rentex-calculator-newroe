@@ -145,7 +145,10 @@ function preprocessPDFText(text) {
             const isBareSKU   = /^[A-Z][A-Z0-9]{2,15}$/.test(curr);
             const skuWithDesc = /^[A-Z][A-Z0-9]{2,15}\s/.test(curr);
             const lacksQtyAndPrice = !/\$/.test(curr) && !/\s\d{1,6}\s*$/.test(curr);
-            const nextIsNewItem = /^[A-Z][A-Z0-9]{2,15}[\s$]/.test(next);
+            // Require 4+ chars for "new item" detection — 3-char brand names like "ROE"
+            // appear at the start of description lines and must NOT trigger a stop.
+            const nextIsNewItem = /^[A-Z][A-Z0-9]{3,15}[\s$]/.test(next)
+                               || /^\d[A-Z0-9]{3,15}[\s$]/.test(next);
             const nextStartsWithQtyOrPrice = /^[\d$]/.test(next);
             // Bare SKU merges with anything (desc or qty); SKU+desc merges only with qty/price
             const canMerge = lacksQtyAndPrice && !nextIsNewItem && next.length > 0 &&
@@ -190,6 +193,38 @@ async function handleFile(file, type) {
         state.rawText = text;
         state.fileType = type;   // 'pdf' or 'excel' — used in runValidation
         state.parsedItems = parseLineItems(text);
+
+        // Rentex Excel format: SKU\tDescription\tQty\tPrice\tExtended
+        // parseLineItems sees col1 as a description string (not a number) so Pattern B
+        // misses the qty entirely, or falls back to the last column (price = 0).
+        // Scan col2 directly when col1 is non-numeric and col2 is a valid qty.
+        if (type === 'excel' && text.includes('\t')) {
+            const colQtyMap = new Map();
+            for (const line of text.split('\n')) {
+                if (!line.includes('\t')) continue;
+                const cols = line.split('\t').map(c => c.trim());
+                if (cols.length < 3) continue;
+                const sku = cols[0].toUpperCase();
+                if (!/^[A-Z0-9]{3,16}$/.test(sku) || !/[A-Z]/.test(sku)) continue;
+                if (!/^\d+$/.test(cols[1]) && /^\d+$/.test(cols[2])) {
+                    const qty = parseInt(cols[2]);
+                    if (qty > 0 && qty < 10000) {
+                        if (colQtyMap.has(sku)) colQtyMap.get(sku).qty += qty;
+                        else colQtyMap.set(sku, { qty, raw: line });
+                    }
+                }
+            }
+            if (colQtyMap.size > 0) {
+                for (const item of state.parsedItems) {
+                    if (colQtyMap.has(item.sku)) item.qty = colQtyMap.get(item.sku).qty;
+                }
+                for (const [sku, { qty, raw }] of colQtyMap) {
+                    if (!state.parsedItems.find(i => i.sku === sku)) {
+                        state.parsedItems.push({ qty, sku, raw });
+                    }
+                }
+            }
+        }
 
         // Auto-detect wall configuration
         const product = detectProduct(text);
@@ -572,12 +607,13 @@ function runValidation() {
                     if (c > 0 && c < 100000) { match.qty = c; break; }
                 }
                 // Column-per-line fallback: scan following lines for a standalone integer.
-                // Handles PDFs where SKU, description, qty, DPW, price are each on their own line.
+                // Handles PDFs where SKU, description, qty are each on their own line.
+                // Stop only at price lines ($) or separators — NOT at "new item" patterns,
+                // because brand-name words like "ROE" trigger false new-item detection.
                 for (let j = li + 1; j < Math.min(li + 8, pdfLines.length); j++) {
                     const adj = pdfLines[j].trim();
                     if (!adj) continue;
-                    if (/^[A-Z][A-Z0-9]{2,15}\b/.test(adj)) break; // next item
-                    if (adj.startsWith('$') || adj.startsWith('---')) break; // price/separator
+                    if (adj.startsWith('$') || adj.startsWith('---')) break;
                     const solo = adj.match(/^(\d{1,6})$/);
                     if (solo) { match.qty = parseInt(solo[1]); break; }
                 }
