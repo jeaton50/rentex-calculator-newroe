@@ -96,44 +96,54 @@ function autoDetectTypeAndHandle(file) {
 // ============================================================
 // Excel qty helper
 // ============================================================
-// Finds every tab-separated row containing `sku` as an exact column value,
-// then returns the sum of the quantities across all matching rows.
-//
-// Strategy: scan the row both left-to-right AND right-to-left for the first
-// valid numeric column (positive, < 10000, no letters/× in the cell).
-// Take the SMALLER of the two — qty < extended_price in all normal cases,
-// so min(first_number, last_number) gives the correct qty whether the column
-// order is SKU|Desc|Qty|Unit|Extended or SKU|Desc|Extended|Unit|Qty.
+// Rentex RTPro Excel has 48 columns with named headers including
+// "Equipment" (SKU) and "Ordered" (qty). Detect those column indices
+// from the header row so we read the right data regardless of how many
+// other columns (price, weight, days, etc.) surround them.
+// Falls back to a simple min(first, last) heuristic for plain 2-5 col sheets.
 function excelQtyForSKU(text, sku) {
+    // Scan for named headers once
+    let skuCol = -1, qtyCol = -1;
+    for (const line of text.split('\n')) {
+        if (!line.includes('\t')) continue;
+        const cols = line.split('\t').map(c => c.trim().toLowerCase());
+        const ei = cols.indexOf('equipment');
+        const oi = cols.indexOf('ordered');
+        if (ei !== -1 && oi !== -1) { skuCol = ei; qtyCol = oi; break; }
+    }
+
     let total = 0;
     for (const line of text.split('\n')) {
         const l = line.trim();
         if (!l || !l.includes('\t')) continue;
         const cols = l.split('\t').map(c => c.trim());
-        const si = cols.findIndex(c => c.toUpperCase() === sku);
-        if (si === -1) continue;
 
-        let left = 0, right = 0;
-
-        for (let ci = si + 1; ci < cols.length; ci++) {
-            const raw = cols[ci].replace(/[$,\s]/g, '');
-            if (!raw || /[a-zA-Z×]/.test(raw)) continue;
-            const v = parseFloat(raw);
-            if (!isNaN(v) && v > 0 && v < 10000) { left = Math.round(v); break; }
+        if (skuCol >= 0 && qtyCol >= 0) {
+            // Named-column format (Rentex RTPro): exact column positions
+            if (cols.length <= Math.max(skuCol, qtyCol)) continue;
+            if (cols[skuCol].toUpperCase() !== sku) continue;
+            const v = parseFloat(cols[qtyCol]);
+            if (!isNaN(v) && v > 0) total += Math.round(v);
+        } else {
+            // Simple fallback: find SKU in any column, take min(first,last) numeric
+            const si = cols.findIndex(c => c.toUpperCase() === sku);
+            if (si === -1) continue;
+            let left = 0, right = 0;
+            for (let ci = si + 1; ci < cols.length; ci++) {
+                const raw = cols[ci].replace(/[$,\s]/g, '');
+                if (!raw || /[a-zA-Z×]/.test(raw)) continue;
+                const v = parseFloat(raw);
+                if (!isNaN(v) && v > 0 && v < 10000) { left = Math.round(v); break; }
+            }
+            for (let ci = cols.length - 1; ci > si; ci--) {
+                const raw = cols[ci].replace(/[$,\s]/g, '');
+                if (!raw || /[a-zA-Z×]/.test(raw)) continue;
+                const v = parseFloat(raw);
+                if (!isNaN(v) && v > 0 && v < 10000) { right = Math.round(v); break; }
+            }
+            const qty = left > 0 && right > 0 ? Math.min(left, right) : (left || right);
+            if (qty > 0) total += qty;
         }
-
-        for (let ci = cols.length - 1; ci > si; ci--) {
-            const raw = cols[ci].replace(/[$,\s]/g, '');
-            if (!raw || /[a-zA-Z×]/.test(raw)) continue;
-            const v = parseFloat(raw);
-            if (!isNaN(v) && v > 0 && v < 10000) { right = Math.round(v); break; }
-        }
-
-        // qty ≤ extended price, so the smaller of the two extremes is the qty.
-        // When only one direction finds a value (e.g. all prices are $0 and excluded),
-        // use whichever is non-zero.
-        const qty = left > 0 && right > 0 ? Math.min(left, right) : (left || right);
-        if (qty > 0) total += qty;
     }
     return total;
 }
@@ -239,29 +249,45 @@ async function handleFile(file, type) {
         state.fileType = type;   // 'pdf' or 'excel' — used in runValidation
         state.parsedItems = parseLineItems(text);
 
-        // Rentex Excel: parseLineItems was designed for PDFs and picks up the wrong
-        // column from tab-separated rows (e.g. price=0 instead of qty=48).
-        // Rebuild parsedItems using excelQtyForSKU which finds the SKU in any column
-        // and reads the first non-text numeric column after it as the quantity.
+        // Rentex Excel: parseLineItems was designed for PDFs and reads wrong columns.
+        // Detect the Equipment (SKU) and Ordered (qty) columns from the header row,
+        // then rebuild parsedItems directly from those exact columns.
+        // Allows 2-char SKUs like "S8" that the generic SKU pattern would otherwise skip.
         if (type === 'excel') {
+            let skuCol = -1, qtyCol = -1;
+            for (const line of text.split('\n')) {
+                if (!line.includes('\t')) continue;
+                const h = line.split('\t').map(c => c.trim().toLowerCase());
+                const ei = h.indexOf('equipment');
+                const oi = h.indexOf('ordered');
+                if (ei !== -1 && oi !== -1) { skuCol = ei; qtyCol = oi; break; }
+            }
+
             const seen = new Set();
             for (const line of text.split('\n')) {
                 const l = line.trim();
                 if (!l || !l.includes('\t')) continue;
                 const cols = l.split('\t').map(c => c.trim());
-                // Find a column that looks like a SKU (3-16 uppercase alphanumeric with a letter)
-                for (const col of cols) {
-                    const sku = col.toUpperCase();
-                    if (!/^[A-Z0-9]{3,16}$/.test(sku) || !/[A-Z]/.test(sku)) continue;
-                    if (seen.has(sku)) continue;
-                    const qty = excelQtyForSKU(text, sku);
-                    if (qty > 0) {
-                        seen.add(sku);
-                        const existing = state.parsedItems.find(i => i.sku === sku);
-                        if (existing) existing.qty = qty;
-                        else state.parsedItems.push({ qty, sku, raw: l });
-                    }
-                    break; // only use first SKU-like column per row
+
+                let sku;
+                if (skuCol >= 0) {
+                    // Named-column format: read the Equipment column directly
+                    if (cols.length <= skuCol) continue;
+                    sku = cols[skuCol].toUpperCase();
+                } else {
+                    // Simple fallback: first column that looks like a SKU
+                    sku = (cols.find(c => /^[A-Z0-9]{2,16}$/.test(c.toUpperCase()) && /[A-Z]/.test(c.toUpperCase())) || '').toUpperCase();
+                }
+
+                if (!sku || !/^[A-Z0-9]{2,16}$/.test(sku) || !/[A-Z]/.test(sku)) continue;
+                if (seen.has(sku)) continue;
+
+                const qty = excelQtyForSKU(text, sku);
+                if (qty > 0) {
+                    seen.add(sku);
+                    const existing = state.parsedItems.find(i => i.sku === sku);
+                    if (existing) existing.qty = qty;
+                    else state.parsedItems.push({ qty, sku, raw: l });
                 }
             }
         }
