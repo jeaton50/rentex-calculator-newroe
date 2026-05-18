@@ -132,28 +132,35 @@ function preprocessPDFText(text) {
         cleaned.push(line);
     }
 
-    // 4. Merge lines where a SKU line's description wrapped to the next line.
-    //    Happens when PDF column widths push the qty/price onto a continuation row.
-    //    Heuristic: if a line starts with a SKU but has no "$" and no trailing number,
-    //    and the next line starts with a number or "$", join them.
-    const merged = [];
-    for (let i = 0; i < cleaned.length; i++) {
-        const curr = cleaned[i];
-        const next = cleaned[i + 1] || '';
-        const startsWithSKU = /^[A-Z][A-Z0-9]{2,15}\s/.test(curr);
-        const lacksQtyAndPrice = !/\$/.test(curr) && !/\s\d{1,6}\s*$/.test(curr);
-        const nextStartsWithQtyOrPrice = /^[\d$]/.test(next);
-        const nextIsNewItem = /^[A-Z][A-Z0-9]{2,15}\s/.test(next);
-
-        if (startsWithSKU && lacksQtyAndPrice && nextStartsWithQtyOrPrice && !nextIsNewItem) {
-            merged.push(curr + ' ' + next);
-            i++; // consume the continuation line
-        } else {
-            merged.push(curr);
+    // 4. Merge lines where a SKU line's data spans multiple lines.
+    //    Pass 1: join bare-SKU lines with the following description line.
+    //    Pass 2: join SKU+description lines with the following qty/price line.
+    //    Two passes handles Rentex PDFs that put each column on its own line.
+    let working = cleaned.slice();
+    for (let pass = 0; pass < 2; pass++) {
+        const merged = [];
+        for (let i = 0; i < working.length; i++) {
+            const curr = working[i];
+            const next = working[i + 1] || '';
+            const isBareSKU   = /^[A-Z][A-Z0-9]{2,15}$/.test(curr);
+            const skuWithDesc = /^[A-Z][A-Z0-9]{2,15}\s/.test(curr);
+            const lacksQtyAndPrice = !/\$/.test(curr) && !/\s\d{1,6}\s*$/.test(curr);
+            const nextIsNewItem = /^[A-Z][A-Z0-9]{2,15}[\s$]/.test(next);
+            const nextStartsWithQtyOrPrice = /^[\d$]/.test(next);
+            // Bare SKU merges with anything (desc or qty); SKU+desc merges only with qty/price
+            const canMerge = lacksQtyAndPrice && !nextIsNewItem && next.length > 0 &&
+                             (isBareSKU || (skuWithDesc && nextStartsWithQtyOrPrice));
+            if (canMerge) {
+                merged.push(curr + ' ' + next);
+                i++;
+            } else {
+                merged.push(curr);
+            }
         }
+        working = merged;
     }
 
-    return merged.join('\n');
+    return working.join('\n');
 }
 
 async function handleFile(file, type) {
@@ -535,20 +542,34 @@ function runValidation() {
         // numbers that would be misread as quantities by these fallback patterns.
         if (state.fileType === 'pdf' && match.found && match.qty === null) {
             const skuEsc = item.sku.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            for (const line of state.rawText.split('\n')) {
-                if (!new RegExp(skuEsc, 'i').test(line)) continue;
-                // Try: SKU then qty (Rentex format, after preprocessing DPW is gone)
+            const pdfLines = state.rawText.split('\n');
+            for (let li = 0; li < pdfLines.length; li++) {
+                if (!new RegExp(skuEsc, 'i').test(pdfLines[li])) continue;
+                const line = pdfLines[li];
+                // Rentex: SKU desc qty $price (after DPW stripping)
                 let m = line.match(new RegExp(`${skuEsc}\\s+.+?\\s+(\\d{1,6})\\s+\\$`, 'i'));
                 if (m) { match.qty = parseInt(m[1]); break; }
-                // Try: qty then SKU (qty-first format)
+                // qty-first: qty SKU
                 m = line.match(new RegExp(`^\\s*(\\d{1,6})\\s+${skuEsc}\\b`, 'i'));
                 if (m) { match.qty = parseInt(m[1]); break; }
-                // Try: any standalone number near the SKU (last resort)
+                // Numbers on this line — single number used directly; multiple → second-to-last
                 const nums = line.match(/\b(\d{1,6})\b/g);
                 if (nums && nums.length > 0) {
-                    const candidate = parseInt(nums[nums.length > 1 ? nums.length - 2 : 0]);
-                    if (candidate > 0 && candidate < 100000) { match.qty = candidate; break; }
+                    const idx = nums.length > 1 ? nums.length - 2 : 0;
+                    const c = parseInt(nums[idx]);
+                    if (c > 0 && c < 100000) { match.qty = c; break; }
                 }
+                // Column-per-line fallback: scan following lines for a standalone integer.
+                // Handles PDFs where SKU, description, qty, DPW, price are each on their own line.
+                for (let j = li + 1; j < Math.min(li + 8, pdfLines.length); j++) {
+                    const adj = pdfLines[j].trim();
+                    if (!adj) continue;
+                    if (/^[A-Z][A-Z0-9]{2,15}\b/.test(adj)) break; // next item
+                    if (adj.startsWith('$') || adj.startsWith('---')) break; // price/separator
+                    const solo = adj.match(/^(\d{1,6})$/);
+                    if (solo) { match.qty = parseInt(solo[1]); break; }
+                }
+                break; // only process first line containing this SKU
             }
         }
 
