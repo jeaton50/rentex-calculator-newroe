@@ -584,24 +584,28 @@ function runValidation() {
     const results = expected.map(item => {
         const match = findItemInPDF(item, state.parsedItems, state.rawText);
 
-        // Excel: if qty is still null after findItemInPDF, read col2 directly from the
-        // tab-separated line (Rentex: SKU\tDescription\tQty\tPrice\tExtended).
-        if (state.fileType === 'excel' && match.found && match.qty === null) {
+        // Excel: always read qty directly from the tab-separated columns.
+        // findItemInPDF step 2 (raw-text search) grabs the first number on the line,
+        // which is often a wrong value from description text — e.g. "5" from "PL2.5"
+        // instead of the real qty. Override match.qty from the correct column every time.
+        // Sum across all rows for this SKU in case it appears on more than one line.
+        if (state.fileType === 'excel' && match.found) {
+            let excelQty = 0;
             for (const line of state.rawText.split('\n')) {
                 if (!line.includes('\t')) continue;
                 const cols = line.split('\t').map(c => c.trim());
                 if (cols[0].toUpperCase() !== item.sku) continue;
-                // Rentex: col2 = Qty when col1 is a description (non-numeric)
+                // Rentex: col0=SKU, col1=Description (non-numeric), col2=Qty
                 if (cols.length >= 3 && !/^\d+$/.test(cols[1]) && /^\d+$/.test(cols[2])) {
                     const qty = parseInt(cols[2]);
-                    if (qty > 0 && qty < 10000) { match.qty = qty; break; }
-                }
-                // Simple SKU\tQty format
-                if (cols.length >= 2 && /^\d+$/.test(cols[1])) {
+                    if (qty > 0 && qty < 10000) excelQty += qty;
+                // Simple: col0=SKU, col1=Qty
+                } else if (cols.length >= 2 && /^\d+$/.test(cols[1])) {
                     const qty = parseInt(cols[1]);
-                    if (qty > 0 && qty < 10000) { match.qty = qty; break; }
+                    if (qty > 0 && qty < 10000) excelQty += qty;
                 }
             }
+            if (excelQty > 0) match.qty = excelQty;
         }
 
         // PDF only: if qty is still null after findItemInPDF, attempt a more targeted
