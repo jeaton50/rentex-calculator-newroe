@@ -584,6 +584,26 @@ function runValidation() {
     const results = expected.map(item => {
         const match = findItemInPDF(item, state.parsedItems, state.rawText);
 
+        // Excel: if qty is still null after findItemInPDF, read col2 directly from the
+        // tab-separated line (Rentex: SKU\tDescription\tQty\tPrice\tExtended).
+        if (state.fileType === 'excel' && match.found && match.qty === null) {
+            for (const line of state.rawText.split('\n')) {
+                if (!line.includes('\t')) continue;
+                const cols = line.split('\t').map(c => c.trim());
+                if (cols[0].toUpperCase() !== item.sku) continue;
+                // Rentex: col2 = Qty when col1 is a description (non-numeric)
+                if (cols.length >= 3 && !/^\d+$/.test(cols[1]) && /^\d+$/.test(cols[2])) {
+                    const qty = parseInt(cols[2]);
+                    if (qty > 0 && qty < 10000) { match.qty = qty; break; }
+                }
+                // Simple SKU\tQty format
+                if (cols.length >= 2 && /^\d+$/.test(cols[1])) {
+                    const qty = parseInt(cols[1]);
+                    if (qty > 0 && qty < 10000) { match.qty = qty; break; }
+                }
+            }
+        }
+
         // PDF only: if qty is still null after findItemInPDF, attempt a more targeted
         // extraction. Skipped for Excel — tab-separated text contains price/description
         // numbers that would be misread as quantities by these fallback patterns.
