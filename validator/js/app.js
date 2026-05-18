@@ -682,24 +682,28 @@ function exportCSV() {
 // ============================================================
 // Init
 // ============================================================
+function toggleAdvancedOptions() {
+    const f   = $('advanced-fields');
+    const btn = $('btn-advanced');
+    const isOpen = f.style.display !== 'none';
+    f.style.display = isOpen ? 'none' : 'block';
+    btn.textContent = isOpen ? '▶ Advanced options' : '▼ Advanced options';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initUpload();
 
     $('sel-product').addEventListener('change', updateAdvancedVisibility);
     $('sel-support').addEventListener('change', updateAdvancedVisibility);
-    // Hide curve row until a product is chosen
     $('row-curve').style.display = 'none';
+    $('btn-advanced').addEventListener('click', toggleAdvancedOptions);
     $('btn-validate').addEventListener('click', runValidation);
     $('btn-export').addEventListener('click', exportCSV);
     $('btn-toggle-raw').addEventListener('click', () => {
         const pre = $('raw-text');
         const btn = $('btn-toggle-raw');
-        if (pre.style.display === 'none') {
-            pre.style.display = '';
-            btn.textContent = 'Hide extracted text';
-        } else {
-            pre.style.display = 'none';
-            btn.textContent = 'Show extracted text';
-        }
+        const showing = pre.style.display === 'block';
+        pre.style.display = showing ? 'none' : 'block';
+        btn.textContent = showing ? 'Show extracted text' : 'Hide extracted text';
     });
 });
