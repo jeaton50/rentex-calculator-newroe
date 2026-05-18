@@ -575,7 +575,7 @@ function runValidation() {
     for (const [bundleSKU, contents] of Object.entries(BUNDLE_CONTENTS)) {
         if (rawUpBundle.includes(bundleSKU)) {
             for (const r of results) {
-                if (r.status === 'missing' && contents.has(r.sku)) {
+                if ((r.status === 'missing' || r.status === 'wrong-qty') && contents.has(r.sku)) {
                     r.status = 'found';
                     r.match = { found: true, qty: null, confidence: 'bundle' };
                 }

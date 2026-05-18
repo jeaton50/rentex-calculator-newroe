@@ -171,8 +171,7 @@ function calcAbsen(H, V, opts = {}) {
     const casesNeeded = Math.ceil(totalWithSpares / 8);
 
     add('8PPL25', 'Absen PL2.5 8× tile package', casesNeeded, 'Tiles', ['8ppl25', 'absen', 'package', '8x']);
-    add('PL25', 'Absen PL2.5 tile (active)', totalTiles, 'Tiles', ['pl25', 'absen', 'pl2.5', 'tile']);
-    add('PL25', 'Absen PL2.5 tile (spares)', totalSpares, 'Tiles', ['pl25', 'absen', 'spare', 'pl2.5']);
+    add('PL25', 'Absen PL2.5 tile', totalWithSpares, 'Tiles', ['pl25', 'absen', 'pl2.5', 'tile', 'spare']);
     add('PL25CASE8X', 'Case, Absen PL2.5, 8×', casesNeeded, 'Tiles', ['pl25case8x', 'pl25case', 'case', 'absen']);
 
     // Processor
@@ -275,8 +274,7 @@ function calcROEGP26Full(H, V, opts = {}) {
     const casesNeeded = Math.ceil(totalWithSpares / 6);
 
     add('6PGP2FULL', 'ROE GP2.6 Full 6× tile package', casesNeeded, 'Tiles', ['6pgp2full', 'gp2', 'full', 'package', '6x']);
-    add('GP2FULL', 'ROE GP2.6 Full LED tile 500×1000mm (active)', totalTiles, 'Tiles', ['gp2full', 'gp2.6', 'full', 'tile', '500x1000', 'graphite']);
-    add('GP2FULL', 'ROE GP2.6 Full LED tile 500×1000mm (spares)', totalSpares, 'Tiles', ['gp2full', 'spare', 'gp2.6', 'full']);
+    add('GP2FULL', 'ROE GP2.6 Full LED tile 500×1000mm', totalWithSpares, 'Tiles', ['gp2full', 'gp2.6', 'full', 'tile', '500x1000', 'graphite', 'spare']);
     add('GP2FULLPSU', 'ROE GP2 Full tile PSU', totalWithSpares, 'Tiles', ['gp2fullpsu', 'gp2', 'full', 'tile psu', 'psu']);
     add('GP2CASEFUL', 'GP2 Full flight case (6×)', casesNeeded, 'Tiles', ['gp2caseful', 'flightcase', 'gp2', 'case', 'full']);
 
@@ -288,9 +286,7 @@ function calcROEGP26Full(H, V, opts = {}) {
         halfWithSpares = halfTiles + halfSpares;
         halfCases = Math.ceil(halfWithSpares / 12);
         add('12PGP2HALF', 'ROE GP2.6 Half 12× tile package', halfCases, 'Tiles', ['12pgp2half', 'gp2', 'half', 'package']);
-        const halfTilesActive = H * gp2HalfRows;
-        add('GP2HALF', 'ROE GP2.6 Half LED tile 500×500mm (active)', halfTilesActive, 'Tiles', ['gp2half', 'gp2.6', 'half', 'tile', '500x500']);
-        add('GP2HALF', 'ROE GP2.6 Half LED tile 500×500mm (spares)', halfWithSpares - halfTilesActive, 'Tiles', ['gp2half', 'spare', 'gp2.6', 'half']);
+        add('GP2HALF', 'ROE GP2.6 Half LED tile 500×500mm', halfWithSpares, 'Tiles', ['gp2half', 'gp2.6', 'half', 'tile', '500x500', 'spare']);
         add('GP2HALFPSU', 'ROE GP2 Half Tile PSU', halfWithSpares, 'Tiles', ['gp2halfpsu', 'gp2', 'half', 'psu', 'tile psu']);
         add('GP2CASEHAF', 'GP2 Half flight case (12×)', halfCases, 'Tiles', ['gp2casehaf', 'flightcase', 'gp2', 'case', 'half']);
     }
@@ -389,8 +385,7 @@ function calcROEBlackPearl(H, V, opts = {}) {
     const casesNeeded = Math.ceil(totalWithSpares / 8);
 
     add(pkgSKU, `ROE Black Pearl 8× tile package (${bpVariant})`, casesNeeded, 'Tiles', [pkgSKU.toLowerCase(), 'black pearl', 'package', '8x', 'roe', 'bp2']);
-    add(tileSKU, `${tileDesc} (active)`, totalTiles, 'Tiles', [tileSKU.toLowerCase(), 'black pearl', 'bp2', 'tile', 'roe']);
-    add(tileSKU, `${tileDesc} (spares)`, totalSpares, 'Tiles', [tileSKU.toLowerCase(), 'spare', 'black pearl', 'bp2']);
+    add(tileSKU, tileDesc, totalWithSpares, 'Tiles', [tileSKU.toLowerCase(), 'black pearl', 'bp2', 'tile', 'roe', 'spare']);
     add(caseSKU, 'Case, ROE Black Pearl, 8×', casesNeeded, 'Tiles', ['bp2v2case', 'bp2v1case', 'case', 'black pearl', 'roe']);
 
     // Processor (192×192 px per tile)
@@ -416,8 +411,10 @@ function calcROEBlackPearl(H, V, opts = {}) {
         const bpSandbags = Math.ceil(bpSbTable[Math.max(0, bpSbIdx)] * (singleBases + doubleBases));
         add('SANDBAG25', 'Sand Bag 25 lbs.', bpSandbags, 'Hardware', ['sandbag', 'sand bag', '25']);
     } else {
-        add('BPBOHEAD1', 'ROE Black Pearl header, 1W, 0.5m', H % 2, 'Hardware', ['bpbohead1', 'header', '1w', '0.5m', 'black pearl']);
-        add('BPBOHEAD2', 'ROE Black Pearl header, 2W, 1m', Math.floor(H / 2), 'Hardware', ['bpbohead2', 'header', '2w', '1m', 'black pearl']);
+        const bpSingleHeaders = groundSupportType === 'Double Base' ? H % 2 : H;
+        const bpDoubleHeaders = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
+        add('BPBOHEAD1', 'ROE Black Pearl header, 1W, 0.5m', bpSingleHeaders, 'Hardware', ['bpbohead1', 'header', '1w', '0.5m', 'black pearl']);
+        add('BPBOHEAD2', 'ROE Black Pearl header, 2W, 1m', bpDoubleHeaders, 'Hardware', ['bpbohead2', 'header', '2w', '1m', 'black pearl']);
     }
 
     // Curved wall brackets (concave/convex)
@@ -484,8 +481,7 @@ function calcROEGP26Half(H, V, opts = {}) {
     const casesNeeded = Math.ceil(totalWithSpares / 12);
 
     add('12PGP2HALF', 'ROE GP2.6 Half 12× tile package', casesNeeded, 'Tiles', ['12pgp2half', 'gp2', 'half', 'package', '12x']);
-    add('GP2HALF', 'ROE GP2.6 Half LED tile 500×500mm (active)', totalTiles, 'Tiles', ['gp2half', 'gp2.6', 'half', 'tile']);
-    add('GP2HALF', 'ROE GP2.6 Half LED tile 500×500mm (spares)', totalSpares, 'Tiles', ['gp2half', 'spare', 'gp2.6', 'half']);
+    add('GP2HALF', 'ROE GP2.6 Half LED tile 500×500mm', totalWithSpares, 'Tiles', ['gp2half', 'gp2.6', 'half', 'tile', 'spare']);
 
     // Processor (192×192 px)
     const proc = selectProcessors(totalTiles, H, V, 192, 192);
@@ -563,8 +559,7 @@ function calcTheatrixx(H, V, opts = {}) {
     const tilePackages = Math.ceil(totalWithSpares / 10);
 
     add('10PTXNOMAD', 'Theatrixx Nomad 2.6 10× tile package', tilePackages, 'Tiles', ['10ptxnomad', 'theatrixx', 'nomad', 'package', '10x']);
-    add('TXNOMAD26',  'Theatrixx Nomad LED panel 500×500mm 2.6mm (active)', totalTiles, 'Tiles', ['txnomad26', 'theatrixx', 'nomad', '2.6', 'panel', 'tile', '500']);
-    add('TXNOMAD26',  'Theatrixx Nomad LED panel 500×500mm 2.6mm (spares)', totalSpares, 'Tiles', ['txnomad26', 'theatrixx', 'nomad', 'spare']);
+    add('TXNOMAD26',  'Theatrixx Nomad LED panel 500×500mm 2.6mm', totalWithSpares, 'Tiles', ['txnomad26', 'theatrixx', 'nomad', '2.6', 'panel', 'tile', '500', 'spare']);
     add('CATXLED',    'Case, Theatrixx Nomad tile, 10×', tilePackages, 'Tiles', ['catxled', 'case', 'theatrixx', 'nomad', '10x']);
 
     // Processor: Novastar MX40PRO (9 megapixels per unit)
@@ -617,9 +612,10 @@ function calcTheatrixx(H, V, opts = {}) {
         add('SANDBAG25', 'Sand Bag 25 lbs.', sandbags, 'Hardware', ['sandbag', 'sand bag', '25']);
 
     } else {
-        // Fly headers
-        add('TXSNGLHEAD', 'Theatrixx Nomad single header', H % 2, 'Hardware', ['txsnglhead', 'single header', 'theatrixx']);
-        add('TXDBLHEAD',  'Theatrixx Nomad double header', Math.floor(H / 2), 'Hardware', ['txdblhead', 'double header', 'theatrixx']);
+        const txSingleHeaders = groundSupportType === 'Double Base' ? H % 2 : H;
+        const txDoubleHeaders = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
+        add('TXSNGLHEAD', 'Theatrixx Nomad single header', txSingleHeaders, 'Hardware', ['txsnglhead', 'single header', 'theatrixx']);
+        add('TXDBLHEAD',  'Theatrixx Nomad double header', txDoubleHeaders, 'Hardware', ['txdblhead', 'double header', 'theatrixx']);
     }
 
     // Data cables
