@@ -373,18 +373,13 @@ function generateWall() {
   hasFractionalInput = (blocksVerRaw % 1) !== 0;
 
   if (hasFractionalInput && productType === 'ROEGP26Full') {
-    // Only use fractional auto-rows when the manual checkbox is NOT checked.
-    // When the checkbox is active the user has explicitly specified half rows,
-    // so the fractional part of V is treated as a display convenience only.
-    const checkboxAlreadyChecked = document.getElementById('gp2HalfCheckbox')?.checked;
-    if (!checkboxAlreadyChecked) {
-      // Extract fractional part (e.g., 0.5 from 4.5)
-      const fractionalPart = blocksVerRaw % 1;
+    // Extract fractional part (e.g., 0.5 from 4.5)
+    const fractionalPart = blocksVerRaw % 1;
 
-      // Convert fractional part to GP2 Half rows
-      // 0.5 = 1 Half row (since 2 Half rows = 1 Full row height)
-      gp2HalfAutoRows = Math.round(fractionalPart * 2);
-    }
+    // Convert fractional part to GP2 Half rows
+    // 0.5 = 1 Half row (since 2 Half rows = 1 Full row height)
+    // 1.0 = 2 Half rows, 1.5 = 3 Half rows, etc.
+    gp2HalfAutoRows = Math.round(fractionalPart * 2);
   }
 
   const groundSupport = document.getElementById('groundSupport').checked;
@@ -555,9 +550,13 @@ function generateWall() {
 
     // GP2 products use package-based spare calculation (always add at least 1 spare case)
     if (productType === 'ROEGP26Full') {
-      // GP2 Full: percentage-based spares rounded to nearest 6-pack, matching validator
-      totalSpares = calcSpares(totalBlocks, 6, 1.5);
-      totalBlocksWithSpares = totalBlocks + totalSpares;
+      // GP2 Full: packages of 6, always add at least 1 spare case
+      const packageSize = 6;
+      const activeCases = Math.ceil(totalBlocks / packageSize);
+      const totalCases = activeCases + 1; // Guarantee at least 1 spare case
+      const roundedTotal = totalCases * packageSize;
+      totalSpares = roundedTotal - totalBlocks;
+      totalBlocksWithSpares = roundedTotal;
     } else if (productType === 'ROEGP26Half') {
       // GP2 Half: same percentage formula as Black Pearl, rounded to nearest multiple of 12
       totalSpares = calcSpares(totalBlocks, 12, 1.5);
