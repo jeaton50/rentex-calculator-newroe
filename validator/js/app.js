@@ -94,6 +94,34 @@ function autoDetectTypeAndHandle(file) {
 }
 
 // ============================================================
+// Excel qty helper
+// ============================================================
+// Finds every tab-separated row containing `sku` as an exact column value,
+// then returns the sum of the first numeric column to the right of the SKU
+// that looks like a quantity (positive, < 10000, no letters in the cell).
+// Works regardless of which column the SKU is in, and accepts decimal-format
+// quantities like "48.00" as produced by some versions of SheetJS.
+function excelQtyForSKU(text, sku) {
+    let total = 0;
+    for (const line of text.split('\n')) {
+        const l = line.trim();
+        if (!l || !l.includes('\t')) continue;
+        const cols = l.split('\t').map(c => c.trim());
+        const si = cols.findIndex(c => c.toUpperCase() === sku);
+        if (si === -1) continue;
+        for (let ci = si + 1; ci < cols.length; ci++) {
+            const raw = cols[ci].replace(/[$,\s]/g, '');
+            if (!raw || /[a-zA-Z×]/.test(raw)) continue; // skip text/description columns
+            const v = parseFloat(raw);
+            if (isNaN(v) || v <= 0 || v >= 10000) continue;
+            total += Math.round(v);
+            break; // first valid numeric column after SKU = qty
+        }
+    }
+    return total;
+}
+
+// ============================================================
 // PDF text preprocessing
 // ============================================================
 // Cleans up common artifacts introduced by PDF.js text extraction
@@ -194,34 +222,29 @@ async function handleFile(file, type) {
         state.fileType = type;   // 'pdf' or 'excel' — used in runValidation
         state.parsedItems = parseLineItems(text);
 
-        // Rentex Excel format: SKU\tDescription\tQty\tPrice\tExtended
-        // parseLineItems sees col1 as a description string (not a number) so Pattern B
-        // misses the qty entirely, or falls back to the last column (price = 0).
-        // Scan col2 directly when col1 is non-numeric and col2 is a valid qty.
-        if (type === 'excel' && text.includes('\t')) {
-            const colQtyMap = new Map();
+        // Rentex Excel: parseLineItems was designed for PDFs and picks up the wrong
+        // column from tab-separated rows (e.g. price=0 instead of qty=48).
+        // Rebuild parsedItems using excelQtyForSKU which finds the SKU in any column
+        // and reads the first non-text numeric column after it as the quantity.
+        if (type === 'excel') {
+            const seen = new Set();
             for (const line of text.split('\n')) {
-                if (!line.includes('\t')) continue;
-                const cols = line.split('\t').map(c => c.trim());
-                if (cols.length < 3) continue;
-                const sku = cols[0].toUpperCase();
-                if (!/^[A-Z0-9]{3,16}$/.test(sku) || !/[A-Z]/.test(sku)) continue;
-                if (!/^\d+$/.test(cols[1]) && /^\d+$/.test(cols[2])) {
-                    const qty = parseInt(cols[2]);
-                    if (qty > 0 && qty < 10000) {
-                        if (colQtyMap.has(sku)) colQtyMap.get(sku).qty += qty;
-                        else colQtyMap.set(sku, { qty, raw: line });
+                const l = line.trim();
+                if (!l || !l.includes('\t')) continue;
+                const cols = l.split('\t').map(c => c.trim());
+                // Find a column that looks like a SKU (3-16 uppercase alphanumeric with a letter)
+                for (const col of cols) {
+                    const sku = col.toUpperCase();
+                    if (!/^[A-Z0-9]{3,16}$/.test(sku) || !/[A-Z]/.test(sku)) continue;
+                    if (seen.has(sku)) continue;
+                    const qty = excelQtyForSKU(text, sku);
+                    if (qty > 0) {
+                        seen.add(sku);
+                        const existing = state.parsedItems.find(i => i.sku === sku);
+                        if (existing) existing.qty = qty;
+                        else state.parsedItems.push({ qty, sku, raw: l });
                     }
-                }
-            }
-            if (colQtyMap.size > 0) {
-                for (const item of state.parsedItems) {
-                    if (colQtyMap.has(item.sku)) item.qty = colQtyMap.get(item.sku).qty;
-                }
-                for (const [sku, { qty, raw }] of colQtyMap) {
-                    if (!state.parsedItems.find(i => i.sku === sku)) {
-                        state.parsedItems.push({ qty, sku, raw });
-                    }
+                    break; // only use first SKU-like column per row
                 }
             }
         }
@@ -584,28 +607,12 @@ function runValidation() {
     const results = expected.map(item => {
         const match = findItemInPDF(item, state.parsedItems, state.rawText);
 
-        // Excel: always read qty directly from the tab-separated columns.
-        // findItemInPDF step 2 (raw-text search) grabs the first number on the line,
-        // which is often a wrong value from description text — e.g. "5" from "PL2.5"
-        // instead of the real qty. Override match.qty from the correct column every time.
-        // Sum across all rows for this SKU in case it appears on more than one line.
+        // Excel: override match.qty using direct column lookup.
+        // findItemInPDF step 2 (raw-text search) picks up the first word-boundary
+        // number on the line — often a wrong value like "5" from "PL2.5".
         if (state.fileType === 'excel' && match.found) {
-            let excelQty = 0;
-            for (const line of state.rawText.split('\n')) {
-                if (!line.includes('\t')) continue;
-                const cols = line.split('\t').map(c => c.trim());
-                if (cols[0].toUpperCase() !== item.sku) continue;
-                // Rentex: col0=SKU, col1=Description (non-numeric), col2=Qty
-                if (cols.length >= 3 && !/^\d+$/.test(cols[1]) && /^\d+$/.test(cols[2])) {
-                    const qty = parseInt(cols[2]);
-                    if (qty > 0 && qty < 10000) excelQty += qty;
-                // Simple: col0=SKU, col1=Qty
-                } else if (cols.length >= 2 && /^\d+$/.test(cols[1])) {
-                    const qty = parseInt(cols[1]);
-                    if (qty > 0 && qty < 10000) excelQty += qty;
-                }
-            }
-            if (excelQty > 0) match.qty = excelQty;
+            const q = excelQtyForSKU(state.rawText, item.sku);
+            if (q > 0) match.qty = q;
         }
 
         // PDF only: if qty is still null after findItemInPDF, attempt a more targeted
