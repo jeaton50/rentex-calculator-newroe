@@ -97,10 +97,13 @@ function autoDetectTypeAndHandle(file) {
 // Excel qty helper
 // ============================================================
 // Finds every tab-separated row containing `sku` as an exact column value,
-// then returns the sum of the first numeric column to the right of the SKU
-// that looks like a quantity (positive, < 10000, no letters in the cell).
-// Works regardless of which column the SKU is in, and accepts decimal-format
-// quantities like "48.00" as produced by some versions of SheetJS.
+// then returns the sum of the quantities across all matching rows.
+//
+// Strategy: scan the row both left-to-right AND right-to-left for the first
+// valid numeric column (positive, < 10000, no letters/× in the cell).
+// Take the SMALLER of the two — qty < extended_price in all normal cases,
+// so min(first_number, last_number) gives the correct qty whether the column
+// order is SKU|Desc|Qty|Unit|Extended or SKU|Desc|Extended|Unit|Qty.
 function excelQtyForSKU(text, sku) {
     let total = 0;
     for (const line of text.split('\n')) {
@@ -109,14 +112,28 @@ function excelQtyForSKU(text, sku) {
         const cols = l.split('\t').map(c => c.trim());
         const si = cols.findIndex(c => c.toUpperCase() === sku);
         if (si === -1) continue;
+
+        let left = 0, right = 0;
+
         for (let ci = si + 1; ci < cols.length; ci++) {
             const raw = cols[ci].replace(/[$,\s]/g, '');
-            if (!raw || /[a-zA-Z×]/.test(raw)) continue; // skip text/description columns
+            if (!raw || /[a-zA-Z×]/.test(raw)) continue;
             const v = parseFloat(raw);
-            if (isNaN(v) || v <= 0 || v >= 10000) continue;
-            total += Math.round(v);
-            break; // first valid numeric column after SKU = qty
+            if (!isNaN(v) && v > 0 && v < 10000) { left = Math.round(v); break; }
         }
+
+        for (let ci = cols.length - 1; ci > si; ci--) {
+            const raw = cols[ci].replace(/[$,\s]/g, '');
+            if (!raw || /[a-zA-Z×]/.test(raw)) continue;
+            const v = parseFloat(raw);
+            if (!isNaN(v) && v > 0 && v < 10000) { right = Math.round(v); break; }
+        }
+
+        // qty ≤ extended price, so the smaller of the two extremes is the qty.
+        // When only one direction finds a value (e.g. all prices are $0 and excluded),
+        // use whichever is non-zero.
+        const qty = left > 0 && right > 0 ? Math.min(left, right) : (left || right);
+        if (qty > 0) total += qty;
     }
     return total;
 }
