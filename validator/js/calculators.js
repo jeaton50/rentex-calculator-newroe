@@ -268,10 +268,13 @@ function calcROEGP26Full(H, V, opts = {}) {
     };
 
     // Tiles — each GP2 Full tile = 500×1000mm
+    // Spare logic mirrors main calculator: always guarantee at least 1 spare case (pack of 6)
     const totalTiles = H * V;
-    const totalSpares = calcSpares(totalTiles, 6, 1.5);
-    const totalWithSpares = totalTiles + totalSpares;
-    const casesNeeded = Math.ceil(totalWithSpares / 6);
+    const activeCases = Math.ceil(totalTiles / 6);
+    const totalCases = activeCases + 1;
+    const totalWithSpares = totalCases * 6;
+    const totalSpares = totalWithSpares - totalTiles;
+    const casesNeeded = totalCases;
 
     add('6PGP2FULL', 'ROE GP2.6 Full 6× tile package', casesNeeded, 'Tiles', ['6pgp2full', 'gp2', 'full', 'package', '6x']);
     add('GP2FULL', 'ROE GP2.6 Full LED tile 500×1000mm', totalWithSpares, 'Tiles', ['gp2full', 'gp2.6', 'full', 'tile', '500x1000', 'graphite', 'spare']);

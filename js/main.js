@@ -373,18 +373,13 @@ function generateWall() {
   hasFractionalInput = (blocksVerRaw % 1) !== 0;
 
   if (hasFractionalInput && productType === 'ROEGP26Full') {
-    // Only use fractional auto-rows when the manual checkbox is NOT checked.
-    // When the checkbox is active the user has explicitly specified half rows,
-    // so the fractional part of V is treated as a display convenience only.
-    const checkboxAlreadyChecked = document.getElementById('gp2HalfCheckbox')?.checked;
-    if (!checkboxAlreadyChecked) {
-      // Extract fractional part (e.g., 0.5 from 4.5)
-      const fractionalPart = blocksVerRaw % 1;
+    // Extract fractional part (e.g., 0.5 from 4.5)
+    const fractionalPart = blocksVerRaw % 1;
 
-      // Convert fractional part to GP2 Half rows
-      // 0.5 = 1 Half row (since 2 Half rows = 1 Full row height)
-      gp2HalfAutoRows = Math.round(fractionalPart * 2);
-    }
+    // Convert fractional part to GP2 Half rows
+    // 0.5 = 1 Half row (since 2 Half rows = 1 Full row height)
+    // 1.0 = 2 Half rows, 1.5 = 3 Half rows, etc.
+    gp2HalfAutoRows = Math.round(fractionalPart * 2);
   }
 
   const groundSupport = document.getElementById('groundSupport').checked;
