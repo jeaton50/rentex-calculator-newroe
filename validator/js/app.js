@@ -194,6 +194,38 @@ async function handleFile(file, type) {
         state.fileType = type;   // 'pdf' or 'excel' — used in runValidation
         state.parsedItems = parseLineItems(text);
 
+        // Rentex Excel format: SKU\tDescription\tQty\tPrice\tExtended
+        // parseLineItems sees col1 as a description string (not a number) so Pattern B
+        // misses the qty entirely, or falls back to the last column (price = 0).
+        // Scan col2 directly when col1 is non-numeric and col2 is a valid qty.
+        if (type === 'excel' && text.includes('\t')) {
+            const colQtyMap = new Map();
+            for (const line of text.split('\n')) {
+                if (!line.includes('\t')) continue;
+                const cols = line.split('\t').map(c => c.trim());
+                if (cols.length < 3) continue;
+                const sku = cols[0].toUpperCase();
+                if (!/^[A-Z0-9]{3,16}$/.test(sku) || !/[A-Z]/.test(sku)) continue;
+                if (!/^\d+$/.test(cols[1]) && /^\d+$/.test(cols[2])) {
+                    const qty = parseInt(cols[2]);
+                    if (qty > 0 && qty < 10000) {
+                        if (colQtyMap.has(sku)) colQtyMap.get(sku).qty += qty;
+                        else colQtyMap.set(sku, { qty, raw: line });
+                    }
+                }
+            }
+            if (colQtyMap.size > 0) {
+                for (const item of state.parsedItems) {
+                    if (colQtyMap.has(item.sku)) item.qty = colQtyMap.get(item.sku).qty;
+                }
+                for (const [sku, { qty, raw }] of colQtyMap) {
+                    if (!state.parsedItems.find(i => i.sku === sku)) {
+                        state.parsedItems.push({ qty, sku, raw });
+                    }
+                }
+            }
+        }
+
         // Auto-detect wall configuration
         const product = detectProduct(text);
         const { H, V } = detectDimensions(text);
