@@ -415,6 +415,7 @@ const CURVE_OPTIONS = {
 function updateCurveOptions(preserveValue) {
     const prod = $('sel-product').value;
     const sel  = $('sel-curve');
+    if (!sel) return;
     const opts = CURVE_OPTIONS[prod] || ['Flat', 'Concave', 'Convex'];
     const current = preserveValue || sel.value;
     sel.innerHTML = opts.map(o => `<option value="${o}"${o === current ? ' selected' : ''}>${o}</option>`).join('');
@@ -452,7 +453,7 @@ function updateAdvancedVisibility() {
 
     $('row-bp-variant').style.display = prod === 'ROEBP' ? '' : 'none';
     $('row-gp2-half').style.display = prod === 'ROEGP26Full' ? '' : 'none';
-    $('row-blank').style.display = isROE ? '' : 'none';
+    $('row-blank').style.display = '';
     $('row-ground-mode').style.display = supType === 'Ground' ? '' : 'none';
     $('row-curve').style.display = prod ? '' : 'none';
     updateCurveOptions();
@@ -485,7 +486,7 @@ function runValidation() {
         voltage:         parseInt($('sel-voltage').value),
         groundSupportType: $('sel-ground-mode').value,
         bpVariant:       $('sel-bp-variant').value,
-        curveType:       $('sel-curve').value || 'Flat',
+        curveType:       ($('sel-curve') && $('sel-curve').value) || 'Flat',
         gp2HalfRows:     parseInt($('inp-gp2-half').value) || 0,
         blankRows:       parseInt($('inp-blank').value)    || 0,
         dataCableOverride:   state.detectedDataCable  || null,
