@@ -253,15 +253,16 @@ async function handleFile(file, type) {
         // Detect the Equipment (SKU) and Ordered (qty) columns from the header row,
         // then rebuild parsedItems directly from those exact columns.
         // Allows 2-char SKUs like "S8" that the generic SKU pattern would otherwise skip.
+        let excelSkuCol = -1, excelQtyCol = -1; // hoisted so _detectedFullTiles block can use them
         if (type === 'excel') {
-            let skuCol = -1, qtyCol = -1;
             for (const line of text.split('\n')) {
                 if (!line.includes('\t')) continue;
                 const h = line.split('\t').map(c => c.trim().toLowerCase());
                 const ei = h.indexOf('equipment');
                 const oi = h.indexOf('ordered');
-                if (ei !== -1 && oi !== -1) { skuCol = ei; qtyCol = oi; break; }
+                if (ei !== -1 && oi !== -1) { excelSkuCol = ei; excelQtyCol = oi; break; }
             }
+            const skuCol = excelSkuCol, qtyCol = excelQtyCol;
 
             const seen = new Set();
             for (const line of text.split('\n')) {
@@ -342,25 +343,25 @@ async function handleFile(file, type) {
             if (item.sku === 'GP2HALF' && !/spare/i.test(item.raw)) state._detectedHalfTiles += item.qty;
         }
 
-        // Excel fallback: Rentex Excel format is SKU\tDescription\tQty\tPrice\tExtended.
-        // parseLineItems Pattern B may grab the Extended Price column as qty when prices are
-        // whole numbers (e.g. "36000"), producing a wildly wrong tile count. Always read col2
-        // directly for tab-separated text so the actual Qty column is used.
-        if (text.includes('\t') && product === 'ROEGP26Full') {
+        // Excel: recount active-only GP2 tiles using the correct named columns.
+        // The parsedItems qty for GP2FULL/GP2HALF is the SUM of active+spare rows
+        // (excelQtyForSKU adds all matching rows), so using it to infer V gives V=3
+        // instead of V=2 for a 10×2 wall with spares. Read each row directly, skip
+        // rows whose description contains "spare", and sum only the active qty.
+        if (text.includes('\t') && product === 'ROEGP26Full' && excelSkuCol >= 0 && excelQtyCol >= 0) {
             let excelFullTiles = 0, excelHalfTiles = 0;
             for (const line of text.split('\n')) {
                 const cols = line.split('\t').map(c => c.trim());
-                if (cols.length >= 3) {
-                    const sku = cols[0].toUpperCase();
-                    const qty = parseInt(cols[2]);
-                    // qty < 10000 guards against accidentally picking up a large price value
-                    if (!isNaN(qty) && qty > 0 && qty < 10000 && !/spare/i.test(line)) {
-                        if (sku === 'GP2FULL') excelFullTiles += qty;
-                        if (sku === 'GP2HALF') excelHalfTiles += qty;
-                    }
+                if (cols.length <= Math.max(excelSkuCol, excelQtyCol)) continue;
+                const sku = cols[excelSkuCol].toUpperCase();
+                const desc = cols[3] || ''; // Description is col 3 in Rentex RTPro
+                if (/spare/i.test(desc)) continue; // skip spare rows
+                const qty = parseInt(cols[excelQtyCol]);
+                if (!isNaN(qty) && qty > 0 && qty < 10000) {
+                    if (sku === 'GP2FULL') excelFullTiles += qty;
+                    if (sku === 'GP2HALF') excelHalfTiles += qty;
                 }
             }
-            // Always override parsedItems result for these SKUs — col2 is authoritative
             if (excelFullTiles > 0) state._detectedFullTiles = excelFullTiles;
             if (excelHalfTiles > 0) state._detectedHalfTiles = excelHalfTiles;
         }
