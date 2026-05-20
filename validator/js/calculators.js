@@ -304,14 +304,14 @@ function calcROEGP26Full(H, V, opts = {}) {
     if (proc.XD10 > 0) add('XD10',     'Brompton Tessera XD10G',       proc.XD10, 'Processor', ['xd10', 'brompton', 'distribution']);
     if (proc.SX40 > 0) add('ECONRJ45', "Ethercon to RJ45 (CAT6) 100'", proc.SX40, 'Processor', ['econrj45', 'rj45', 'ethercon', 'cat6']);
 
-    // Truss hardware
+    // Truss hardware — ground only (not needed when flown)
     const hw = roeHardware(H, V, 1.0, gp2HalfRows, blankRows, true);
-    add('BPGPREAR1', 'ROE BP2/GP2 rear truss 1m', hw.rearTruss, 'Hardware', ['bpgprear1', 'rear truss', '1m', '1 meter', 'roe']);
-    add('BPGPREAR05', 'ROE BP2/GP2 rear truss 0.5m', hw.rearHalf, 'Hardware', ['bpgprear05', 'rear truss', '0.5m', 'half meter', 'roe']);
-    add('BPGPBRIDGE', 'ROE BP2/GP2 rear bridge clamp', hw.rearBridge, 'Hardware', ['bpgpbridge', 'rear bridge', 'bridge clamp', 'roe']);
 
     if (supportType === 'Ground') {
-        add('BPGPUBT', 'ROE BP2/GP2 universal base truss', hw.universalBaseTruss, 'Hardware', ['bpgpubt', 'universal base truss', 'roe', 'base truss']);
+        add('BPGPUBT',    'ROE BP2/GP2 universal base truss',  hw.universalBaseTruss, 'Hardware', ['bpgpubt', 'universal base truss', 'roe', 'base truss']);
+        add('BPGPREAR1',  'ROE BP2/GP2 rear truss 1m',         hw.rearTruss,          'Hardware', ['bpgprear1', 'rear truss', '1m', '1 meter', 'roe']);
+        add('BPGPREAR05', 'ROE BP2/GP2 rear truss 0.5m',       hw.rearHalf,           'Hardware', ['bpgprear05', 'rear truss', '0.5m', 'half meter', 'roe']);
+        add('BPGPBRIDGE', 'ROE BP2/GP2 rear bridge clamp',     hw.rearBridge,         'Hardware', ['bpgpbridge', 'rear bridge', 'bridge clamp', 'roe']);
         const singleBases = groundSupportType === 'Double Base' ? H % 2 : H;
         const doubleBases = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
         add('GP2BASE1', 'ROE Graphite GP base bar, 1W', singleBases, 'Hardware', ['gp2base1', 'base bar', '1w', 'graphite', 'gp']);
@@ -399,12 +399,12 @@ function calcROEBlackPearl(H, V, opts = {}) {
 
     // Truss hardware (BP tile = 0.5m tall)
     const hw = roeHardware(H, V, 0.5, 0, blankRows, false);
-    add('BPGPREAR1', 'ROE BP2/GP2 rear truss 1m', hw.rearTruss, 'Hardware', ['bpgprear1', 'rear truss', '1m', 'roe']);
-    add('BPGPREAR05', 'ROE BP2/GP2 rear truss 0.5m', hw.rearHalf, 'Hardware', ['bpgprear05', 'rear truss', '0.5m', 'half meter']);
-    add('BPGPBRIDGE', 'ROE BP2/GP2 rear bridge clamp', hw.rearBridge, 'Hardware', ['bpgpbridge', 'rear bridge', 'bridge clamp']);
 
     if (supportType === 'Ground') {
-        add('BPGPUBT', 'ROE BP2/GP2 universal base truss', hw.universalBaseTruss, 'Hardware', ['bpgpubt', 'universal base truss', 'roe', 'base truss']);
+        add('BPGPUBT',    'ROE BP2/GP2 universal base truss',  hw.universalBaseTruss, 'Hardware', ['bpgpubt', 'universal base truss', 'roe', 'base truss']);
+        add('BPGPREAR1',  'ROE BP2/GP2 rear truss 1m',         hw.rearTruss,          'Hardware', ['bpgprear1', 'rear truss', '1m', 'roe']);
+        add('BPGPREAR05', 'ROE BP2/GP2 rear truss 0.5m',       hw.rearHalf,           'Hardware', ['bpgprear05', 'rear truss', '0.5m', 'half meter']);
+        add('BPGPBRIDGE', 'ROE BP2/GP2 rear bridge clamp',     hw.rearBridge,         'Hardware', ['bpgpbridge', 'rear bridge', 'bridge clamp']);
         const singleBases = groundSupportType === 'Double Base' ? H % 2 : H;
         const doubleBases = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
         add('BPBOBB1', 'ROE Black Pearl base bar, 1W, 0.5m', singleBases, 'Hardware', ['bpbobb1', 'base bar', '0.5m', '1w', 'black pearl']);
@@ -492,14 +492,14 @@ function calcROEGP26Half(H, V, opts = {}) {
     if (proc.SX40 > 0) add('SX40', 'Brompton Tessera SX40', proc.SX40, 'Processor', ['sx40', 'brompton', 'tessera']);
     if (proc.XD10 > 0) add('XD10', 'Brompton Tessera XD10G', proc.XD10, 'Processor', ['xd10', 'brompton', 'distribution']);
 
-    // Truss hardware (same as BP, 0.5m tile height)
+    // Truss hardware — ground only (not needed when flown)
     const hw = roeHardware(H, V, 0.5, 0, blankRows, false);
-    add('BPGPREAR1', 'ROE BP2/GP2 rear truss 1m', hw.rearTruss, 'Hardware', ['bpgprear1', 'rear truss', '1m', 'roe']);
-    add('BPGPREAR05', 'ROE BP2/GP2 rear truss 0.5m', hw.rearHalf, 'Hardware', ['bpgprear05', 'rear truss', '0.5m']);
-    add('BPGPBRIDGE', 'ROE BP2/GP2 rear bridge clamp', hw.rearBridge, 'Hardware', ['bpgpbridge', 'rear bridge', 'bridge clamp']);
 
     if (supportType === 'Ground') {
-        add('BPGPUBT', 'ROE BP2/GP2 universal base truss', hw.universalBaseTruss, 'Hardware', ['bpgpubt', 'universal base truss', 'roe']);
+        add('BPGPUBT',    'ROE BP2/GP2 universal base truss',  hw.universalBaseTruss, 'Hardware', ['bpgpubt', 'universal base truss', 'roe']);
+        add('BPGPREAR1',  'ROE BP2/GP2 rear truss 1m',         hw.rearTruss,          'Hardware', ['bpgprear1', 'rear truss', '1m', 'roe']);
+        add('BPGPREAR05', 'ROE BP2/GP2 rear truss 0.5m',       hw.rearHalf,           'Hardware', ['bpgprear05', 'rear truss', '0.5m']);
+        add('BPGPBRIDGE', 'ROE BP2/GP2 rear bridge clamp',     hw.rearBridge,         'Hardware', ['bpgpbridge', 'rear bridge', 'bridge clamp']);
         const singleBases = groundSupportType === 'Double Base' ? H % 2 : H;
         const doubleBases = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
         add('GP2BASE1', 'ROE Graphite GP base bar, 1W', singleBases, 'Hardware', ['gp2base1', 'base bar', '1w', 'graphite', 'gp']);
