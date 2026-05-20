@@ -158,7 +158,7 @@ function calcGP26Sandbags(productType, H, V, gp2HalfRows) {
 // ABSEN PL2.5
 // ============================================================
 function calcAbsen(H, V, opts = {}) {
-    const { supportType = 'Ground', voltage = 208, groundSupportType = 'Single Base', curveType = 'Flat', edisonCableOverride = null } = opts;
+    const { supportType = 'Ground', voltage = 208, groundSupportType = 'Single Base', flySupportType = 'Single Header', curveType = 'Flat', edisonCableOverride = null } = opts;
     const items = [];
     const add = (sku, desc, qty, cat, kw) => {
         if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
@@ -217,8 +217,8 @@ function calcAbsen(H, V, opts = {}) {
         const sandbags = Math.ceil(sbTable[Math.max(0, idx)] * baseCount / 1.0525);
         add('SANDBAG25', 'Sand Bag 25 lbs.', sandbags, 'Hardware', ['sandbag', 'sand bag', '25']);
     } else {
-        const singleHeaders = groundSupportType === 'Double Base' ? H % 2 : H;
-        const doubleHeaders = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
+        const singleHeaders = flySupportType === 'Double Header' ? H % 2 : H;
+        const doubleHeaders = flySupportType === 'Double Header' ? Math.floor(H / 2) : 0;
         add('PL25HEAD1', 'Absen PL2.5 header, 1W, 0.5m', singleHeaders, 'Hardware', ['pl25head1', 'header', '1w']);
         add('PL25HEAD2', 'Absen PL2.5 header, 2W, 1m', doubleHeaders, 'Hardware', ['pl25head2', 'header', '2w']);
     }
@@ -261,7 +261,7 @@ function calcAbsen(H, V, opts = {}) {
 // ROE GP2.6 FULL
 // ============================================================
 function calcROEGP26Full(H, V, opts = {}) {
-    const { supportType = 'Ground', voltage = 208, gp2HalfRows = 0, blankRows = 0, groundSupportType = 'Single Base', edisonCableOverride = null } = opts;
+    const { supportType = 'Ground', voltage = 208, gp2HalfRows = 0, blankRows = 0, groundSupportType = 'Single Base', flySupportType = 'Single Header', edisonCableOverride = null } = opts;
     const items = [];
     const add = (sku, desc, qty, cat, kw) => {
         if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
@@ -318,8 +318,8 @@ function calcROEGP26Full(H, V, opts = {}) {
         add('GP2BASE2', 'ROE Graphite GP base bar, 2W', doubleBases, 'Hardware', ['gp2base2', 'base bar', '2w', 'graphite', 'gp']);
         add('SANDBAG25', 'Sand Bag 25 lbs.', calcGP26Sandbags('ROEGP26Full', H, V, gp2HalfRows), 'Hardware', ['sandbag', 'sand bag', '25']);
     } else {
-        const singleHeaders = groundSupportType === 'Double Base' ? H % 2 : H;
-        const doubleHeaders = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
+        const singleHeaders = flySupportType === 'Double Header' ? H % 2 : H;
+        const doubleHeaders = flySupportType === 'Double Header' ? Math.floor(H / 2) : 0;
         add('GP2HEAD1', 'ROE Graphite GP hanging bar, 1W', singleHeaders, 'Hardware', ['gp2head1', 'hanging bar', '1w', 'header']);
         add('GP2HEAD2', 'ROE Graphite GP hanging bar, 2W', doubleHeaders, 'Hardware', ['gp2head2', 'hanging bar', '2w', 'header']);
     }
@@ -367,7 +367,7 @@ function calcROEGP26Full(H, V, opts = {}) {
 // ROE BLACK PEARL (BP2)
 // ============================================================
 function calcROEBlackPearl(H, V, opts = {}) {
-    const { supportType = 'Ground', voltage = 208, blankRows = 0, groundSupportType = 'Single Base', bpVariant = 'BP2V2', curveType = 'Flat', edisonCableOverride = null } = opts;
+    const { supportType = 'Ground', voltage = 208, blankRows = 0, groundSupportType = 'Single Base', flySupportType = 'Single Header', bpVariant = 'BP2V2', curveType = 'Flat', edisonCableOverride = null } = opts;
     const items = [];
     const add = (sku, desc, qty, cat, kw) => {
         if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
@@ -417,8 +417,8 @@ function calcROEBlackPearl(H, V, opts = {}) {
         const bpSandbags = Math.ceil(bpSbTable[Math.max(0, bpSbIdx)] * (singleBases + doubleBases));
         add('SANDBAG25', 'Sand Bag 25 lbs.', bpSandbags, 'Hardware', ['sandbag', 'sand bag', '25']);
     } else {
-        const bpSingleHeaders = groundSupportType === 'Double Base' ? H % 2 : H;
-        const bpDoubleHeaders = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
+        const bpSingleHeaders = flySupportType === 'Double Header' ? H % 2 : H;
+        const bpDoubleHeaders = flySupportType === 'Double Header' ? Math.floor(H / 2) : 0;
         add('BPBOHEAD1', 'ROE Black Pearl header, 1W, 0.5m', bpSingleHeaders, 'Hardware', ['bpbohead1', 'header', '1w', '0.5m', 'black pearl']);
         add('BPBOHEAD2', 'ROE Black Pearl header, 2W, 1m', bpDoubleHeaders, 'Hardware', ['bpbohead2', 'header', '2w', '1m', 'black pearl']);
     }
@@ -475,7 +475,7 @@ function calcROEBlackPearl(H, V, opts = {}) {
 // ROE GP2.6 HALF (standalone)
 // ============================================================
 function calcROEGP26Half(H, V, opts = {}) {
-    const { supportType = 'Ground', voltage = 208, blankRows = 0, groundSupportType = 'Single Base', curveType = 'Flat', edisonCableOverride = null } = opts;
+    const { supportType = 'Ground', voltage = 208, blankRows = 0, groundSupportType = 'Single Base', flySupportType = 'Single Header', curveType = 'Flat', edisonCableOverride = null } = opts;
     const items = [];
     const add = (sku, desc, qty, cat, kw) => {
         if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
@@ -509,8 +509,8 @@ function calcROEGP26Half(H, V, opts = {}) {
         add('GP2BASE2', 'ROE Graphite GP base bar, 2W', doubleBases, 'Hardware', ['gp2base2', 'base bar', '2w', 'graphite', 'gp']);
         add('SANDBAG25', 'Sand Bag 25 lbs.', calcGP26Sandbags('ROEGP26Half', H, V, 0), 'Hardware', ['sandbag', 'sand bag', '25']);
     } else {
-        const singleHeaders = groundSupportType === 'Double Base' ? H % 2 : H;
-        const doubleHeaders = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
+        const singleHeaders = flySupportType === 'Double Header' ? H % 2 : H;
+        const doubleHeaders = flySupportType === 'Double Header' ? Math.floor(H / 2) : 0;
         add('GP2HEAD1', 'ROE Graphite GP hanging bar, 1W', singleHeaders, 'Hardware', ['gp2head1', 'hanging bar', '1w', 'header']);
         add('GP2HEAD2', 'ROE Graphite GP hanging bar, 2W', doubleHeaders, 'Hardware', ['gp2head2', 'hanging bar', '2w', 'header']);
     }
@@ -552,7 +552,7 @@ function calcROEGP26Half(H, V, opts = {}) {
 // THEATRIXX NOMAD 2.6
 // ============================================================
 function calcTheatrixx(H, V, opts = {}) {
-    const { supportType = 'Ground', voltage = 208, groundSupportType = 'Single Base', curveType = 'Flat' } = opts;
+    const { supportType = 'Ground', voltage = 208, groundSupportType = 'Single Base', flySupportType = 'Single Header', curveType = 'Flat' } = opts;
     const items = [];
     const add = (sku, desc, qty, cat, kw) => {
         if (qty > 0) items.push({ sku, desc, qty, category: cat, keywords: kw || [] });
@@ -618,8 +618,8 @@ function calcTheatrixx(H, V, opts = {}) {
         add('SANDBAG25', 'Sand Bag 25 lbs.', sandbags, 'Hardware', ['sandbag', 'sand bag', '25']);
 
     } else {
-        const txSingleHeaders = groundSupportType === 'Double Base' ? H % 2 : H;
-        const txDoubleHeaders = groundSupportType === 'Double Base' ? Math.floor(H / 2) : 0;
+        const txSingleHeaders = flySupportType === 'Double Header' ? H % 2 : H;
+        const txDoubleHeaders = flySupportType === 'Double Header' ? Math.floor(H / 2) : 0;
         add('TXSNGLHEAD', 'Theatrixx Nomad single header', txSingleHeaders, 'Hardware', ['txsnglhead', 'single header', 'theatrixx']);
         add('TXDBLHEAD',  'Theatrixx Nomad double header', txDoubleHeaders, 'Hardware', ['txdblhead', 'double header', 'theatrixx']);
     }
