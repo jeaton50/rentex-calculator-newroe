@@ -11,6 +11,7 @@ const state = {
     supportType: 'Ground',
     voltage: 208,
     groundSupportType: 'Single Base',
+    flySupportType: 'Single Header',
     bpVariant: 'BP2V2',
     curveType: 'Flat',
     gp2HalfRows: 0,
@@ -332,6 +333,20 @@ async function handleFile(file, type) {
             for (const s of grndSKUs) { if (rawUp.includes(s)) { state.supportType = 'Ground'; break; } }
         }
 
+        // Auto-detect fly header mode (single vs double) when wall is flown
+        const dblHeaderSKUs = new Set(['GP2HEAD2', 'BPBOHEAD2', 'TXDBLHEAD', 'PL25HEAD2']);
+        if (state.supportType === 'Fly') {
+            let dblFound = false;
+            for (const item of state.parsedItems) {
+                if (dblHeaderSKUs.has(item.sku)) { dblFound = true; break; }
+            }
+            if (!dblFound) {
+                const rawUp2 = text.toUpperCase();
+                for (const s of dblHeaderSKUs) { if (rawUp2.includes(s)) { dblFound = true; break; } }
+            }
+            state.flySupportType = dblFound ? 'Double Header' : 'Single Header';
+        }
+
         // Auto-detect GP2Full + GP2Half active tile counts from parsed line items
         // (used in runValidation to fill V and gp2HalfRows when H is entered manually)
         state._detectedFullTiles = 0;
@@ -505,6 +520,7 @@ function populateConfigForm() {
     $('sel-support').value = state.supportType;
     $('sel-voltage').value = state.voltage;
     $('sel-ground-mode').value = state.groundSupportType;
+    $('sel-fly-mode').value = state.flySupportType || 'Single Header';
     $('sel-bp-variant').value = state.bpVariant;
     $('inp-gp2-half').value = state.gp2HalfRows;
     $('inp-blank').value = state.blankRows;
@@ -564,6 +580,7 @@ function updateAdvancedVisibility() {
     $('row-gp2-half').style.display = prod === 'ROEGP26Full' ? '' : 'none';
     $('row-blank').style.display = '';
     $('row-ground-mode').style.display = supType === 'Ground' ? '' : 'none';
+    $('row-fly-mode').style.display    = supType === 'Fly'    ? '' : 'none';
     $('row-curve').style.display = prod ? '' : 'none';
     updateCurveOptions();
 }
@@ -594,6 +611,7 @@ function runValidation() {
         supportType:     $('sel-support').value,
         voltage:         parseInt($('sel-voltage').value),
         groundSupportType: $('sel-ground-mode').value,
+        flySupportType:  $('sel-fly-mode').value,
         bpVariant:       $('sel-bp-variant').value,
         curveType:       ($('sel-curve') && $('sel-curve').value) || 'Flat',
         gp2HalfRows:     parseInt($('inp-gp2-half').value) || 0,
