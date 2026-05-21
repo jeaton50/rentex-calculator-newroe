@@ -115,9 +115,9 @@ function excelQtyForSKU(text, sku) {
 
     let total = 0;
     for (const line of text.split('\n')) {
-        const l = line.trim();
-        if (!l || !l.includes('\t')) continue;
-        const cols = l.split('\t').map(c => c.trim());
+        if (!line.includes('\t')) continue;
+        const cols = line.split('\t').map(c => c.trim());
+        if (cols.every(c => !c)) continue;
 
         if (skuCol >= 0 && qtyCol >= 0) {
             // Named-column format (Rentex RTPro): exact column positions
@@ -272,9 +272,9 @@ async function handleFile(file, type) {
 
             const seen = new Set();
             for (const line of text.split('\n')) {
-                const l = line.trim();
-                if (!l || !l.includes('\t')) continue;
-                const cols = l.split('\t').map(c => c.trim());
+                if (!line.includes('\t')) continue;
+                const cols = line.split('\t').map(c => c.trim());
+                if (cols.every(c => !c)) continue;
 
                 let sku;
                 if (skuCol >= 0) {
