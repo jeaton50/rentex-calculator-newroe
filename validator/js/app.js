@@ -294,7 +294,7 @@ async function handleFile(file, type) {
                     seen.add(sku);
                     const existing = state.parsedItems.find(i => i.sku === sku);
                     if (existing) existing.qty = qty;
-                    else state.parsedItems.push({ qty, sku, raw: l });
+                    else state.parsedItems.push({ qty, sku, raw: line });
                 }
             }
         }
