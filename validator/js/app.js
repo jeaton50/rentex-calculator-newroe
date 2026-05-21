@@ -254,14 +254,19 @@ async function handleFile(file, type) {
         // Detect the Equipment (SKU) and Ordered (qty) columns from the header row,
         // then rebuild parsedItems directly from those exact columns.
         // Allows 2-char SKUs like "S8" that the generic SKU pattern would otherwise skip.
-        let excelSkuCol = -1, excelQtyCol = -1; // hoisted so _detectedFullTiles block can use them
+        let excelSkuCol = -1, excelQtyCol = -1, excelPriceCol = -1; // hoisted for later blocks
         if (type === 'excel') {
             for (const line of text.split('\n')) {
                 if (!line.includes('\t')) continue;
                 const h = line.split('\t').map(c => c.trim().toLowerCase());
                 const ei = h.indexOf('equipment');
                 const oi = h.indexOf('ordered');
-                if (ei !== -1 && oi !== -1) { excelSkuCol = ei; excelQtyCol = oi; break; }
+                if (ei !== -1 && oi !== -1) {
+                    excelSkuCol = ei;
+                    excelQtyCol = oi;
+                    excelPriceCol = h.indexOf('actual price'); // col O in Rentex RTPro
+                    break;
+                }
             }
             const skuCol = excelSkuCol, qtyCol = excelQtyCol;
 
@@ -303,6 +308,18 @@ async function handleFile(file, type) {
         state.H = H;
         state.V = V;
         state.wallCount = detectWallCount(text);
+
+        // Excel: detect multi-wall orders from "Wall N" section headers (e.g. "Wall 1", "Wall 2").
+        // Rentex RTPro exports each wall as a named group — count the highest wall number.
+        if (type === 'excel' && state.wallCount <= 1) {
+            const wallNums = new Set();
+            for (const line of text.split('\n')) {
+                const m = line.match(/\bWall\s+(\d+)\b/i);
+                if (m) wallNums.add(parseInt(m[1]));
+            }
+            if (wallNums.size > 1) state.wallCount = Math.max(...wallNums);
+        }
+
         state.supportType = supportType;
         state.voltage = voltage;
 
@@ -388,16 +405,39 @@ async function handleFile(file, type) {
             }
         }
 
-        // Infer the missing dimension from tile count when the other is already known
-        const _tiles = product === 'ROEGP26Full' ? state._detectedFullTiles : state._detectedActiveTiles;
-        if (_tiles > 0) {
-            if (!state.H && state.V > 0) state.H = Math.round(_tiles / state.V);
-            if (!state.V && state.H > 0) state.V = Math.round(_tiles / state.H);
+        // Excel: refine active tile count using the Actual Price column.
+        // Spare/comp rows have the same SKU and description as active rows but price=0.
+        // Summing all rows via parsedItems inflates the count; reading price-positive rows
+        // gives the true active tile count needed for correct V inference.
+        if (text.includes('\t') && product !== 'ROEGP26Full' && excelSkuCol >= 0 && excelQtyCol >= 0 && excelPriceCol >= 0) {
+            const excelTileSKUs = new Set(['PL25', 'BP2V2', 'BP2B1', 'BP2B2', 'TXNOMAD26', 'GP2HALF']);
+            let excelActiveTiles = 0;
+            for (const line of text.split('\n')) {
+                const cols = line.split('\t').map(c => c.trim());
+                if (cols.length <= Math.max(excelSkuCol, excelQtyCol, excelPriceCol)) continue;
+                const sku = cols[excelSkuCol].toUpperCase();
+                if (!excelTileSKUs.has(sku)) continue;
+                const priceStr = cols[excelPriceCol];
+                if (priceStr !== '' && parseFloat(priceStr) === 0) continue; // spare row
+                const qty = parseInt(cols[excelQtyCol]);
+                if (!isNaN(qty) && qty > 0) excelActiveTiles += qty;
+            }
+            if (excelActiveTiles > 0) state._detectedActiveTiles = excelActiveTiles;
         }
 
-        // GP2Full half rows (uses state.H which may have just been auto-filled above)
+        // Infer the missing dimension from tile count when the other is already known.
+        // For multi-wall Excel orders, divide total tile count by wallCount first.
+        const _tiles = product === 'ROEGP26Full' ? state._detectedFullTiles : state._detectedActiveTiles;
+        if (_tiles > 0) {
+            const tilesPerWall = state.wallCount > 1 ? Math.round(_tiles / state.wallCount) : _tiles;
+            if (!state.H && state.V > 0) state.H = Math.round(tilesPerWall / state.V);
+            if (!state.V && state.H > 0) state.V = Math.round(tilesPerWall / state.H);
+        }
+
+        // GP2Full half rows — account for multi-wall when dividing by H
         if (product === 'ROEGP26Full' && state.H > 0 && state._detectedHalfTiles > 0) {
-            state.gp2HalfRows = Math.round(state._detectedHalfTiles / state.H);
+            const halfPerWall = state.wallCount > 1 ? Math.round(state._detectedHalfTiles / state.wallCount) : state._detectedHalfTiles;
+            state.gp2HalfRows = Math.round(halfPerWall / state.H);
         }
 
         // Auto-detect blank/dummy rows — match by SKU pattern or description keywords
@@ -597,10 +637,12 @@ function runValidation() {
     if (!product) { setStatus('Please select a product type.', 'error'); return; }
     if (!H) { setStatus('Please enter the tile width (H).', 'error'); return; }
 
-    // For GP2Full walls: auto-compute V and gp2HalfRows from detected tile counts if not set
+    // For GP2Full walls: auto-compute V from detected tile counts if not set.
+    // Divide by wallCount first for multi-wall Excel orders.
     if (product === 'ROEGP26Full' && H > 0) {
         if (!V && state._detectedFullTiles > 0) {
-            V = Math.round(state._detectedFullTiles / H);
+            const fullPerWall = wallCount > 1 ? Math.round(state._detectedFullTiles / wallCount) : state._detectedFullTiles;
+            V = Math.round(fullPerWall / H);
             $('inp-v').value = V;
         }
     }
