@@ -588,6 +588,7 @@ const EquipmentCalculator = {
       voltage,
       gp2HalfBottomRow,
       gp2HalfRows,
+      gp2HalfRowSpareOverride,
     } = config;
 
     // Data cables distance estimate
@@ -654,7 +655,10 @@ const EquipmentCalculator = {
       const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows;
 
       // GP2 Half: same percentage formula as Black Pearl, rounded to nearest multiple of 12
-      const halfSparesCable = window.calcSpares(gp2HalfTilesNeeded, 12, 1.5);
+      // (unless the user has overridden the spare count via the slider)
+      const halfSparesCable = (gp2HalfRowSpareOverride !== null && gp2HalfRowSpareOverride !== undefined)
+        ? gp2HalfRowSpareOverride
+        : window.calcSpares(gp2HalfTilesNeeded, 12, 1.5);
       const gp2HalfWithSpares = gp2HalfTilesNeeded + halfSparesCable;
 
       totalTilesWithSparesIncludingHalf = totalTilesWithSpares + gp2HalfWithSpares;
@@ -1237,6 +1241,7 @@ function addROEGP26Equipment(config, tbody) {
     gp2HalfBottomRow,
     gp2HalfRows,
     gp2HalfPosition,
+    gp2HalfRowSpareOverride,
     gp2FullVerticalBlocks,
     gp2FullRowManualRows = 0,
     gp2FullRowManualPosition = 'bottom',
@@ -1289,7 +1294,10 @@ function addROEGP26Equipment(config, tbody) {
       const gp2HalfTilesNeeded = horizontalBlocks * gp2HalfRows;
 
       // GP2 Half: same percentage formula as Black Pearl, rounded to nearest multiple of 12
-      const gp2HalfSpares = window.calcSpares(gp2HalfTilesNeeded, 12, 1.5);
+      // (unless the user has overridden the spare count via the slider)
+      const gp2HalfSpares = (gp2HalfRowSpareOverride !== null && gp2HalfRowSpareOverride !== undefined)
+        ? gp2HalfRowSpareOverride
+        : window.calcSpares(gp2HalfTilesNeeded, 12, 1.5);
       const gp2HalfWithSpare = gp2HalfTilesNeeded + gp2HalfSpares;
       const gp2HalfSpareTiles = gp2HalfSpares;
       const halfActiveCases = Math.ceil(gp2HalfTilesNeeded / 12);
@@ -1846,6 +1854,7 @@ function displayEquipment(data) {
     const gp2HalfBottomRow = data.gp2HalfBottomRow || false;
     const gp2HalfRows = data.gp2HalfRows || 0;
     const gp2HalfPosition = data.gp2HalfPosition || 'bottom';
+    const gp2HalfRowSpareOverride = (data.gp2HalfRowSpareOverride !== undefined) ? data.gp2HalfRowSpareOverride : null;
     const gp2FullVerticalBlocks = data.gp2FullVerticalBlocks || verticalBlocks;
     const gp2FullRowManualRows = data.gp2FullRowManualRows || 0;
     const gp2FullRowManualPosition = data.gp2FullRowManualPosition || 'bottom';
@@ -1934,6 +1943,7 @@ function displayEquipment(data) {
       voltage,
       gp2HalfBottomRow,
       gp2HalfRows,
+      gp2HalfRowSpareOverride,
     });
 
     const supportStructures = EquipmentCalculator.calculateSupportStructures({
@@ -2008,6 +2018,7 @@ function displayEquipment(data) {
       gp2HalfBottomRow,
       gp2HalfRows,
       gp2HalfPosition,
+      gp2HalfRowSpareOverride,
       gp2FullRowManualRows,
       gp2FullRowManualPosition,
       gp2FullVerticalBlocks,

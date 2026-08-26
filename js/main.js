@@ -456,6 +456,46 @@ function generateWall() {
   const gp2HalfBottomRow = (gp2HalfAutoRows > 0) || (gp2HalfManualRows > 0);
   const gp2HalfRows = gp2HalfAutoRows + gp2HalfManualRows; // Total for equipment calculations
 
+  // ROE GP2.6 Half (500x500mm) row spare tiles slider: covers the Half tiles
+  // added as extra rows onto a GP2.6 Full wall via "Add GP2.6 Half Row".
+  const gp2HalfRowSparesSliderContainer = document.getElementById('gp2HalfRowSparesSliderContainer');
+  const gp2HalfRowSparesSlider = document.getElementById('gp2HalfRowSparesSlider');
+  const gp2HalfRowSparesValueLabel = document.getElementById('gp2HalfRowSparesValue');
+  const gp2HalfRowSparesPresetLabel = document.getElementById('gp2HalfRowSparesPresetLabel');
+  let gp2HalfRowSpareOverride = null;
+
+  if (productType === 'ROEGP26Full' && gp2HalfBottomRow && gp2HalfRows > 0) {
+    const gp2HalfRowTilesNeeded = blocksHor * gp2HalfRows;
+    const presetGp2HalfRowSpares = calcSpares(gp2HalfRowTilesNeeded, 12, 1.5);
+
+    if (window.gp2HalfRowSparesPreset !== presetGp2HalfRowSpares) {
+      window.gp2HalfRowSparesPreset = presetGp2HalfRowSpares;
+      window.gp2HalfRowSparesOverride = null;
+    }
+
+    if (gp2HalfRowSparesSliderContainer) gp2HalfRowSparesSliderContainer.style.display = 'block';
+    if (gp2HalfRowSparesSlider) {
+      const maxGp2HalfRowSpares = Math.max(presetGp2HalfRowSpares * 2, presetGp2HalfRowSpares + 10, 10);
+      gp2HalfRowSparesSlider.min = 0;
+      gp2HalfRowSparesSlider.max = maxGp2HalfRowSpares;
+      const gp2HalfRowSliderValue = (window.gp2HalfRowSparesOverride !== null && window.gp2HalfRowSparesOverride !== undefined)
+        ? window.gp2HalfRowSparesOverride
+        : presetGp2HalfRowSpares;
+      gp2HalfRowSparesSlider.value = gp2HalfRowSliderValue;
+      if (gp2HalfRowSparesValueLabel) gp2HalfRowSparesValueLabel.textContent = gp2HalfRowSliderValue;
+      if (gp2HalfRowSparesPresetLabel) {
+        gp2HalfRowSparesPresetLabel.textContent = gp2HalfRowSliderValue === presetGp2HalfRowSpares
+          ? `Preset (${presetGp2HalfRowSpares})`
+          : `Preset: ${presetGp2HalfRowSpares}`;
+      }
+      gp2HalfRowSpareOverride = gp2HalfRowSliderValue;
+    }
+  } else {
+    if (gp2HalfRowSparesSliderContainer) gp2HalfRowSparesSliderContainer.style.display = 'none';
+    window.gp2HalfRowSparesOverride = null;
+    window.gp2HalfRowSparesPreset = null;
+  }
+
   // Check if GP2 Full Row is enabled via manual checkbox (additive full rows)
   const gp2FullRowCheckboxElement = document.getElementById('gp2FullRowCheckbox');
   const gp2FullRowCountElement = document.getElementById('gp2FullRowCount');
@@ -711,6 +751,7 @@ function generateWall() {
     gp2HalfAutoRows,
     gp2HalfManualRows,
     gp2HalfManualPosition,
+    gp2HalfRowSpareOverride,
     gp2FullVerticalBlocks, // Reduced GP2 Full blocks (after replacing top rows with Half)
     gp2FullRowManualRows,
     gp2FullRowManualPosition,
@@ -2537,6 +2578,17 @@ document.addEventListener('DOMContentLoaded', () => {
   if (graphiteMixFullSparesSliderInput) {
     graphiteMixFullSparesSliderInput.addEventListener('input', function () {
       window.graphiteMixFullSparesOverride = parseInt(this.value, 10);
+      if (typeof generateWall === 'function') {
+        generateWall();
+      }
+    });
+  }
+
+  // ROE GP2.6 Half (500x500mm) row spare tiles slider (for "Add GP2.6 Half Row" on a Full wall)
+  const gp2HalfRowSparesSliderInput = document.getElementById('gp2HalfRowSparesSlider');
+  if (gp2HalfRowSparesSliderInput) {
+    gp2HalfRowSparesSliderInput.addEventListener('input', function () {
+      window.gp2HalfRowSparesOverride = parseInt(this.value, 10);
       if (typeof generateWall === 'function') {
         generateWall();
       }
