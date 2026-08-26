@@ -1877,9 +1877,10 @@ function displayEquipment(data) {
     }
 
     const heightWarning = document.getElementById("blockVerticalWarning")?.textContent || "";
-    const sourceSignalCount = parseInt(document.getElementById("sourceSignals")?.value || 1, 10);
-    const redundancyType = document.getElementById("redundancy")?.value || "None";
-    const selectedDistroType = document.getElementById("powerDistroType")?.value || "Auto";
+    // Use data object values when available (multiscreen mode), fall back to DOM for backward compatibility
+    const sourceSignalCount = data.sourceSignalCount ?? parseInt(document.getElementById("sourceSignals")?.value || 1, 10);
+    const redundancyType = data.redundancyType ?? document.getElementById("redundancy")?.value ?? "None";
+    const selectedDistroType = data.selectedDistroType ?? document.getElementById("powerDistroType")?.value ?? "Auto";
     const companyLabel = document.getElementById("companyName")?.value || "Rentex";
 
     if (heightWarning === "***EXCEEDS LIMIT, MUST FLY***") {
