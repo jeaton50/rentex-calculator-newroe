@@ -282,6 +282,33 @@
                 </div>
               </div>
             </div>
+
+            <!-- Spare tile sliders (Half and Full are separate spare pools) -->
+            <div id="graphiteMixHalfSparesSliderContainer" style="margin-top:10px; display:none;">
+              <label for="graphiteMixHalfSparesSlider">
+                <strong>Half Tile Spares:</strong> <span id="graphiteMixHalfSparesValue">0</span>
+              </label>
+              <input type="range" id="graphiteMixHalfSparesSlider" name="graphiteMixHalfSparesSlider" min="0"
+                max="0" value="0" step="1" style="width:100%;">
+              <div style="display:flex; justify-content:space-between; font-size:11px; color:#666;">
+                <span>&larr; Fewer spares</span>
+                <span id="graphiteMixHalfSparesPresetLabel">Preset</span>
+                <span>More spares &rarr;</span>
+              </div>
+            </div>
+
+            <div id="graphiteMixFullSparesSliderContainer" style="margin-top:10px; display:none;">
+              <label for="graphiteMixFullSparesSlider">
+                <strong>Full Tile Spares:</strong> <span id="graphiteMixFullSparesValue">0</span>
+              </label>
+              <input type="range" id="graphiteMixFullSparesSlider" name="graphiteMixFullSparesSlider" min="0"
+                max="0" value="0" step="1" style="width:100%;">
+              <div style="display:flex; justify-content:space-between; font-size:11px; color:#666;">
+                <span>&larr; Fewer spares</span>
+                <span id="graphiteMixFullSparesPresetLabel">Preset</span>
+                <span>More spares &rarr;</span>
+              </div>
+            </div>
           </div>
         </div>
 
