@@ -445,6 +445,20 @@
             </select>
           </div>
 
+          <!-- ROE GP2.6 Half (500x500mm) row spare tiles slider -->
+          <div id="gp2HalfRowSparesSliderContainer" style="margin-top:10px; display:none;">
+            <label for="gp2HalfRowSparesSlider">
+              <strong>500x500 Half Row Spares:</strong> <span id="gp2HalfRowSparesValue">0</span>
+            </label>
+            <input type="range" id="gp2HalfRowSparesSlider" name="gp2HalfRowSparesSlider" min="0" max="0"
+              value="0" step="1" style="width:100%;">
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:#666;">
+              <span>&larr; Fewer spares</span>
+              <span id="gp2HalfRowSparesPresetLabel">Preset</span>
+              <span>More spares &rarr;</span>
+            </div>
+          </div>
+
           <!-- GP2 Full Row Option (for GP2.6 Full) -->
           <div style="margin-top: 8px;">
             <input type="checkbox" id="gp2FullRowCheckbox" name="gp2FullRowCheckbox">
