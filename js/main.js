@@ -524,6 +524,74 @@ function generateWall() {
       fullSpares = fullTilesWithSpares - fullTiles;
     }
 
+    // Spare tile sliders: let the user nudge each pool's spare count up/down
+    // from its calculated preset, independently for Half and Full tiles.
+    const halfSparesSliderContainer = document.getElementById('graphiteMixHalfSparesSliderContainer');
+    const halfSparesSlider = document.getElementById('graphiteMixHalfSparesSlider');
+    const halfSparesValueLabel = document.getElementById('graphiteMixHalfSparesValue');
+    const halfSparesPresetLabel = document.getElementById('graphiteMixHalfSparesPresetLabel');
+
+    const presetHalfSpares = halfSpares;
+    if (window.graphiteMixHalfSparesPreset !== presetHalfSpares) {
+      window.graphiteMixHalfSparesPreset = presetHalfSpares;
+      window.graphiteMixHalfSparesOverride = null;
+    }
+    if (halfTiles > 0) {
+      if (halfSparesSliderContainer) halfSparesSliderContainer.style.display = 'block';
+      if (halfSparesSlider) {
+        const maxHalfSpares = Math.max(presetHalfSpares * 2, presetHalfSpares + 10, 10);
+        halfSparesSlider.min = 0;
+        halfSparesSlider.max = maxHalfSpares;
+        const halfSliderValue = (window.graphiteMixHalfSparesOverride !== null && window.graphiteMixHalfSparesOverride !== undefined)
+          ? window.graphiteMixHalfSparesOverride
+          : presetHalfSpares;
+        halfSparesSlider.value = halfSliderValue;
+        if (halfSparesValueLabel) halfSparesValueLabel.textContent = halfSliderValue;
+        if (halfSparesPresetLabel) {
+          halfSparesPresetLabel.textContent = halfSliderValue === presetHalfSpares ? `Preset (${presetHalfSpares})` : `Preset: ${presetHalfSpares}`;
+        }
+        halfSpares = halfSliderValue;
+        halfTilesWithSpares = halfTiles + halfSpares;
+      }
+    } else {
+      if (halfSparesSliderContainer) halfSparesSliderContainer.style.display = 'none';
+      window.graphiteMixHalfSparesOverride = null;
+      window.graphiteMixHalfSparesPreset = null;
+    }
+
+    const fullSparesSliderContainer = document.getElementById('graphiteMixFullSparesSliderContainer');
+    const fullSparesSlider = document.getElementById('graphiteMixFullSparesSlider');
+    const fullSparesValueLabel = document.getElementById('graphiteMixFullSparesValue');
+    const fullSparesPresetLabel = document.getElementById('graphiteMixFullSparesPresetLabel');
+
+    const presetFullSpares = fullSpares;
+    if (window.graphiteMixFullSparesPreset !== presetFullSpares) {
+      window.graphiteMixFullSparesPreset = presetFullSpares;
+      window.graphiteMixFullSparesOverride = null;
+    }
+    if (fullTiles > 0) {
+      if (fullSparesSliderContainer) fullSparesSliderContainer.style.display = 'block';
+      if (fullSparesSlider) {
+        const maxFullSpares = Math.max(presetFullSpares * 2, presetFullSpares + 10, 10);
+        fullSparesSlider.min = 0;
+        fullSparesSlider.max = maxFullSpares;
+        const fullSliderValue = (window.graphiteMixFullSparesOverride !== null && window.graphiteMixFullSparesOverride !== undefined)
+          ? window.graphiteMixFullSparesOverride
+          : presetFullSpares;
+        fullSparesSlider.value = fullSliderValue;
+        if (fullSparesValueLabel) fullSparesValueLabel.textContent = fullSliderValue;
+        if (fullSparesPresetLabel) {
+          fullSparesPresetLabel.textContent = fullSliderValue === presetFullSpares ? `Preset (${presetFullSpares})` : `Preset: ${presetFullSpares}`;
+        }
+        fullSpares = fullSliderValue;
+        fullTilesWithSpares = fullTiles + fullSpares;
+      }
+    } else {
+      if (fullSparesSliderContainer) fullSparesSliderContainer.style.display = 'none';
+      window.graphiteMixFullSparesOverride = null;
+      window.graphiteMixFullSparesPreset = null;
+    }
+
     // Store Graphite Mix data
     graphiteMixData = {
       halfHorizontal,
@@ -543,6 +611,16 @@ function generateWall() {
     totalSpares = halfSpares + fullSpares;
     totalBlocksWithSpares = totalBlocks + totalSpares;
   } else {
+    // Mix mode is off - hide/reset its spare sliders.
+    const halfSparesSliderContainerOff = document.getElementById('graphiteMixHalfSparesSliderContainer');
+    const fullSparesSliderContainerOff = document.getElementById('graphiteMixFullSparesSliderContainer');
+    if (halfSparesSliderContainerOff) halfSparesSliderContainerOff.style.display = 'none';
+    if (fullSparesSliderContainerOff) fullSparesSliderContainerOff.style.display = 'none';
+    window.graphiteMixHalfSparesOverride = null;
+    window.graphiteMixHalfSparesPreset = null;
+    window.graphiteMixFullSparesOverride = null;
+    window.graphiteMixFullSparesPreset = null;
+
     // Normal mode: standard spare calculation
     // For GP2 Full with GP2 Half enabled, use the reduced Full tile count
     const actualVerticalBlocks = (productType === 'ROEGP26Full' && gp2HalfBottomRow) ? gp2FullVerticalBlocks : blocksVer;
@@ -566,6 +644,49 @@ function generateWall() {
       totalSpares = calcSpares(totalBlocks, productType === "theatrixx" ? 10 : 8, productType === "theatrixx" ? 2 : 1.5);
       totalBlocksWithSpares = totalSpares + totalBlocks;
     }
+  }
+
+  // ROE Graphite (GP2.6) spare tiles slider: let the user nudge the spare
+  // count up/down from the calculated preset for the standard (non-mix) modes.
+  const isGraphiteProduct = productType === 'ROEGP26Full' || productType === 'ROEGP26Half';
+  const graphiteSparesSliderContainer = document.getElementById('graphiteSparesSliderContainer');
+  const graphiteSparesSlider = document.getElementById('graphiteSparesSlider');
+  const graphiteSparesValue = document.getElementById('graphiteSparesValue');
+  const graphiteSparesPresetLabel = document.getElementById('graphiteSparesPresetLabel');
+
+  if (isGraphiteProduct && !roeGraphiteMixEnabled) {
+    const presetSpares = totalSpares;
+
+    if (window.graphiteSparesPreset !== presetSpares) {
+      // Preset changed (tile count/product changed) - reset any manual override.
+      window.graphiteSparesPreset = presetSpares;
+      window.graphiteSparesOverride = null;
+    }
+
+    if (graphiteSparesSliderContainer) graphiteSparesSliderContainer.style.display = 'block';
+
+    if (graphiteSparesSlider) {
+      const maxSpares = Math.max(presetSpares * 2, presetSpares + 10, 10);
+      graphiteSparesSlider.min = 0;
+      graphiteSparesSlider.max = maxSpares;
+
+      const sliderValue = (window.graphiteSparesOverride !== null && window.graphiteSparesOverride !== undefined)
+        ? window.graphiteSparesOverride
+        : presetSpares;
+      graphiteSparesSlider.value = sliderValue;
+
+      if (graphiteSparesValue) graphiteSparesValue.textContent = sliderValue;
+      if (graphiteSparesPresetLabel) {
+        graphiteSparesPresetLabel.textContent = sliderValue === presetSpares ? `Preset (${presetSpares})` : `Preset: ${presetSpares}`;
+      }
+
+      totalSpares = sliderValue;
+      totalBlocksWithSpares = totalBlocks + totalSpares;
+    }
+  } else {
+    if (graphiteSparesSliderContainer) graphiteSparesSliderContainer.style.display = 'none';
+    window.graphiteSparesOverride = null;
+    window.graphiteSparesPreset = null;
   }
 
   const requestData = {
@@ -2384,6 +2505,38 @@ document.addEventListener('DOMContentLoaded', () => {
         if (blockInputs) blockInputs.style.display = 'block';
       }
 
+      if (typeof generateWall === 'function') {
+        generateWall();
+      }
+    });
+  }
+
+  // ROE Graphite spare tiles slider
+  const graphiteSparesSliderInput = document.getElementById('graphiteSparesSlider');
+  if (graphiteSparesSliderInput) {
+    graphiteSparesSliderInput.addEventListener('input', function () {
+      window.graphiteSparesOverride = parseInt(this.value, 10);
+      if (typeof generateWall === 'function') {
+        generateWall();
+      }
+    });
+  }
+
+  // ROE Graphite Mix spare tile sliders (Half and Full tiles have separate spare pools)
+  const graphiteMixHalfSparesSliderInput = document.getElementById('graphiteMixHalfSparesSlider');
+  if (graphiteMixHalfSparesSliderInput) {
+    graphiteMixHalfSparesSliderInput.addEventListener('input', function () {
+      window.graphiteMixHalfSparesOverride = parseInt(this.value, 10);
+      if (typeof generateWall === 'function') {
+        generateWall();
+      }
+    });
+  }
+
+  const graphiteMixFullSparesSliderInput = document.getElementById('graphiteMixFullSparesSlider');
+  if (graphiteMixFullSparesSliderInput) {
+    graphiteMixFullSparesSliderInput.addEventListener('input', function () {
+      window.graphiteMixFullSparesOverride = parseInt(this.value, 10);
       if (typeof generateWall === 'function') {
         generateWall();
       }
