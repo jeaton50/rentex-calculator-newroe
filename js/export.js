@@ -62,10 +62,16 @@ const ExportManager = {
       voltage: (config.powerDistroType == '110') ? 110 : 208,
       wallType: config.wallType,
       powerDistro: config.powerDistroType,
+      selectedDistroType: config.powerDistroType,
       gp2HalfBottomRow,
       gp2HalfRows,
       gp2HalfPosition,
-      gp2FullVerticalBlocks: blocksVerWhole
+      gp2FullVerticalBlocks: blocksVerWhole,
+      // Include redundancy and source signals for processor calculations
+      redundancyType: config.redundancy || 'None',
+      sourceSignalCount: config.sourceSignals || 1,
+      // Include dummy tile settings (blankRows is how equipment.js expects it)
+      blankRows: (config.dummyTiles && config.dummyTileCount > 0) ? config.dummyTileCount : 0
     };
 
     // Use equipment collector to gather items
