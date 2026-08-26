@@ -304,6 +304,20 @@
           <div id="dimensionVerticalWarning" class="warning"></div>
         </div>
 
+        <!-- ROE Graphite (GP2.6) spare tiles slider -->
+        <div id="graphiteSparesSliderContainer" style="margin-top:10px; margin-bottom:15px; display:none;">
+          <label for="graphiteSparesSlider">
+            <strong>Spare Tiles:</strong> <span id="graphiteSparesValue">0</span>
+          </label>
+          <input type="range" id="graphiteSparesSlider" name="graphiteSparesSlider" min="0" max="0" value="0"
+            step="1" style="width:100%;">
+          <div style="display:flex; justify-content:space-between; font-size:11px; color:#666;">
+            <span>&larr; Fewer spares</span>
+            <span id="graphiteSparesPresetLabel">Preset</span>
+            <span>More spares &rarr;</span>
+          </div>
+        </div>
+
         <!-- Add a new checkbox for Multiple Screen Management above the Advanced Options -->
         <div id="multipleScreenManagementContainer" style="margin-top:0px;">
           <input type="checkbox" id="multipleScreenManagementCheckbox" name="multipleScreenManagementCheckbox">

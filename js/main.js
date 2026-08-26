@@ -568,6 +568,49 @@ function generateWall() {
     }
   }
 
+  // ROE Graphite (GP2.6) spare tiles slider: let the user nudge the spare
+  // count up/down from the calculated preset for the standard (non-mix) modes.
+  const isGraphiteProduct = productType === 'ROEGP26Full' || productType === 'ROEGP26Half';
+  const graphiteSparesSliderContainer = document.getElementById('graphiteSparesSliderContainer');
+  const graphiteSparesSlider = document.getElementById('graphiteSparesSlider');
+  const graphiteSparesValue = document.getElementById('graphiteSparesValue');
+  const graphiteSparesPresetLabel = document.getElementById('graphiteSparesPresetLabel');
+
+  if (isGraphiteProduct && !roeGraphiteMixEnabled) {
+    const presetSpares = totalSpares;
+
+    if (window.graphiteSparesPreset !== presetSpares) {
+      // Preset changed (tile count/product changed) - reset any manual override.
+      window.graphiteSparesPreset = presetSpares;
+      window.graphiteSparesOverride = null;
+    }
+
+    if (graphiteSparesSliderContainer) graphiteSparesSliderContainer.style.display = 'block';
+
+    if (graphiteSparesSlider) {
+      const maxSpares = Math.max(presetSpares * 2, presetSpares + 10, 10);
+      graphiteSparesSlider.min = 0;
+      graphiteSparesSlider.max = maxSpares;
+
+      const sliderValue = (window.graphiteSparesOverride !== null && window.graphiteSparesOverride !== undefined)
+        ? window.graphiteSparesOverride
+        : presetSpares;
+      graphiteSparesSlider.value = sliderValue;
+
+      if (graphiteSparesValue) graphiteSparesValue.textContent = sliderValue;
+      if (graphiteSparesPresetLabel) {
+        graphiteSparesPresetLabel.textContent = sliderValue === presetSpares ? `Preset (${presetSpares})` : `Preset: ${presetSpares}`;
+      }
+
+      totalSpares = sliderValue;
+      totalBlocksWithSpares = totalBlocks + totalSpares;
+    }
+  } else {
+    if (graphiteSparesSliderContainer) graphiteSparesSliderContainer.style.display = 'none';
+    window.graphiteSparesOverride = null;
+    window.graphiteSparesPreset = null;
+  }
+
   const requestData = {
     productType,
     blocksHor,
@@ -2384,6 +2427,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (blockInputs) blockInputs.style.display = 'block';
       }
 
+      if (typeof generateWall === 'function') {
+        generateWall();
+      }
+    });
+  }
+
+  // ROE Graphite spare tiles slider
+  const graphiteSparesSliderInput = document.getElementById('graphiteSparesSlider');
+  if (graphiteSparesSliderInput) {
+    graphiteSparesSliderInput.addEventListener('input', function () {
+      window.graphiteSparesOverride = parseInt(this.value, 10);
       if (typeof generateWall === 'function') {
         generateWall();
       }
