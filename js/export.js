@@ -9,49 +9,97 @@
 const ExportManager = {
 
   /**
-   * Get equipment list for a specific screen configuration
-   * Used in multi-screen mode to gather equipment for each screen
+   * Resolve a screen configuration into the same request object generateWall()
+   * hands to displayEquipment(). This is the single source of truth for a
+   * screen's specs — tile counts, spares, GP2 row layout, power inputs — so the
+   * per-screen headers, the per-screen equipment lists, the combined totals and
+   * the Excel/PDF exports all describe the same wall.
    * @param {Object} config - Screen configuration object
-   * @returns {Array} Array of equipment items with ecode, name, and quantity
+   * @returns {Object|null} Request data for displayEquipment, or null
    */
-  getEquipmentForScreen(config) {
-    if (!config) return [];
+  getScreenSpec(config) {
+    if (!config) return null;
 
-    // Mirror generateWall()'s GP2 Half detection logic:
-    // Fractional blocksVer (e.g. 5.5) means auto half-rows; manual checkbox is additive.
+    const productType = config.productType;
+    const blocksHor = parseInt(config.blocksHor, 10) || 0;
+
+    // ---- Mirror generateWall()'s GP2 row detection -------------------------
+    // Fractional blocksVer (e.g. 5.5) means auto Half rows; the manual
+    // checkbox is additive on top of that.
     const blocksVerRaw = parseFloat(config.blocksVer) || 0;
     const blocksVerWhole = Math.floor(blocksVerRaw);
-    const hasFractional = config.productType === 'ROEGP26Full' && (blocksVerRaw % 1) !== 0;
-    const gp2HalfAutoRows = hasFractional ? Math.round((blocksVerRaw % 1) * 2) : 0;
-    const gp2HalfManualRows = (config.gp2HalfEnabled && config.productType === 'ROEGP26Full')
-      ? (config.gp2HalfCount || 1) : 0;
+    const isGP2Full = productType === 'ROEGP26Full';
+    const hasFractional = (blocksVerRaw % 1) !== 0;
+
+    // Only GP2.6 Full turns a fractional height into Half rows; for every other
+    // product generateWall() just carries the fraction through as the display height.
+    const gp2HalfAutoRows = (isGP2Full && hasFractional) ? Math.round((blocksVerRaw % 1) * 2) : 0;
+    const gp2HalfManualRows = (config.gp2HalfEnabled && isGP2Full)
+      ? (parseInt(config.gp2HalfCount, 10) || 1) : 0;
     const gp2HalfRows = gp2HalfAutoRows + gp2HalfManualRows;
     const gp2HalfBottomRow = gp2HalfRows > 0;
     const gp2HalfPosition = config.gp2HalfPosition || 'bottom';
 
-    // totalBlocks must use whole-number rows only (half tiles are tracked separately)
-    const totalBlocks = config.blocksHor * blocksVerWhole;
-    const sparePercentage = config.productType === 'theatrixx' ? 10 : 8;
-    const spareFactor = config.productType === 'theatrixx' ? 2 : 1.5;
+    // Additional whole GP2 Full rows (separate checkbox)
+    const gp2FullRowManualRows = (config.gp2FullRowEnabled && isGP2Full)
+      ? (parseInt(config.gp2FullRowCount, 10) || 1) : 0;
+    const gp2FullRowManualPosition = config.gp2FullRowPosition || 'bottom';
 
-    let totalSpares;
-    if (typeof Calculator !== 'undefined' && Calculator.calculateSpares) {
-      totalSpares = Calculator.calculateSpares(totalBlocks, sparePercentage, spareFactor);
-    } else if (typeof calcSpares === 'function') {
-      totalSpares = calcSpares(totalBlocks, sparePercentage, spareFactor);
-    } else {
-      // Fallback calculation
-      const sparesPercent = Math.ceil(totalBlocks * (sparePercentage / 100));
-      totalSpares = sparesPercent;
+    // generateWall() hands equipment.js the *display* height (whole Full rows
+    // plus half-height rows plus any extra Full rows), not the raw whole count.
+    let displayBlocksVer = hasFractional ? blocksVerRaw : blocksVerWhole;
+    if (gp2HalfManualRows > 0) {
+      displayBlocksVer = blocksVerWhole + (gp2HalfAutoRows / 2) + (gp2HalfManualRows / 2);
+    }
+    if (gp2FullRowManualRows > 0) {
+      displayBlocksVer = displayBlocksVer + gp2FullRowManualRows;
     }
 
-    const totalBlocksWithSpares = totalSpares + totalBlocks;
+    // ---- Tile / spare totals ----------------------------------------------
+    // These must come from the same Calculator helpers generateWall() uses, or
+    // the per-screen tile counts will not match the main equipment list.
+    const roeGraphiteMixEnabled = !!config.roeGraphiteMixEnabled;
+    let graphiteMixData = null;
+    let totalBlocks;
+    let totalSpares;
+    let totalBlocksWithSpares;
 
-    // Build request data for equipment calculation
+    if (roeGraphiteMixEnabled && typeof Calculator !== 'undefined' && Calculator.calculateGraphiteMixTotals) {
+      graphiteMixData = Calculator.calculateGraphiteMixTotals({
+        halfHorizontal: config.halfHorizontal,
+        halfVertical: config.halfVertical,
+        fullHorizontal: config.fullHorizontal,
+        fullVertical: config.fullVertical,
+        halfSpareOverride: config.mixHalfSpareOverride,
+        fullSpareOverride: config.mixFullSpareOverride
+      });
+      totalBlocks = graphiteMixData.halfTiles + graphiteMixData.fullTiles;
+      totalSpares = graphiteMixData.halfSpares + graphiteMixData.fullSpares;
+      totalBlocksWithSpares = totalBlocks + totalSpares;
+    } else {
+      // Half rows replace Full rows, so the Full tile count uses whole rows only.
+      totalBlocks = blocksHor * blocksVerWhole;
+
+      // The spare-tiles slider only applies to the standard (non-mix) Graphite modes.
+      const isGraphiteProduct = isGP2Full || productType === 'ROEGP26Half';
+      const spareOverride = isGraphiteProduct ? (config.spareOverride ?? null) : null;
+
+      if (typeof Calculator !== 'undefined' && Calculator.calculateTileTotals) {
+        const totals = Calculator.calculateTileTotals({ productType, totalBlocks, spareOverride });
+        totalSpares = totals.totalSpares;
+        totalBlocksWithSpares = totals.totalBlocksWithSpares;
+      } else {
+        // Fallback: percentage formula (matches non-Graphite products)
+        totalSpares = Math.ceil(totalBlocks * ((productType === 'theatrixx' ? 10 : 8) / 100));
+        totalBlocksWithSpares = totalBlocks + totalSpares;
+      }
+    }
+
+    // ---- Build the same request object generateWall() builds ---------------
     const requestData = {
-      productType: config.productType,
-      blocksHor: config.blocksHor,
-      blocksVer: blocksVerWhole,
+      productType,
+      blocksHor,
+      blocksVer: displayBlocksVer,
       totalBlocks,
       totalSpares,
       totalBlocksWithSpares,
@@ -65,14 +113,37 @@ const ExportManager = {
       selectedDistroType: config.powerDistroType,
       gp2HalfBottomRow,
       gp2HalfRows,
+      gp2HalfAutoRows,
+      gp2HalfManualRows,
       gp2HalfPosition,
+      gp2HalfManualPosition: gp2HalfPosition,
+      gp2HalfRowSpareOverride: (isGP2Full && gp2HalfRows > 0)
+        ? (config.gp2HalfRowSpareOverride ?? null)
+        : null,
       gp2FullVerticalBlocks: blocksVerWhole,
-      // Include redundancy and source signals for processor calculations
+      gp2FullRowManualRows,
+      gp2FullRowManualPosition,
+      roeGraphiteMixEnabled,
+      graphiteMixData,
+      // Redundancy and source signals for processor calculations
       redundancyType: config.redundancy || 'None',
       sourceSignalCount: config.sourceSignals || 1,
-      // Include dummy tile settings (blankRows is how equipment.js expects it)
+      // Dummy tile settings (blankRows is how equipment.js expects it)
       blankRows: (config.dummyTiles && config.dummyTileCount > 0) ? config.dummyTileCount : 0
     };
+
+    return requestData;
+  },
+
+  /**
+   * Get equipment list for a specific screen configuration
+   * Used in multi-screen mode to gather equipment for each screen
+   * @param {Object} config - Screen configuration object
+   * @returns {Array} Array of equipment items with ecode, name, and quantity
+   */
+  getEquipmentForScreen(config) {
+    const requestData = this.getScreenSpec(config);
+    if (!requestData) return [];
 
     // Use equipment collector to gather items
     window.equipmentCollector = [];
@@ -163,11 +234,17 @@ const ExportManager = {
           const screenKeys = [];
           for (const item of screenEquipment) {
             if (item.quantity > 0) {
-              const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
+              // Merge on the normalized name so per-screen descriptive suffixes
+              // (case splits, row placement) don't split one ecode across rows.
+              const key = MultiScreenManager.combinedEquipmentKey(item);
               screenKeys.push(key);
 
               if (!combinedEquipment[key]) {
-                combinedEquipment[key] = { ecode: item.ecode, name: item.name, quantity: 0 };
+                combinedEquipment[key] = {
+                  ecode: item.ecode,
+                  name: MultiScreenManager.normalizeEquipmentName(item.name),
+                  quantity: 0
+                };
                 // Insert at the position right after the last known preceding neighbor
                 let insertIdx = combinedEquipmentOrder.length;
                 for (let i = screenKeys.length - 2; i >= 0; i--) {
@@ -389,9 +466,14 @@ const ExportManager = {
         screenEquipment.forEach(item => {
           const qty = Number(item.quantity);
           if (qty > 0) {
-            const key = `${item.ecode.trim()}|${item.name.trim()}`;
+            const key = MultiScreenManager.combinedEquipmentKey(item);
             if (!combinedEquipment[key]) {
-              combinedEquipment[key] = { ecode: item.ecode, name: item.name, quantity: 0, weight: Number(item.weight) || 0 };
+              combinedEquipment[key] = {
+                ecode: item.ecode,
+                name: MultiScreenManager.normalizeEquipmentName(item.name),
+                quantity: 0,
+                weight: Number(item.weight) || 0
+              };
             }
             combinedEquipment[key].quantity += qty;
           }
@@ -1260,6 +1342,7 @@ if (typeof window !== 'undefined') {
   window.exportEquipmentPDF = () => ExportManager.exportToPDF();
   window.exportCombinedPDF  = () => ExportManager.exportCombinedPDF();
   window.getEquipmentForScreen = (config) => ExportManager.getEquipmentForScreen(config);
+  window.getScreenSpec = (config) => ExportManager.getScreenSpec(config);
 }
 
 // Export for module systems

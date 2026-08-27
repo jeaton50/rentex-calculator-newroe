@@ -541,28 +541,22 @@ function generateWall() {
     const fullHorizontal = parseInt(document.getElementById('fullHorizontal')?.value || 0, 10);
     const fullVertical = parseInt(document.getElementById('fullVertical')?.value || 0, 10);
 
-    const halfTiles = halfHorizontal * halfVertical;
-    const fullTiles = fullHorizontal * fullVertical;
+    // Preset spare counts come from the shared Calculator helper so the main
+    // list and the multi-screen per-screen lists always agree.
+    const mixPreset = Calculator.calculateGraphiteMixTotals({
+      halfHorizontal,
+      halfVertical,
+      fullHorizontal,
+      fullVertical
+    });
 
-    // Calculate spares for each type
-    // GP2 Half: same percentage formula as Black Pearl, rounded to nearest multiple of 12
-    let halfTilesWithSpares = 0;
-    let halfSpares = 0;
-    if (halfTiles > 0) {
-      halfSpares = calcSpares(halfTiles, 12, 1.5);
-      halfTilesWithSpares = halfTiles + halfSpares;
-    }
+    const halfTiles = mixPreset.halfTiles;
+    const fullTiles = mixPreset.fullTiles;
 
-    // GP2 Full: packages of 6
-    const fullPackageSize = 6;
-    let fullTilesWithSpares = 0;
-    let fullSpares = 0;
-    if (fullTiles > 0) {
-      const fullActiveCases = Math.ceil(fullTiles / fullPackageSize);
-      const fullTotalCases = fullActiveCases + 1; // Guarantee at least 1 spare case
-      fullTilesWithSpares = fullTotalCases * fullPackageSize;
-      fullSpares = fullTilesWithSpares - fullTiles;
-    }
+    let halfSpares = mixPreset.presetHalfSpares;
+    let halfTilesWithSpares = halfTiles + halfSpares;
+    let fullSpares = mixPreset.presetFullSpares;
+    let fullTilesWithSpares = fullTiles + fullSpares;
 
     // Spare tile sliders: let the user nudge each pool's spare count up/down
     // from its calculated preset, independently for Half and Full tiles.
@@ -666,24 +660,11 @@ function generateWall() {
     const actualVerticalBlocks = (productType === 'ROEGP26Full' && gp2HalfBottomRow) ? gp2FullVerticalBlocks : blocksVer;
     totalBlocks = blocksHor * actualVerticalBlocks;
 
-    // GP2 products use package-based spare calculation (always add at least 1 spare case)
-    if (productType === 'ROEGP26Full') {
-      // GP2 Full: packages of 6, always add at least 1 spare case
-      const packageSize = 6;
-      const activeCases = Math.ceil(totalBlocks / packageSize);
-      const totalCases = activeCases + 1; // Guarantee at least 1 spare case
-      const roundedTotal = totalCases * packageSize;
-      totalSpares = roundedTotal - totalBlocks;
-      totalBlocksWithSpares = roundedTotal;
-    } else if (productType === 'ROEGP26Half') {
-      // GP2 Half: same percentage formula as Black Pearl, rounded to nearest multiple of 12
-      totalSpares = calcSpares(totalBlocks, 12, 1.5);
-      totalBlocksWithSpares = totalBlocks + totalSpares;
-    } else {
-      // Black Pearl, Theatrixx, etc: use original calcSpares function
-      totalSpares = calcSpares(totalBlocks, productType === "theatrixx" ? 10 : 8, productType === "theatrixx" ? 2 : 1.5);
-      totalBlocksWithSpares = totalSpares + totalBlocks;
-    }
+    // Product-specific spare rules live in Calculator.calculateTileTotals() so the
+    // main list and the multi-screen per-screen lists always agree.
+    const tileTotals = Calculator.calculateTileTotals({ productType, totalBlocks });
+    totalSpares = tileTotals.totalSpares;
+    totalBlocksWithSpares = tileTotals.totalBlocksWithSpares;
   }
 
   // ROE Graphite (GP2.6) spare tiles slider: let the user nudge the spare
@@ -751,6 +732,9 @@ function generateWall() {
     gp2HalfAutoRows,
     gp2HalfManualRows,
     gp2HalfManualPosition,
+    // equipment.js reads gp2HalfPosition; canvas.js reads gp2HalfManualPosition.
+    // Both must be sent or the equipment list ignores the user's position choice.
+    gp2HalfPosition: gp2HalfManualPosition,
     gp2HalfRowSpareOverride,
     gp2FullVerticalBlocks, // Reduced GP2 Full blocks (after replacing top rows with Half)
     gp2FullRowManualRows,
@@ -973,13 +957,23 @@ window.generateAllEquipment = function () {
       max-width: calc(33.33% - 20px);
     `;
 
-    const totalBlocks = config.blocksHor * config.blocksVer;
+    // Resolve the screen the same way the equipment builder does, so the header,
+    // the power summary and the equipment table below all describe one wall.
+    const screenSpec = (typeof getScreenSpec === 'function') ? getScreenSpec(config) : null;
     const productType = config.productType;
-    let voltage = (config.powerDistroType == "110") ? 110 : 208;
+    // Active tile count (whole Full rows only — Half rows are counted separately)
+    const totalBlocks = screenSpec ? screenSpec.totalBlocks : (config.blocksHor * config.blocksVer);
+    let voltage = screenSpec ? screenSpec.voltage : ((config.powerDistroType == "110") ? 110 : 208);
     let amps, watts;
 
     if (typeof EquipmentCalculator !== 'undefined' && EquipmentCalculator.calculatePower) {
-      const power = EquipmentCalculator.calculatePower(productType, totalBlocks, voltage, config);
+      const power = EquipmentCalculator.calculatePower(productType, totalBlocks, voltage, screenSpec ? {
+        gp2HalfBottomRow: screenSpec.gp2HalfBottomRow,
+        gp2HalfRows: screenSpec.gp2HalfRows,
+        horizontalBlocks: screenSpec.blocksHor,
+        roeGraphiteMixEnabled: screenSpec.roeGraphiteMixEnabled,
+        graphiteMixData: screenSpec.graphiteMixData
+      } : config);
       amps = power.amps || 0;
       watts = power.watts || 0;
     } else if (productType === "absen") {
@@ -1008,12 +1002,24 @@ window.generateAllEquipment = function () {
     combinedAmps += amps;
     combinedWatts += watts;
 
+    // Tile height differs by product: GP2.6 Full tiles are 1000mm (3.28'),
+    // every other tile is 500mm (1.64'). Width is 500mm for all of them.
+    const tileHeightFeet = (productType === 'ROEGP26Full') ? 3.28 : 1.64;
+    const displayBlocksVer = screenSpec ? screenSpec.blocksVer : config.blocksVer;
+    const dimensionsLabel = (screenSpec && screenSpec.roeGraphiteMixEnabled && screenSpec.graphiteMixData)
+      ? `${screenSpec.graphiteMixData.fullHorizontal} x ${screenSpec.graphiteMixData.fullVertical} Full + ` +
+        `${screenSpec.graphiteMixData.halfHorizontal} x ${screenSpec.graphiteMixData.halfVertical} Half tiles`
+      : `${config.blocksHor} x ${displayBlocksVer} tiles`;
+    const sizeLabel = (screenSpec && screenSpec.roeGraphiteMixEnabled)
+      ? ''
+      : `<div><strong>Size:</strong> ${(config.blocksHor * 1.64).toFixed(2)}' x ${(displayBlocksVer * tileHeightFeet).toFixed(2)}'</div>`;
+
     screenSection.innerHTML = `
       <h3>Screen ${config.id} Equipment</h3>
       <div class="screen-power-summary" style="margin-bottom: 15px; padding: 8px; background-color: #f0f0f0; border-radius: 5px;">
         <div><strong>Product Type:</strong> ${productType}</div>
-        <div><strong>Dimensions:</strong> ${config.blocksHor} x ${config.blocksVer} tiles</div>
-        <div><strong>Size:</strong> ${(config.blocksHor * 1.64).toFixed(2)}' x ${(config.blocksVer * 1.64).toFixed(2)}'</div>
+        <div><strong>Dimensions:</strong> ${dimensionsLabel}</div>
+        ${sizeLabel}
         <div><strong>Voltage:</strong> ${voltage}V</div>
         <div><strong>Amperage:</strong> ${amps.toFixed(2)}A</div>
         <div><strong>Power:</strong> ${watts.toFixed(2)}W</div>
@@ -1056,14 +1062,15 @@ window.generateAllEquipment = function () {
         screenTbody.appendChild(row);
         screenWeight += item.weight * item.quantity;
 
-        // Use full equipment name (matching Excel export) for merge key
-        const key = `${(item.ecode || '').trim()}|${(item.name || '').trim()}`;
+        // Merge on the normalized name (matching the Excel export) so per-screen
+        // descriptive suffixes don't split one ecode across several rows.
+        const key = MultiScreenManager.combinedEquipmentKey(item);
         screenKeys.push(key);
 
         if (!combinedEquipment[key]) {
           combinedEquipment[key] = {
             ecode: item.ecode,
-            name: item.name,
+            name: MultiScreenManager.normalizeEquipmentName(item.name),
             quantity: 0,
             weight: item.weight
           };

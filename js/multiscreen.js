@@ -27,6 +27,32 @@ class ScreenConfig {
     this.gp2HalfEnabled = false;
     this.gp2HalfCount = 1;
     this.gp2HalfPosition = 'bottom';
+
+    // GP2.6 Full additional-rows checkbox
+    this.gp2FullRowEnabled = false;
+    this.gp2FullRowCount = 1;
+    this.gp2FullRowPosition = 'bottom';
+
+    // ROE Graphite Mix mode (separate Half and Full tile blocks)
+    this.roeGraphiteMixEnabled = false;
+    this.halfHorizontal = 0;
+    this.halfVertical = 0;
+    this.fullHorizontal = 0;
+    this.fullVertical = 0;
+
+    // Spare tile slider overrides (null = use the calculated preset).
+    // These live on window.* while a screen is being edited, so they must be
+    // stored per screen or every screen would inherit the last one edited.
+    // Each override is stored with the preset it was taken against, because
+    // generateWall() discards an override whenever the preset changes.
+    this.spareOverride = null;              // graphiteSparesSlider (GP2.6 Full/Half)
+    this.spareOverridePreset = null;
+    this.gp2HalfRowSpareOverride = null;    // gp2HalfRowSparesSlider (Half rows on a Full wall)
+    this.gp2HalfRowSparePreset = null;
+    this.mixHalfSpareOverride = null;       // graphiteMixHalfSparesSlider
+    this.mixHalfSparePreset = null;
+    this.mixFullSpareOverride = null;       // graphiteMixFullSparesSlider
+    this.mixFullSparePreset = null;
   }
 }
 
@@ -111,6 +137,39 @@ const MultiScreenManager = {
       'T1025', 'T1003', 'EDT110M', 'TXT32ED6', 'TXT32T125'
     ];
     return cableEcodes.includes(ecode);
+  },
+
+  /**
+   * Normalize an equipment name for combined totals.
+   *
+   * Per-screen rows carry descriptive suffixes that vary by screen — the case
+   * split "(4 active + 1 spare)" and the row placement "(for top 2 rows)".
+   * Keying the combined totals on the raw name therefore emits the same ecode
+   * twice with split quantities, which is wrong on a pull sheet. Stripping the
+   * per-screen suffixes lets identical items merge, while "**SPARE**" (a
+   * genuinely separate line item) is preserved.
+   *
+   * @param {string} name - Equipment name from a per-screen list
+   * @returns {string} Name with per-screen descriptive suffixes removed
+   */
+  normalizeEquipmentName(name) {
+    return String(name || '')
+      .replace(/\s*\(\d+\s+active\s*\+\s*\d+\s+spare\)/gi, '')
+      .replace(/\s*\(for\s+(?:top|bottom)\s+\d+\s+rows?\)/gi, '')
+      .replace(/\s*\((?:top|bottom)\s+\d+\s+rows?\)/gi, '')
+      .replace(/\s*\(for\s+GP2\s+Half\s+(?:top|bottom)\s+row\)/gi, '')
+      .replace(/\s*\(Graphite Mix\)/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  },
+
+  /**
+   * Build the merge key used for combined equipment totals.
+   * @param {Object} item - Equipment item {ecode, name}
+   * @returns {string} Merge key
+   */
+  combinedEquipmentKey(item) {
+    return `${(item.ecode || '').trim()}|${this.normalizeEquipmentName(item.name)}`;
   },
 
   /**
@@ -350,6 +409,29 @@ const MultiScreenManager = {
       config.gp2HalfEnabled = document.getElementById('gp2HalfCheckbox')?.checked || false;
       config.gp2HalfCount = parseInt(document.getElementById('gp2HalfCount')?.value || 1, 10);
       config.gp2HalfPosition = document.getElementById('gp2HalfPosition')?.value || 'bottom';
+
+      // GP2 Full additional rows
+      config.gp2FullRowEnabled = document.getElementById('gp2FullRowCheckbox')?.checked || false;
+      config.gp2FullRowCount = parseInt(document.getElementById('gp2FullRowCount')?.value || 1, 10);
+      config.gp2FullRowPosition = document.getElementById('gp2FullRowPosition')?.value || 'bottom';
+
+      // ROE Graphite Mix mode
+      config.roeGraphiteMixEnabled = document.getElementById('roeGraphicMix')?.checked || false;
+      config.halfHorizontal = parseInt(document.getElementById('halfHorizontal')?.value || 0, 10);
+      config.halfVertical = parseInt(document.getElementById('halfVertical')?.value || 0, 10);
+      config.fullHorizontal = parseInt(document.getElementById('fullHorizontal')?.value || 0, 10);
+      config.fullVertical = parseInt(document.getElementById('fullVertical')?.value || 0, 10);
+
+      // Spare tile slider overrides (window globals are shared across screens,
+      // so snapshot them onto the screen being saved)
+      config.spareOverride = window.graphiteSparesOverride ?? null;
+      config.spareOverridePreset = window.graphiteSparesPreset ?? null;
+      config.gp2HalfRowSpareOverride = window.gp2HalfRowSparesOverride ?? null;
+      config.gp2HalfRowSparePreset = window.gp2HalfRowSparesPreset ?? null;
+      config.mixHalfSpareOverride = window.graphiteMixHalfSparesOverride ?? null;
+      config.mixHalfSparePreset = window.graphiteMixHalfSparesPreset ?? null;
+      config.mixFullSpareOverride = window.graphiteMixFullSparesOverride ?? null;
+      config.mixFullSparePreset = window.graphiteMixFullSparesPreset ?? null;
     }
   },
 
@@ -455,6 +537,51 @@ const MultiScreenManager = {
       if (gp2HalfCountInput) gp2HalfCountInput.value = config.gp2HalfCount || 1;
       if (gp2HalfPositionSelect) gp2HalfPositionSelect.value = config.gp2HalfPosition || 'bottom';
 
+      // GP2 Full additional rows — same ordering rule as GP2 Half above.
+      const gp2FullRowCheckbox = document.getElementById('gp2FullRowCheckbox');
+      const gp2FullRowCountInput = document.getElementById('gp2FullRowCount');
+      const gp2FullRowPositionSelect = document.getElementById('gp2FullRowPosition');
+      const gp2FullRowCountContainer = document.getElementById('gp2FullRowCountContainer');
+      if (gp2FullRowCheckbox) {
+        gp2FullRowCheckbox.checked = config.gp2FullRowEnabled || false;
+        if (gp2FullRowCountContainer) {
+          gp2FullRowCountContainer.style.display = config.gp2FullRowEnabled ? 'block' : 'none';
+        }
+      }
+      if (gp2FullRowCountInput) gp2FullRowCountInput.value = config.gp2FullRowCount || 1;
+      if (gp2FullRowPositionSelect) gp2FullRowPositionSelect.value = config.gp2FullRowPosition || 'bottom';
+
+      // ROE Graphite Mix mode
+      const roeGraphiteMixCheckbox = document.getElementById('roeGraphicMix');
+      const roeGraphiteMixInputs = document.getElementById('mixedTileInputs');
+      if (roeGraphiteMixCheckbox) {
+        roeGraphiteMixCheckbox.checked = config.roeGraphiteMixEnabled || false;
+        if (roeGraphiteMixInputs) {
+          roeGraphiteMixInputs.style.display = config.roeGraphiteMixEnabled ? 'block' : 'none';
+        }
+      }
+      const halfHorizontalEl = document.getElementById('halfHorizontal');
+      const halfVerticalEl = document.getElementById('halfVertical');
+      const fullHorizontalEl = document.getElementById('fullHorizontal');
+      const fullVerticalEl = document.getElementById('fullVertical');
+      if (halfHorizontalEl && config.halfHorizontal) halfHorizontalEl.value = config.halfHorizontal;
+      if (halfVerticalEl && config.halfVertical) halfVerticalEl.value = config.halfVertical;
+      if (fullHorizontalEl && config.fullHorizontal) fullHorizontalEl.value = config.fullHorizontal;
+      if (fullVerticalEl && config.fullVertical) fullVerticalEl.value = config.fullVertical;
+
+      // Restore this screen's spare tile slider overrides.
+      // The cached preset must be restored alongside the override: generateWall()
+      // drops an override whenever the preset it sees differs from the cached one,
+      // so restoring the override without its preset would silently discard it.
+      window.graphiteSparesOverride = config.spareOverride ?? null;
+      window.graphiteSparesPreset = config.spareOverridePreset ?? null;
+      window.gp2HalfRowSparesOverride = config.gp2HalfRowSpareOverride ?? null;
+      window.gp2HalfRowSparesPreset = config.gp2HalfRowSparePreset ?? null;
+      window.graphiteMixHalfSparesOverride = config.mixHalfSpareOverride ?? null;
+      window.graphiteMixHalfSparesPreset = config.mixHalfSparePreset ?? null;
+      window.graphiteMixFullSparesOverride = config.mixFullSpareOverride ?? null;
+      window.graphiteMixFullSparesPreset = config.mixFullSparePreset ?? null;
+
       // Re-generate the wall now that all settings (including GP2 Half) are correctly in the DOM.
       // The productType change event fired generateWall() before GP2 Half / fractional blocksVer
       // were restored, so we must run it again to get the correct equipment list.
@@ -505,7 +632,13 @@ const MultiScreenManager = {
 
     // Calculate totals from all screens
     window.screenConfigurations.forEach((config) => {
-      const screenTiles = config.blocksHor * config.blocksVer;
+      // Resolve the screen through the shared spec builder so GP2 Half rows,
+      // extra Full rows and Graphite Mix grids are counted the same way the
+      // equipment list counts them.
+      const spec = (typeof ExportManager !== 'undefined' && ExportManager.getScreenSpec)
+        ? ExportManager.getScreenSpec(config)
+        : null;
+      const screenTiles = spec ? spec.totalBlocks : (config.blocksHor * config.blocksVer);
       totalTiles += screenTiles;
       productTypes.add(config.productType);
 
@@ -517,7 +650,13 @@ const MultiScreenManager = {
       // Use EquipmentCalculator for precise power metrics if available
       let screenPower;
       if (typeof EquipmentCalculator !== 'undefined' && EquipmentCalculator.calculatePower) {
-        screenPower = EquipmentCalculator.calculatePower(config.productType, screenTiles, voltageInput, config);
+        screenPower = EquipmentCalculator.calculatePower(config.productType, screenTiles, voltageInput, spec ? {
+          gp2HalfBottomRow: spec.gp2HalfBottomRow,
+          gp2HalfRows: spec.gp2HalfRows,
+          horizontalBlocks: spec.blocksHor,
+          roeGraphiteMixEnabled: spec.roeGraphiteMixEnabled,
+          graphiteMixData: spec.graphiteMixData
+        } : config);
       } else {
         // Fallback calculation logic (keep existing as baseline)
         let amps110 = 0, amps208 = 0, watts = 0;
@@ -871,20 +1010,38 @@ const MultiScreenManager = {
 
     // Calculate totals from all screens
     window.screenConfigurations.forEach((config) => {
-      const screenTiles = config.blocksHor * config.blocksVer;
+      // Resolve the screen through the shared spec builder so GP2 Half rows,
+      // extra Full rows and Graphite Mix grids are counted the same way the
+      // equipment list counts them.
+      const spec = (typeof ExportManager !== 'undefined' && ExportManager.getScreenSpec)
+        ? ExportManager.getScreenSpec(config)
+        : null;
+      const screenTiles = spec ? spec.totalBlocks : (config.blocksHor * config.blocksVer);
       totalTiles += screenTiles;
       productTypes.add(config.productType);
 
-      // Calculate pixels sum
+      // Calculate pixels sum.
+      // Tiles are 192px wide for GP2; a GP2.6 Full tile is 384px tall (500x1000mm)
+      // while every other tile is square, so height must be derived per product.
       const p = CONSTANTS.PIXELS_PER_TILE[config.productType] || 200;
+      const tilePixelHeight = (config.productType === 'ROEGP26Full') ? p * 2 : p;
+      const displayVer = spec ? spec.blocksVer : config.blocksVer;
       const screenHorPixels = config.blocksHor * p;
-      const screenVerPixels = config.blocksVer * p;
+      // displayVer is in Full-tile units, so multiplying by the Full tile height
+      // correctly accounts for half-height rows (each contributes 0.5).
+      const screenVerPixels = Math.round(displayVer * tilePixelHeight);
       totalPixels += screenHorPixels * screenVerPixels;
       totalHorPixels += screenHorPixels;
       totalVerPixels += screenVerPixels;
 
       // Calculate power sum
-      const power = EquipmentCalculator.calculatePower(config.productType, screenTiles, (config.powerDistroType == '110' ? 110 : 208));
+      const power = EquipmentCalculator.calculatePower(config.productType, screenTiles, (config.powerDistroType == '110' ? 110 : 208), spec ? {
+        gp2HalfBottomRow: spec.gp2HalfBottomRow,
+        gp2HalfRows: spec.gp2HalfRows,
+        horizontalBlocks: spec.blocksHor,
+        roeGraphiteMixEnabled: spec.roeGraphiteMixEnabled,
+        graphiteMixData: spec.graphiteMixData
+      } : {});
       totalWatts += power.watts;
       if (config.powerDistroType == '110') {
         totalAmps110 += power.amps;
@@ -892,12 +1049,29 @@ const MultiScreenManager = {
         totalAmps208 += power.amps;
       }
 
-      // Calculate data ports needed based on product type
+      // Calculate data ports needed based on product type.
+      // Limits must match EquipmentCalculator.calculateProcessors()'s maxDataCascade.
       let daisyChainLimit = 10; // Default for Absen and Theatrixx
       if (['BP2B1', 'BP2B2', 'BP2V2'].includes(config.productType)) {
         daisyChainLimit = 13;
+      } else if (config.productType === 'ROEGP26Full') {
+        daisyChainLimit = 5;
+      } else if (config.productType === 'ROEGP26Half') {
+        daisyChainLimit = 11;
       }
-      const screenDataPorts = Math.ceil(screenTiles / daisyChainLimit);
+
+      let screenDataPorts;
+      if (spec && spec.roeGraphiteMixEnabled && spec.graphiteMixData) {
+        // Mix mode runs two grids with different cascade limits
+        screenDataPorts = Math.ceil((spec.graphiteMixData.fullTiles || 0) / 5) +
+          Math.ceil((spec.graphiteMixData.halfTiles || 0) / 11);
+      } else if (spec && config.productType === 'ROEGP26Full' && spec.gp2HalfRows > 0) {
+        // Half rows sit on their own cascades (11 per run), Full tiles on theirs (5 per run)
+        screenDataPorts = Math.ceil(screenTiles / 5) +
+          Math.ceil((spec.blocksHor * spec.gp2HalfRows) / 11);
+      } else {
+        screenDataPorts = Math.ceil(screenTiles / daisyChainLimit);
+      }
       totalDataPorts += screenDataPorts;
 
       if (config.productType === 'theatrixx') {
