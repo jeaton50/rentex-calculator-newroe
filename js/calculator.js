@@ -223,6 +223,125 @@ const Calculator = {
   },
 
   /**
+   * Calculate tile / spare totals for a wall using the product-specific spare rules.
+   *
+   * This is the single source of truth for tile counts. Both the main equipment
+   * list (generateWall) and the per-screen multi-screen lists
+   * (ExportManager.getEquipmentForScreen) must use it so the two always agree.
+   *
+   * Spare rules by product:
+   *  - ROEGP26Full : ships in packages of 6, always add one full spare case
+   *  - ROEGP26Half : percentage formula rounded to a multiple of 12
+   *  - theatrixx   : percentage formula, 10% / factor 2
+   *  - everything else (absen, BP2*) : percentage formula, 8% / factor 1.5
+   *
+   * @param {Object} config
+   * @param {string} config.productType - Product type
+   * @param {number} config.totalBlocks - Active (non-spare) tile count
+   * @param {number|null} [config.spareOverride] - Manual spare count from the
+   *        spare-tiles slider. When provided (not null/undefined) it replaces
+   *        the calculated preset.
+   * @returns {Object} {totalBlocks, totalSpares, totalBlocksWithSpares, presetSpares}
+   */
+  calculateTileTotals(config) {
+    const { productType, totalBlocks } = config;
+    const spareOverride = config.spareOverride;
+
+    let presetSpares;
+
+    if (productType === 'ROEGP26Full') {
+      // GP2 Full: packages of 6, always add at least 1 spare case
+      const packageSize = 6;
+      const activeCases = Math.ceil(totalBlocks / packageSize);
+      const totalCases = activeCases + 1; // Guarantee at least 1 spare case
+      presetSpares = (totalCases * packageSize) - totalBlocks;
+    } else if (productType === 'ROEGP26Half') {
+      // GP2 Half: same percentage formula as Black Pearl, rounded to a multiple of 12
+      presetSpares = this.calculateSpares(totalBlocks, 12, 1.5);
+    } else {
+      // Black Pearl, Absen, Theatrixx, etc.
+      presetSpares = this.calculateSpares(
+        totalBlocks,
+        productType === 'theatrixx' ? 10 : 8,
+        productType === 'theatrixx' ? 2 : 1.5
+      );
+    }
+
+    const totalSpares = (spareOverride !== null && spareOverride !== undefined)
+      ? spareOverride
+      : presetSpares;
+
+    return {
+      totalBlocks,
+      totalSpares,
+      totalBlocksWithSpares: totalBlocks + totalSpares,
+      presetSpares
+    };
+  },
+
+  /**
+   * Calculate ROE Graphite Mix tile / spare totals (separate Half and Full pools).
+   * Shared by generateWall() and the multi-screen per-screen equipment builder.
+   *
+   * @param {Object} config
+   * @param {number} config.halfHorizontal - Half-tile columns
+   * @param {number} config.halfVertical - Half-tile rows
+   * @param {number} config.fullHorizontal - Full-tile columns
+   * @param {number} config.fullVertical - Full-tile rows
+   * @param {number|null} [config.halfSpareOverride] - Manual Half spare count
+   * @param {number|null} [config.fullSpareOverride] - Manual Full spare count
+   * @returns {Object} graphiteMixData shaped exactly as equipment.js expects
+   */
+  calculateGraphiteMixTotals(config) {
+    const halfHorizontal = config.halfHorizontal || 0;
+    const halfVertical = config.halfVertical || 0;
+    const fullHorizontal = config.fullHorizontal || 0;
+    const fullVertical = config.fullVertical || 0;
+
+    const halfTiles = halfHorizontal * halfVertical;
+    const fullTiles = fullHorizontal * fullVertical;
+
+    // GP2 Half: percentage formula rounded to a multiple of 12
+    let presetHalfSpares = 0;
+    if (halfTiles > 0) {
+      presetHalfSpares = this.calculateSpares(halfTiles, 12, 1.5);
+    }
+
+    // GP2 Full: packages of 6, always add at least 1 spare case
+    let presetFullSpares = 0;
+    if (fullTiles > 0) {
+      const fullPackageSize = 6;
+      const fullActiveCases = Math.ceil(fullTiles / fullPackageSize);
+      presetFullSpares = ((fullActiveCases + 1) * fullPackageSize) - fullTiles;
+    }
+
+    const halfOverride = config.halfSpareOverride;
+    const fullOverride = config.fullSpareOverride;
+
+    const halfSpares = (halfTiles > 0 && halfOverride !== null && halfOverride !== undefined)
+      ? halfOverride
+      : presetHalfSpares;
+    const fullSpares = (fullTiles > 0 && fullOverride !== null && fullOverride !== undefined)
+      ? fullOverride
+      : presetFullSpares;
+
+    return {
+      halfHorizontal,
+      halfVertical,
+      fullHorizontal,
+      fullVertical,
+      halfTiles,
+      fullTiles,
+      halfSpares,
+      fullSpares,
+      halfTilesWithSpares: halfTiles + halfSpares,
+      fullTilesWithSpares: fullTiles + fullSpares,
+      presetHalfSpares,
+      presetFullSpares
+    };
+  },
+
+  /**
    * Calculate 208v circuits needed for power distribution
    * @param {string} productType - Product type
    * @param {number} totalTiles - Total number of tiles
