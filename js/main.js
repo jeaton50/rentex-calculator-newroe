@@ -882,7 +882,7 @@ window.generateAllEquipment = function () {
   summarySectionContainer.appendChild(summaryHeader);
 
   const message1 = document.createElement('p');
-  message1.textContent = "WDC, Boston, Ft. Lauderdale, Nashville & Phoenix cannot process LED tiles.";
+  message1.textContent = "WDC, Boston, Ft. Lauderdale & Nashville cannot process LED tiles.";
   message1.style.cssText = 'color: red; margin: 5px 0;';
   summarySectionContainer.appendChild(message1);
 
